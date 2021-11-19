@@ -1,2 +1,2 @@
 # rdfconverter
-Conversion and validation of YARRRML and Chowl files to RDF
+Conversion and validation of YARRRML and Chowlk files to RDF
