@@ -1,0 +1,80 @@
+prefixes: {data: 'https://raw.githubusercontent.com/Mat-O-Lab/resources/main/mechanics/data/polymer_tensile/Zugversuch_eng_ETFE-Ref%2BGroesseneffekt2-metadata.json/',
+  method: 'https://raw.githubusercontent.com/Mat-O-Lab/MSEO/main/methods/DIN_EN_ISO_527-3.drawio.ttl/',
+  obo: 'http://purl.obolibrary.org/obo/'}
+base: http://purl.matolab.org/mseo/mappings/
+sources:
+  data_columns: {access: 'https://raw.githubusercontent.com/Mat-O-Lab/resources/main/mechanics/data/polymer_tensile/Zugversuch_eng_ETFE-Ref%2BGroesseneffekt2-metadata.json',
+    iterator: '$.tableSchema.columns[*]', referenceFormulation: jsonpath}
+  data_notes: {access: 'https://raw.githubusercontent.com/Mat-O-Lab/resources/main/mechanics/data/polymer_tensile/Zugversuch_eng_ETFE-Ref%2BGroesseneffekt2-metadata.json',
+    iterator: '$.notes[*]', referenceFormulation: jsonpath}
+mappings:
+  ForceMeasurementInformation:
+    sources: [data_notes, data_columns]
+    s: data:$(@id)
+    condition:
+      function: equal
+      parameters:
+      - [str1, $(label)]
+      - [str2, '']
+    po:
+    - ['obo:0010002', 'method:SpecimenName']
+  LenghtMeasurementInformation:
+    sources: [data_notes, data_columns]
+    s: data:$(@id)
+    condition:
+      function: equal
+      parameters:
+      - [str1, $(label)]
+      - [str2, '']
+    po:
+    - ['obo:0010002', 'method:SpecimenName']
+  SpecimenName:
+    sources: [data_notes, data_columns]
+    s: data:$(@id)
+    condition:
+      function: equal
+      parameters:
+      - [str1, $(label)]
+      - [str2, aktuelle Probe]
+    po:
+    - ['obo:0010002', 'method:SpecimenName']
+  StartLenghtMeasurementInformation:
+    sources: [data_notes, data_columns]
+    s: data:$(@id)
+    condition:
+      function: equal
+      parameters:
+      - [str1, $(label)]
+      - [str2, "Einspannl\xE4nge"]
+    po:
+    - ['obo:0010002', 'method:SpecimenName']
+  TestTimeInterval:
+    sources: [data_notes, data_columns]
+    s: data:$(@id)
+    condition:
+      function: equal
+      parameters:
+      - [str1, $(label)]
+      - [str2, '']
+    po:
+    - ['obo:0010002', 'method:SpecimenName']
+  ThicknessMeasurementInformation:
+    sources: [data_notes, data_columns]
+    s: data:$(@id)
+    condition:
+      function: equal
+      parameters:
+      - [str1, $(label)]
+      - [str2, Probendicke a0]
+    po:
+    - ['obo:0010002', 'method:SpecimenName']
+  WidthMeasurementInformation:
+    sources: [data_notes, data_columns]
+    s: data:$(@id)
+    condition:
+      function: equal
+      parameters:
+      - [str1, $(label)]
+      - [str2, Probenbreite b0]
+    po:
+    - ['obo:0010002', 'method:SpecimenName']
