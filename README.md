@@ -16,4 +16,4 @@ It will be a java service on the web, to be deployed with tom-cat or another jav
 
 To call the service you use:
 
-http://localhost:8080/rdfconv/RDFConverter?jsonfile=http://myjsonfile.json
+http://localhost:8080/rdfconv/conv?jsonfile=http://myjsonfile.json
