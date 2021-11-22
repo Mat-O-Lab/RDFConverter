@@ -1,5 +1,5 @@
 {
 "yarrrml": "https://raw.githubusercontent.com/Mat-O-Lab/resources/main/mappings/Zugversuch_eng_ETFE-Ref%252BGroesseneffekt2-map.yaml",
 "chowlk": "https://raw.githubusercontent.com/oeg-upm/Chowlk/webservice/output/aio.ttl",
-"shacl": "https://raw.githubusercontent.com/Mat-O-Lab/rdfconverter/main/resources/exshacl.ttl",
+"shacl": "https://raw.githubusercontent.com/Mat-O-Lab/rdfconverter/main/resources/exshacl.ttl"
 }
