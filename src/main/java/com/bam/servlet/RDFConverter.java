@@ -44,14 +44,23 @@ public class RDFConverter extends HttpServlet {
 			String jsonFile = request.getParameter("jsonfile");
 			response.getWriter().append("Validating and uploading files to the triple store...");
 			try {
-				//String json = readUrl("http://www.javascriptkit.com/" + "dhtmltutors/javascriptkit.json");
 				String jsonConf = readUrl(jsonFile);
 				Gson gson = new Gson();
 				Conf conf = gson.fromJson(jsonConf, Conf.class);
 
-				response.getWriter().append(conf.yarrrml);
-				response.getWriter().append(conf.chowlk);
-				response.getWriter().append(conf.shacl);
+				String rdfYarrrml = generateRDFyaml(readUrl(conf.yarrrml));
+				String ttlChowlk = readUrl(conf.chowlk);
+				String shacl = readUrl(conf.shacl);
+				
+				String resultShacl = validateRDF(rdfYarrrml, shacl);
+				if(!resultShacl.startsWith("valid")) {
+					response.getWriter().append(resultShacl);
+				} else {
+					String resultIncludeTriples = includeTripleStore(rdfYarrrml, ttlChowlk); 
+					if(resultIncludeTriples.startsWith("fail")) {
+						response.getWriter().append(resultIncludeTriples);
+					}
+				}
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -59,6 +68,21 @@ public class RDFConverter extends HttpServlet {
 
 			
 		}
+	}
+
+	private String includeTripleStore(String rdfYarrrml, String ttlChowlk){
+		
+		return null;
+	}
+
+	private String validateRDF(String rdf, String shaclShapes) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private String generateRDFyaml(String yarrrml) {
+		
+		return null;
 	}
 
 	private static String readUrl(String urlString) throws Exception {
