@@ -13,6 +13,6 @@ The validation will not occur on the RDF content from CHOWLk, because it does no
 
 It is a java service on the web, to be deployed with tom-cat or another java servlet container.
 
-To call the service you use:
+Example of how to use the API/service on the web:
 
-http://localhost:8080/rdfconv/conv?jsonfile=http://myjsonfile.json
+http://localhost:8080/rdfconv/conv?jsonfile=https://raw.githubusercontent.com/Mat-O-Lab/rdfconverter/main/resources/conf.json
