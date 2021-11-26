@@ -48,16 +48,24 @@ public class RDFConverter extends HttpServlet {
 				Gson gson = new Gson();
 				Conf conf = gson.fromJson(jsonConf, Conf.class);
 
-				String rdfYarrrml = generateRDFyaml(readUrl(conf.yarrrml));
-				String ttlChowlk = readUrl(conf.chowlk);
-				String shacl = readUrl(conf.shacl);
-				
-				String resultShacl = validateRDF(rdfYarrrml, shacl);
-				if(!resultShacl.startsWith("valid")) {
-					response.getWriter().append(resultShacl);
+				String yamlContent = readUrl(conf.yarrrml);
+				String ttlChowlk = extractTTLMethodfromYaml(yamlContent);
+				String rdfYarrrml = generateRDFyaml(yamlContent);
+				String shacl = null;
+				if (conf.shacl != null && conf.shacl.startsWith("http")) {
+					shacl = readUrl(conf.shacl);
+					String resultShacl = validateRDF(rdfYarrrml, shacl);
+					if (!resultShacl.startsWith("valid")) {
+						response.getWriter().append(resultShacl);
+					} else {
+						String resultIncludeTriples = includeTripleStore(rdfYarrrml, ttlChowlk);
+						if (resultIncludeTriples.startsWith("fail")) {
+							response.getWriter().append(resultIncludeTriples);
+						}
+					}
 				} else {
-					String resultIncludeTriples = includeTripleStore(rdfYarrrml, ttlChowlk); 
-					if(resultIncludeTriples.startsWith("fail")) {
+					String resultIncludeTriples = includeTripleStore(rdfYarrrml, ttlChowlk);
+					if (resultIncludeTriples.startsWith("fail")) {
 						response.getWriter().append(resultIncludeTriples);
 					}
 				}
@@ -66,23 +74,27 @@ public class RDFConverter extends HttpServlet {
 				e.printStackTrace();
 			}
 
-			
 		}
 	}
 
-	private String includeTripleStore(String rdfYarrrml, String ttlChowlk){
-		
-		return null;
+	private String extractTTLMethodfromYaml(String yamlContent) throws Exception {
+		String ttlURL = yamlContent.substring(yamlContent.indexOf("method:") + 9, yamlContent.indexOf(".ttl")) + ".ttl";
+		return readUrl(ttlURL);
+	}
+
+	private String includeTripleStore(String rdfYarrrml, String ttlChowlk) {
+
+		return "fail: private String includeTripleStore(String rdfYarrrml, String ttlChowlk) not implemented \n";
 	}
 
 	private String validateRDF(String rdf, String shaclShapes) {
 		// TODO Auto-generated method stub
-		return null;
+		return "fail: String validateRDF(String rdf, String shaclShapes) not implmented \n";
 	}
 
 	private String generateRDFyaml(String yarrrml) {
-		
-		return null;
+
+		return "fail: private String generateRDFyaml(String yarrrml) no implemented \n";
 	}
 
 	private static String readUrl(String urlString) throws Exception {
