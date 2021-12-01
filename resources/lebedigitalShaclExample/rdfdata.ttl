@@ -1,0 +1,30 @@
+@prefix ns1: <http://www.w3.org/2002/07/owl#> .
+@prefix ns2: <http://www.ontologyrepository.com/CommonCoreOntologies/> .
+@prefix ns3: <http://purl.obolibrary.org/obo/> .
+@prefix ns4: <http://www.geneontology.org/formats/oboInOwl#> .
+@prefix ns5: <http://www.daml.org/2003/01/periodictable/PeriodicTable#> .
+@prefix ns6: <http://purl.org/dc/elements/1.1/> .
+@prefix ns7: <https://www.materials.fraunhofer.de/ontologies/BWMD_ontology/mid#> .
+@prefix ns8: <https://www.materials.fraunhofer.de/ontologies/graph_designer#> .
+@prefix ns9: <http://purl.org/dc/terms/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://purl.matolab.org/mseo/mid/E-modul_experiment_BA_Los_M_V-4> a ns1:NamedIndividual,
+        <https://github.com/BAMresearch/ModelCalibration/blob/Datasets/usecases/Concrete/ConcreteOntology/Concrete_Ontology_MSEO.owl#DeterminationOfSecantModulusOfElasticity> ;
+    ns2:has_agent <https://purl.matolab.org/mseo/mid/Agent_BA_Los_M_V-4Kh> ;
+    ns2:has_input <https://purl.matolab.org/mseo/mid/ForceRate_BA_Los_M_V-4Kraftgeregelt>,
+        <https://purl.matolab.org/mseo/mid/Specimen_BA_Los_M_V-4> ;
+    ns2:has_output <https://purl.matolab.org/mseo/mid/RawDataSet_BA_Los_M_V-4specimen_dat> ;
+    ns2:occures_on <https://purl.matolab.org/mseo/mid/Day_11.09.2014_13:37:29> .
+    
+    
+<https://purl.matolab.org/mseo/mid/Day_11.09.2014_13:37:29> a ns2:Day,
+        ns1:NamedIndividual ;
+    ns3:RO_0010001 <https://purl.matolab.org/mseo/mid/InformationBearingEntity_11.09.2014_13:37:29> .
+    
+<https://purl.matolab.org/mseo/mid/InformationBearingEntity_11.09.2014_13:37:29> a ns2:InformationBearingEntity,
+        ns1:NamedIndividual ;
+    ns3:RO_0010002 <https://purl.matolab.org/mseo/mid/Day_11.09.2014_13:37:29> ;
+    ns2:has_datetime_value "2014-09-11T13:37:29"^^xsd:String .
