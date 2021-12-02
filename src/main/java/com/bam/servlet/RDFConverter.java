@@ -79,9 +79,9 @@ public class RDFConverter extends HttpServlet {
 				} else {
 					String resultIncludeTriples = includeTripleStore(rdfYarrrml, ttlChowlk);
 					resultIncludeTriples += "---No SHACL shapes provided---";
-					if (resultIncludeTriples.startsWith("fail")) {
+					//if (resultIncludeTriples.startsWith("fail")) {
 						response.getWriter().append(resultIncludeTriples);
-					}
+					//}
 				}
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -97,58 +97,55 @@ public class RDFConverter extends HttpServlet {
 	}
 
 	private String includeTripleStore(String rdfYarrrml, String ttlChowlk) {
-		DataManager.insertTriples(rdfYarrrml);
-		DataManager.insertTriples(ttlChowlk);
-		return "fail: private String includeTripleStore(String rdfYarrrml, String ttlChowlk) not implemented \n";
-	}
-
-	private String validateRDF(String rdf, String shaclShapes) throws RDFParseException, RepositoryException, IOException {
-		String ret = null;
-		boolean bValid = true;
-        ShaclSail shaclSail = new ShaclSail(new MemoryStore());
-
-        SailRepository sailRepository = new SailRepository(shaclSail);
-        sailRepository.init();
-
-        try (SailRepositoryConnection connection = sailRepository.getConnection()) {
-
-            connection.begin();
-           
-            StringReader shaclRules = new StringReader(shaclShapes);
-
-            connection.add(shaclRules, "", RDFFormat.TURTLE, RDF4J.SHACL_SHAPE_GRAPH);
-            connection.commit();
-
-            connection.begin();
-            
-            StringReader rdfData = new StringReader(rdf);
-
-            connection.add(rdfData, "", RDFFormat.TURTLE);
-            
-            try {
-                connection.commit();
-            } catch (Exception exception) {
-                Throwable cause = exception.getCause();
-                if (cause instanceof ShaclSailValidationException) {
-                    Model validationReportModel = ((ShaclSailValidationException) cause).validationReportAsModel();
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    Rio.write(validationReportModel, baos, RDFFormat.TURTLE);
-                    ret = baos.toString(StandardCharsets.UTF_8);
-                    bValid = false;
-                }
-                if(!bValid) {
-                	ret = "fail: " + ret;
-                }
-                //throw exception;
-            }
-            if(bValid) {
-            	ret = "VALID";
-            }
-        }
-		
+		String ret = "";
+		//ret += DataManager.insertTriples(rdfYarrrml);
+		ret += DataManager.insertTriples(ttlChowlk);
 		return ret;
 	}
 
+	private String validateRDF(String rdf, String shaclShapes) {
+		String ret = null;
+		boolean bValid = true;
+		ShaclSail shaclSail = new ShaclSail(new MemoryStore());
+
+		SailRepository sailRepository = new SailRepository(shaclSail);
+		sailRepository.init();
+		try {
+			SailRepositoryConnection connection = sailRepository.getConnection();
+			connection.begin();
+			StringReader shaclRules = new StringReader(shaclShapes);
+			connection.add(shaclRules, "", RDFFormat.TURTLE, RDF4J.SHACL_SHAPE_GRAPH);
+			connection.commit();
+			connection.begin();
+			StringReader rdfData = new StringReader(rdf);
+			connection.add(rdfData, "", RDFFormat.TURTLE);
+			connection.commit();
+		} catch (Exception exception) {
+			Throwable cause = exception.getCause();
+			bValid = false;
+			if (cause instanceof ShaclSailValidationException) {
+				Model validationReportModel = ((ShaclSailValidationException) cause).validationReportAsModel();
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				Rio.write(validationReportModel, baos, RDFFormat.TURTLE);
+				ret = baos.toString(StandardCharsets.UTF_8);
+			}
+			if (cause == null) {
+				ret = "fail: " + exception.getMessage();
+			} else {
+				ret = "fail: " + ret;
+			}
+		}
+		if (bValid) {
+			ret = "VALID";
+		}
+
+		return ret;
+	}
+
+	/*
+	 * yarrrml-parser -i rules.yml -o rules.rml.ttl java -jar /path/to/rmlmapper.jar
+	 * -m rules.rml.ttl -o /path/to/outputfile.ttl
+	 */
 	private String generateRDFyaml(String yarrrml) {
 
 		return "fail: private String generateRDFyaml(String yarrrml) no implemented \n";

@@ -6,11 +6,12 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.protocol.ClientContext;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.protocol.BasicHttpContext;
-import org.apache.jena.sparql.modify.UpdateProcessRemote;
-import org.apache.jena.update.UpdateExecutionFactory;
-import org.apache.jena.update.UpdateFactory;
-import org.apache.jena.update.UpdateProcessor;
-import org.apache.jena.update.UpdateRequest;
+
+import com.hp.hpl.jena.sparql.modify.UpdateProcessRemote;
+import com.hp.hpl.jena.update.UpdateExecutionFactory;
+import com.hp.hpl.jena.update.UpdateFactory;
+import com.hp.hpl.jena.update.UpdateProcessor;
+import com.hp.hpl.jena.update.UpdateRequest;
 
 public class DataManager {
 
@@ -31,7 +32,7 @@ public class DataManager {
 			    AuthScope.ANY_PORT), new UsernamePasswordCredentials("admin", "NtUb4Mv4vx9040X6"));
 			httpContext.setAttribute(ClientContext.CREDS_PROVIDER, provider);
 
-			UpdateRequest update = UpdateFactory.create("INSERT DATA { graph <http://graph/my> { " + triples + "}}");
+			UpdateRequest update = UpdateFactory.create("INSERT DATA { graph <http://graph/bam> { " + triples + "}}");
 			UpdateProcessor processor = UpdateExecutionFactory.createRemote(update, "https://fuseki.materials.digital/SecondaryData/update");
 			((UpdateProcessRemote)processor).setHttpContext(httpContext);
 			processor.execute();
