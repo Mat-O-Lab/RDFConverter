@@ -1,4 +1,4 @@
-# rdfconverter
+# RDFConverter
 Conversion and validation of YARRRML and Chowlk files to RDF
 
 Input (A json file containing, an example [here](https://raw.githubusercontent.com/Mat-O-Lab/rdfconverter/main/resources/conf.json)): 
