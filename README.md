@@ -5,7 +5,7 @@ Conversion and validation of YARRRML and Chowlk files to RDF
 -	yarrrml file (https://github.com/Mat-O-Lab/resources/blob/main/mappings/Zugversuch_eng_ETFE-Ref%252BGroesseneffekt2-map.yaml)
 -	SHACL shapes (Optional)
 
-An example of this json file is available [here](https://raw.githubusercontent.com/Mat-O-Lab/rdfconverter/main/resources/conf.json))
+An example of this json file is available [here](https://raw.githubusercontent.com/Mat-O-Lab/rdfconverter/main/resources/conf.json)
  
 ## Output: A string answering if the triples are successfully included on the triple store or not.
 
