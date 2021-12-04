@@ -21,6 +21,7 @@
 				<version>3.2.3</version>
 			</plugin>
 		</plugins>
+		<finalName>rdfconv</finalName>
 	</build>
 	<dependencies>
 		<dependency>
