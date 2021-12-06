@@ -43,6 +43,11 @@
 			<artifactId>rdf4j-storage</artifactId>
 			<type>pom</type>
 		</dependency>
+		<dependency>
+			<groupId>be.ugent.rml</groupId>
+			<artifactId>rmlmapper</artifactId>
+			<version>4.10.0</version>
+		</dependency>
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>

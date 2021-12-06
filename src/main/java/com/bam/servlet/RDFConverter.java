@@ -1,19 +1,25 @@
 package com.bam.servlet;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.vocabulary.RDF4J;
-import org.eclipse.rdf4j.repository.RepositoryException;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
-import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import org.eclipse.rdf4j.sail.shacl.ShaclSail;
@@ -21,6 +27,15 @@ import org.eclipse.rdf4j.sail.shacl.ShaclSailValidationException;
 
 import com.google.gson.Gson;
 
+import be.ugent.rml.Executor;
+import be.ugent.rml.Utils;
+import be.ugent.rml.functions.FunctionLoader;
+import be.ugent.rml.functions.lib.IDLabFunctions;
+import be.ugent.rml.records.RecordsFactory;
+import be.ugent.rml.store.QuadStore;
+import be.ugent.rml.store.QuadStoreFactory;
+import be.ugent.rml.store.RDF4JStore;
+import be.ugent.rml.term.NamedNode;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -79,9 +94,9 @@ public class RDFConverter extends HttpServlet {
 				} else {
 					String resultIncludeTriples = includeTripleStore(rdfYarrrml, ttlChowlk);
 					resultIncludeTriples += "---No SHACL shapes provided---";
-					//if (resultIncludeTriples.startsWith("fail")) {
-						response.getWriter().append(resultIncludeTriples);
-					//}
+					// if (resultIncludeTriples.startsWith("fail")) {
+					response.getWriter().append(resultIncludeTriples);
+					// }
 				}
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -98,7 +113,7 @@ public class RDFConverter extends HttpServlet {
 
 	private String includeTripleStore(String rdfYarrrml, String ttlChowlk) {
 		String ret = "";
-		//ret += DataManager.insertTriples(rdfYarrrml);
+		// ret += DataManager.insertTriples(rdfYarrrml);
 		ret += DataManager.insertTriples(ttlChowlk);
 		return ret;
 	}
@@ -143,12 +158,63 @@ public class RDFConverter extends HttpServlet {
 	}
 
 	/*
-	 * yarrrml-parser -i rules.yml -o rules.rml.ttl java -jar /path/to/rmlmapper.jar
-	 * -m rules.rml.ttl -o /path/to/outputfile.ttl
+	 * java -jar /path/to/rmlmapper.jar -m rules.rml.ttl -o /path/to/outputfile.ttl
+	 * 
+	 * Based on: https://github.com/RMLio/rmlmapper-java/blob/master/src/test/java/be/ugent/rml/readme/ReadmeTest.java
 	 */
 	private String generateRDFyaml(String yarrrml) {
+		QuadStore result = null;
+		try {
+			// String mapPath = "./src/test/resources/argument/mapping.ttl"; // path to the
+			// mapping file that needs to be
+			// executed
+			// File mappingFile = new File(mapPath);
+			File mappingFile = generateRML(yarrrml);
 
-		return "fail: private String generateRDFyaml(String yarrrml) no implemented \n";
+			// Get the mapping string stream
+			InputStream mappingStream = new FileInputStream(mappingFile);
+
+			// Load the mapping in a QuadStore
+			QuadStore rmlStore = QuadStoreFactory.read(mappingStream);
+
+			// Set up the basepath for the records factory, i.e., the basepath for the
+			// (local file) data sources
+			RecordsFactory factory = new RecordsFactory(mappingFile.getParent());
+
+			// Set up the functions used during the mapping
+			Map<String, Class> libraryMap = new HashMap<>();
+			libraryMap.put("IDLabFunctions", IDLabFunctions.class);
+
+			FunctionLoader functionLoader = new FunctionLoader(null, libraryMap);
+
+			// Set up the outputstore (needed when you want to output something else than
+			// nquads
+			QuadStore outputStore = new RDF4JStore();
+
+			// Create the Executor
+			Executor executor = new Executor(rmlStore, factory, functionLoader, outputStore,
+					Utils.getBaseDirectiveTurtle(mappingStream));
+
+			// Execute the mapping
+			result = executor.executeV5(null).get(new NamedNode("rmlmapper://default.store"));
+
+			// Output the result
+			BufferedWriter out = new BufferedWriter(new OutputStreamWriter(System.out));
+			result.write(out, "turtle");
+			out.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return result.toSortedString();
+	}
+
+	/*
+	 * yarrrml-parser -i yarrrml.yml -o rules.rml.ttl
+	 */
+	private File generateRML(String yarrrml) {
+		
+		
+		return null;
 	}
 
 	private static String readUrl(String urlString) throws Exception {
