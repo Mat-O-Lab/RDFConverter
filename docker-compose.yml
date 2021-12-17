@@ -5,3 +5,7 @@ services:
     build: .
     ports:
       - "8080:8080"
+  yarrrml-parser:
+    build: yarrrml-parser
+    expose:
+      - "3000"
