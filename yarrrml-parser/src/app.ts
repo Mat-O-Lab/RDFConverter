@@ -11,7 +11,7 @@ app.get('/', (req, res) => {
     const yarrrml_query = req.body.yarrrml;
     if (yarrrml_query) {
         const triples: string = y2r.convert(yarrrml_query);
-        if ( y2r.getLogger().has('error') ) {
+        if (y2r.getLogger().has('error')) {
             return res.status(400).send(y2r.getLogger().getAll());
         }
         return res.send(triples);
