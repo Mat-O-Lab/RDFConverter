@@ -1,22 +1,27 @@
 package com.bam.servlet;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.StringReader;
+import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.HttpEntity;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
 import org.eclipse.rdf4j.model.Model;
 import org.eclipse.rdf4j.model.vocabulary.RDF4J;
+import org.eclipse.rdf4j.query.algebra.Str;
 import org.eclipse.rdf4j.repository.sail.SailRepository;
 import org.eclipse.rdf4j.repository.sail.SailRepositoryConnection;
 import org.eclipse.rdf4j.rio.RDFFormat;
@@ -211,10 +216,24 @@ public class RDFConverter extends HttpServlet {
 	/*
 	 * yarrrml-parser -i yarrrml.yml -o rules.rml.ttl
 	 */
-	private File generateRML(String yarrrml) {
-		
-		
-		return null;
+	private File generateRML(String yarrrml) throws IOException {
+
+		// open HTTP client
+		try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+			HttpPost httpPost = new HttpPost("http://localhost:3000");
+			List<NameValuePair> values = new ArrayList<>();
+			values.add(new BasicNameValuePair("yarrrml", yarrrml));
+			httpPost.setEntity(new UrlEncodedFormEntity(values));
+
+			//make POST to yarrrm-parser service and return response string
+			try (CloseableHttpResponse httpResponse = httpClient.execute(httpPost)) {
+				HttpEntity response = httpResponse.getEntity();
+
+				String rml = EntityUtils.toString(response);
+				EntityUtils.consume(response);
+				return null;
+			}
+		}
 	}
 
 	private static String readUrl(String urlString) throws Exception {
