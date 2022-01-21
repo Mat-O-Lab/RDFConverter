@@ -24,10 +24,17 @@ jobs:
             echo "$DIFFSHACL"
             # Escape newlines (replace \n with %0A)
               echo "::set-output name=diff::$( echo "$DIFF-SHACL" | sed ':a;N;$!ba;s/\n/%0A/g' )"
+        - run: ls
         - name: Build Validator
           run: docker-compose up -d app
         - name: validate rdf against shacl
           if: ${{ steps.rdf.outputs.diff && steps.shacl.outputs.diff }}
           #working-directory: ./methods
           run: |
-            for rdf_file in ${{ steps.rdf.outputs.diff }}; do for shacl_file in ${{ steps.shacl.outputs.diff }}; do curl -v -X POST -F 'rdf=@$rdf_file' -F 'shaclShape=@shacl_file' 'http://localhost:8080/rdfconv/validate'; done; done
+            for rdf_file in ${{ steps.rdf.outputs.diff }} 
+            do 
+              for shacl_file in ${{ steps.shacl.outputs.diff }}
+              do 
+                curl -v -X POST -F 'rdf=@$rdf_file' -F 'shaclShape=@shacl_file' 'http://localhost:8080/rdfconv/validate' 
+              done
+            done
