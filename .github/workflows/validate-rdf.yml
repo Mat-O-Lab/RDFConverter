@@ -14,9 +14,8 @@ jobs:
             # See https://github.community/t/check-pushed-file-changes-with-git-diff-tree-in-github-actions/17220/10
             export DIFFRDF=$(git diff --name-only ${{ github.event.before }}..${{ github.event.after }} validate/rdf/*.ttl)
             echo "$DIFFRDF"
-            echo "test"
             # Escape newlines (replace \n with %0A)
-              echo "::set-output name=diff-rdf::$( echo "$DIFFRDF" | sed ':a;N;$!ba;s/\n/%0A/g' )"
+              echo "::set-output name=diff::$( echo "$DIFFRDF" | sed ':a;N;$!ba;s/\n/%0A/g' )"
         - name: Check changed shacl shapes
           id: shacl
           run: |
@@ -24,7 +23,7 @@ jobs:
             export DIFFSHACL=$(git diff --name-only ${{ github.event.before }}..${{ github.event.after }} validate/shacl/*.ttl)
             echo "$DIFFSHACL"
             # Escape newlines (replace \n with %0A)
-              echo "::set-output name=diff-shacl::$( echo "$DIFF-SHACL" | sed ':a;N;$!ba;s/\n/%0A/g' )"
+              echo "::set-output name=diff::$( echo "$DIFF-SHACL" | sed ':a;N;$!ba;s/\n/%0A/g' )"
         - name: Build Validator
           run: docker-compose up -d app
         - name: validate rdf against shacl
