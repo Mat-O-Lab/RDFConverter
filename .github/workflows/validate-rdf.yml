@@ -1,0 +1,33 @@
+name: validate-rdf-against-shacl
+
+on: [push]
+jobs:
+  run-servlet-validate:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2
+          with:
+            fetch-depth: 0
+        - name: Check changed rdf files
+            id: rdf
+            run: |
+              # See https://github.community/t/check-pushed-file-changes-with-git-diff-tree-in-github-actions/17220/10
+              export DIFF-RDF=$(git diff --name-only ${{ github.event.before }}..${{ github.event.after }} validate/rdf/*.ttl)
+              echo "$DIFF-RDF"
+              # Escape newlines (replace \n with %0A)
+              echo "::set-output name=diff-rdf::$( echo "$DIFF-RDF" | sed ':a;N;$!ba;s/\n/%0A/g' )"
+        - name: Check changed shacl shapes
+            id: shacl
+            run: |
+              # See https://github.community/t/check-pushed-file-changes-with-git-diff-tree-in-github-actions/17220/10
+              export DIFF-SHACL=$(git diff --name-only ${{ github.event.before }}..${{ github.event.after }} validate/shacl/*.ttl)
+              echo "$DIFF-SHACL"
+              # Escape newlines (replace \n with %0A)
+              echo "::set-output name=diff-shacl::$( echo "$DIFF-SHACL" | sed ':a;N;$!ba;s/\n/%0A/g' )"
+        - name: Build Validator
+            run: docker-compose up -d app
+        - name: validate rdf against shacl
+            if: ${{ steps.rdf.outputs.diff && steps.shacl.outputs.diff }}
+            #working-directory: ./methods
+            run: |
+              for rdf_file in ${{ steps.rdf.outputs.diff }}; do for shacl_file in ${{ steps.shacl.outputs.diff }}; do curl -v -X POST -F 'rdf=@$rdf_file' -F 'shaclShape=@shacl_file' 'http://localhost:8080/rdfconv/validate'; done; done
