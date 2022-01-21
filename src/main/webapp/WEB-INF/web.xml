@@ -15,8 +15,18 @@
 		<servlet-name>RDFConverter</servlet-name>
 		<servlet-class>com.bam.servlet.RDFConverter</servlet-class>
 	</servlet>
+	<servlet>
+		<description>RDF Validator</description>
+		<display-name>RDFValidator</display-name>
+		<servlet-name>RDFValidator</servlet-name>
+		<servlet-class>com.bam.servlet.RDFValidator</servlet-class>
+	</servlet>
 	<servlet-mapping>
 		<servlet-name>RDFConverter</servlet-name>
 		<url-pattern>/conv</url-pattern>
+	</servlet-mapping>
+	<servlet-mapping>
+		<servlet-name>RDFValidator</servlet-name>
+		<url-pattern>/validate</url-pattern>
 	</servlet-mapping>
 </web-app>
