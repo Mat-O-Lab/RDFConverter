@@ -27,6 +27,10 @@ jobs:
         - name: Build Validator
           run: docker-compose up -d app
         - run: docker ps -a
+        - name: Sleep
+          uses: jakejarvis/wait-action@master
+          with:
+            time: '10s'
         - name: validate rdf against shacl
           if: ${{ (steps.rdf.outputs.diff && steps.shacl.outputs.diff) || 1 }}
           #working-directory: ./methods
