@@ -1,6 +1,11 @@
 name: validate-rdf-against-shacl
 
-on: [ push ]
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - validation/**
 jobs:
   run-servlet-validate:
     runs-on: ubuntu-latest
