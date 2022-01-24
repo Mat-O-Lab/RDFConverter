@@ -24,7 +24,6 @@ jobs:
             echo "$DIFFSHACL"
             # Escape newlines (replace \n with %0A)
               echo "::set-output name=diff::$( echo "$DIFF-SHACL" | sed ':a;N;$!ba;s/\n/%0A/g' )"
-        - run: ls
         - name: Build Validator
           run: docker-compose up -d app
         - name: validate rdf against shacl
