@@ -28,7 +28,7 @@ jobs:
           if: ${{steps.rdf.outputs.diff && steps.shacl.outputs.diff}}
           run: docker-compose up -d app
         - name: validate rdf against shacl
-          if: ${{steps.rdf.outputs.diff && steps.shacl.outputs.diff}}
+          if: ${{steps.rdf.outputs.diff || steps.shacl.outputs.diff}}
           run: |
             sleep 1
             for rdf_file in validate/rdf/* 
