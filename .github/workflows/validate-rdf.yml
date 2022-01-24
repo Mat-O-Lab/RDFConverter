@@ -26,7 +26,7 @@ jobs:
               echo "::set-output name=diff::$( echo "$DIFF-SHACL" | sed ':a;N;$!ba;s/\n/%0A/g' )"
         - name: Build Validator
           run: docker-compose up -d app
-        - run: docker ps
+        - run: docker ps -a
         - name: validate rdf against shacl
           if: ${{ (steps.rdf.outputs.diff && steps.shacl.outputs.diff) || 1 }}
           #working-directory: ./methods
