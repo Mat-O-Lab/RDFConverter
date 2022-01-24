@@ -27,12 +27,12 @@ jobs:
         - name: Build Validator
           run: docker-compose up -d app
         - name: validate rdf against shacl
-          if: ${{ steps.rdf.outputs.diff && steps.shacl.outputs.diff }}
+          if: ${{ (steps.rdf.outputs.diff && steps.shacl.outputs.diff) || 1 }}
           #working-directory: ./methods
           run: |
-            for rdf_file in "validate/rdf/*" 
+            for rdf_file in validate/rdf/* 
             do 
-              for shacl_file in  "validate/shacl/*"
+              for shacl_file in  validate/shacl/*
               do 
                 curl -v -X POST -F 'rdf=@$rdf_file' -F 'shaclShape=@$shacl_file' 'http://localhost:8080/rdfconv/validate' 
               done
