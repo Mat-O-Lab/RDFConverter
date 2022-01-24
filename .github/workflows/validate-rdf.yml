@@ -26,19 +26,20 @@ jobs:
               echo "::set-output name=diff::$( echo "$DIFF-SHACL" | sed ':a;N;$!ba;s/\n/%0A/g' )"
         - name: Build Validator
           run: docker-compose up -d app
-        - run: docker ps -a
-        - name: Sleep
-          uses: jakejarvis/wait-action@master
-          with:
-            time: '10s'
         - name: validate rdf against shacl
           if: ${{ (steps.rdf.outputs.diff && steps.shacl.outputs.diff) || 1 }}
           #working-directory: ./methods
           run: |
+            sleep 1
             for rdf_file in validate/rdf/* 
             do 
               for shacl_file in  validate/shacl/*
-              do 
-                curl -v -X POST -F "rdf=@$rdf_file" -F "shaclShape=@$shacl_file" "http://localhost:8080/rdfconv/validate"
+              do
+                RESULT=$(curl -s -F "rdf=@$rdf_file" -F "shaclShape=@$shacl_file" "http://localhost:8080/rdfconv/validate")
+                  if [ "$RESULT" != "VALID" ]; then
+                    echo "Error with $rdf_file and $shacl_file"
+                    echo "$RESULT"
+                    exit 1
+                  fi
               done
             done
