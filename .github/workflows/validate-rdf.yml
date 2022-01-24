@@ -25,7 +25,7 @@ jobs:
             sleep 1
             for rdf_file in validate/rdf/* 
             do 
-              for shacl_file in  validate/shacl/*
+              for shacl_file in validate/shacl/*
               do
                 RESULT=$(curl -s -F "rdf=@$rdf_file" -F "shaclShape=@$shacl_file" "http://localhost:8080/rdfconv/validate")
                   if [ "$RESULT" != "VALID" ]; then
