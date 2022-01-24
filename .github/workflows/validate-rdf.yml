@@ -34,6 +34,6 @@ jobs:
             do 
               for shacl_file in  validate/shacl/*
               do 
-                curl -v -X POST -F 'rdf=@$rdf_file' -F 'shaclShape=@$shacl_file' 'http://localhost:8080/rdfconv/validate' 
+                curl -v -X POST -F "rdf=@$rdf_file" -F "shaclShape=@$shacl_file" "http://localhost:8080/rdfconv/validate"
               done
             done
