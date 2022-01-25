@@ -39,7 +39,7 @@ public class RDFValidator extends HttpServlet {
         writer.append(validateRDF(rdf, shaclShape));
     }
 
-    protected static String validateRDF(String rdf, String shaclShapes) {
+    protected static String validateRDF(String rdf, String shaclShapes) throws UnsupportedEncodingException {
         String ret = null;
         boolean bValid = true;
         ShaclSail shaclSail = new ShaclSail(new MemoryStore());
@@ -63,7 +63,7 @@ public class RDFValidator extends HttpServlet {
                 Model validationReportModel = ((ShaclSailValidationException) cause).validationReportAsModel();
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 Rio.write(validationReportModel, baos, RDFFormat.TURTLE);
-                ret = baos.toString(StandardCharsets.UTF_8);
+                ret = baos.toString(String.valueOf(StandardCharsets.UTF_8));
             }
             if (cause == null) {
                 ret = "fail: " + exception.getMessage();

@@ -1,11 +1,11 @@
-FROM maven:3.8-jdk-8 as maven_builder
+FROM maven:3.8-amazoncorretto-8 as maven_builder
 
 COPY src /src/
 COPY pom.xml .
 
-RUN mvn clean package
+RUN mvn package
 
-FROM tomcat:jdk8
+FROM tomcat:jdk8-corretto
 
 COPY --from=maven_builder /target/rdfconv.war /usr/local/tomcat/webapps
 
