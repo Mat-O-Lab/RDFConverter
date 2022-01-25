@@ -82,7 +82,7 @@ public class ShaclSampleCode {
                     //Rio.write(validationReportModel, System.out, RDFFormat.TURTLE);
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     Rio.write(validationReportModel, baos, RDFFormat.TURTLE);
-                    System.err.println(baos.toString(StandardCharsets.UTF_8));
+                    System.err.println(baos.toString(StandardCharsets.UTF_8.toString()));
                     bValid = false;
                 }
                 if(!bValid) {

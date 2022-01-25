@@ -6,14 +6,17 @@
 	<artifactId>rdfconv</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>war</packaging>
-	<name>rdfconv</name>
+	<properties>
+		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.compiler.source>1.8</maven.compiler.source>
+	</properties>
 	<build>
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.8.1</version>
 				<configuration>
-					<release>16</release>
+					<release>1.8</release>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -23,16 +26,17 @@
 		</plugins>
 		<finalName>rdfconv</finalName>
 	</build>
+	<name>rdfconv</name>
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.jena</groupId>
 			<artifactId>jena-core</artifactId>
-			<version>2.13.0</version>
+			<version>4.3.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.jena</groupId>
 			<artifactId>jena-arq</artifactId>
-			<version>2.13.0</version>
+			<version>4.3.2</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
@@ -47,12 +51,13 @@
 		<dependency>
 			<groupId>org.eclipse.rdf4j</groupId>
 			<artifactId>rdf4j-storage</artifactId>
+			<version>4.0.0-M2</version>
 			<type>pom</type>
 		</dependency>
 		<dependency>
 			<groupId>be.ugent.rml</groupId>
 			<artifactId>rmlmapper</artifactId>
-			<version>4.10.0</version>
+			<version>4.14.3</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
