@@ -22,6 +22,7 @@ http://localhost:8080/rdfconv/conv?jsonfile=https://raw.githubusercontent.com/Ma
 
 ```bash
 cd flaskapp
+
 docker-compose up
 ```
 
