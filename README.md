@@ -19,6 +19,10 @@ Example of how to use the API/service on the web:
 http://localhost:8080/rdfconv/conv?jsonfile=https://raw.githubusercontent.com/Mat-O-Lab/rdfconverter/main/resources/conf.json
 
 # Flask app
-start the flask app by running "wsgi.py".
+
+```bash
+cd flaskapp
+docker-compose up
+```
 
 Go to http://localhost:5000
