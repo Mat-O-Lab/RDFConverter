@@ -17,3 +17,13 @@ It is a java service on the web to be deployed with tom-cat or another java serv
 Example of how to use the API/service on the web:
 
 http://localhost:8080/rdfconv/conv?jsonfile=https://raw.githubusercontent.com/Mat-O-Lab/rdfconverter/main/resources/conf.json
+
+# Flask app
+
+```bash
+cd flaskapp
+
+docker-compose up
+```
+
+Go to http://localhost:5000

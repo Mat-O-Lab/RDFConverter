@@ -1,0 +1,129 @@
+{
+  "openapi": "3.0.0",
+  "info":{
+      "description": "CSVtoCSVW",
+      "version": "1.0.0",
+      "title": "CSVtoCSVW",
+      "contact": {
+          "name": "Thomas Hanke",
+          "email": "thomas.hanke@imws.fraunhofer.de"
+      },
+      "license": {
+          "name": "Apache 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+      }
+  },
+  "servers":[
+      {
+          "url": "/"
+      }
+  ],
+  "schemes": [
+    "https",
+    "http"
+  ],
+  "paths": {
+    "/api": {
+            "post": {
+                "tags": [
+                    "JSON-LD"
+                ],
+                "summary": "Create Meta JSON-LD",
+                "description": "Create a metafile for a csv file.",
+                "requestBody": {
+                  "required": "true",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Converter"
+                      }
+                    }
+                  }
+                },
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                        "200": {
+                            "description": "converted csv-like file into JSON-LD metafile.",
+                            "content": {
+                              "application/json": {
+                                "schema": {
+                                  "$ref": "#/components/schemas/JSON-LD"
+                                }
+                              }
+                            }
+                          },
+                        "404": {
+                            "description": "File not found."
+                            },
+
+                        "500":{
+                            "description": "Internal server error"
+                        }
+
+                    }
+                }
+            }
+  },
+
+  "components" : {
+    "schemas" : {
+      "Converter":{
+              "description": "Conversion object handling parsing of csv and metafile return",
+              "required": "true",
+              "type": "object",
+              "properties": {
+                "data_url":{
+                  "type": "string",
+                  "format": "uri",
+                  "description": "Url to raw csv"
+                },
+                "separator" : {
+                  "type" : "string",
+                  "default" : "auto"
+                },
+                "encoding" : {
+                  "type" : "string",
+                  "default" : "auto"
+                }
+              }
+
+              },
+      "JSON-LD": {
+        "description": "contains metadata about one csv file",
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "Suggested file name."
+          },
+          "filedata": {
+            "type": "string",
+            "description": "File content string."
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "name": "api_key",
+      "in": "header"
+    }
+  },
+  "definitions": {
+    "ApiResponse": {
+      "type": "object",
+      "properties": {
+        "filename": {
+          "type": "string"
+        },
+        "filedata": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
