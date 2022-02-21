@@ -116,3 +116,7 @@ def api():
         filename, file_data = annotator.process(content['data_url'])
     return jsonify({"filename": filename, "filedata": file_data})
 """
+
+@app.route('/api/join_data', methods=['POST'])
+def join_data():
+    pass
