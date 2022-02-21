@@ -2,3 +2,4 @@
 /target/
 /yarrrml-parser/node_modules/
 /yarrrml-parser/bin/
+/.vscode/
