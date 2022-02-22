@@ -33,7 +33,7 @@ public class DataManager {
 			httpContext.setAttribute(ClientContext.CREDS_PROVIDER, provider);
 
 			UpdateRequest update = UpdateFactory.create("INSERT DATA { graph <http://graph/bam> { " + triples + "}}");
-			UpdateProcessor processor = UpdateExecutionFactory.createRemote(update, "https://fuseki.materials.digital/SecondaryData/update");
+			UpdateProcessor processor = UpdateExecutionFactory.createRemote(update, "https://fuseki.matolab.org/SecondaryData/update");
 			((UpdateProcessRemote)processor).setHttpContext(httpContext);
 			processor.execute();
 			bRes = true;
