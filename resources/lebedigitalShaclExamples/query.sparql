@@ -1,0 +1,48 @@
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+prefix sd: <http://www.w3.org/ns/sparql-service-description#>
+prefix bam: <http://bam.de/resource/>
+prefix gd: <https://www.materials.fraunhofer.de/ontologies/graph_designer#>
+prefix mid: <https://www.materials.fraunhofer.de/ontologies/BWMD_ontology/mid#>
+prefix moltt: <https://www.materials.fraunhofer.de/ontologies/MoL_TensileTest#>
+prefix monto: <https://www.materials.fraunhofer.de/ontologies/BWMD_ontology/domain#>
+prefix onto1: <http://www.semanticweb.org/hart/ontologies/2020/9/mol_merged#>
+prefix wiki: <https://www.wikidata.org/wiki/>
+
+SELECT Distinct ?experiment_id ?testpiece_id ?machine ?test_temperature ?Rp01 ?Rp02 ?Rm ?A ?test_date ?operator ?strain_rate ?l_0 ?Fracture_position ?reduction_of_area ?valid ?file_format_temperature ?idx_mech_start ?idx_mech_end WHERE { 
+  ?specimen a mid:BWMD_00048 . 
+  ?specimen moltt:TT_00100 ?testpiece_id .
+  ?specimen mid:BWMD_00337+/mid:BWMD_00323/rdf:value ?machine .
+ 
+  #?specimen mid:BWMD_00337/mid:BWMD_00339/moltt:TT_00050/rdf:value ?test_temperature . #Sequency property path
+  
+  BIND (STRAFTER(str(?specimen), "specimen_") as ?experiment_id) .
+  
+  BIND( IRI(CONCAT("http://www.semanticweb.org/hart/ontologies/2020/9/mol_merged#Reduction+of+area_",?experiment_id)) as ?reduction_of_area1) .
+  ?reduction_of_area1 rdf:value ?reduction_of_area .
+   
+  BIND( IRI(CONCAT("http://www.semanticweb.org/hart/ontologies/2020/9/mol_merged#Tensile+strength_",?experiment_id)) as ?Rm1) .
+  ?Rm1 rdf:value ?Rm .
+  
+  BIND( IRI(CONCAT("http://www.semanticweb.org/hart/ontologies/2020/9/mol_merged#Elongation+after+fracture_",?experiment_id)) as ?A1) . ?A1 rdf:value ?A .
+  
+  BIND( IRI(CONCAT("http://bam.de/resource/blanknode_processParameterSet1_",?experiment_id)) as ?test_temperature1) . ?test_temperature1 rdf:value ?test_temperature .
+  
+  BIND( IRI(CONCAT("http://bam.de/resource/blanknode_characteristic3_",?experiment_id)) as ?Rp02_) . ?Rp02_ rdf:value ?Rp02 .
+  
+  BIND( IRI(CONCAT("http://www.semanticweb.org/hart/ontologies/2020/9/mol_merged#Strain+Rate_",?experiment_id)) as ?strain_rate_) . ?strain_rate_ mid:BWMD_00315 ?strain_rate .
+  
+  #?specimen mid:BWMD_00337/mid:BWMD_00331/mid:BWMD_00337/mid:BWMD_00339/moltt:TT_00048/mid:BWMD_00315 ?strain_rate .
+  
+  BIND("Not found" as ?Rp01) .
+  BIND("Not found" as ?test_date) .
+  BIND("Not found" as ?operator) .
+  BIND("Not found" as ?l_0) .
+  BIND("Not found" as ?Fracture_position) .
+  BIND("Not found" as ?valid) .
+  BIND("Not found" as ?file_format_temperature) .
+  BIND("Not found" as ?idx_mech_start) .
+  BIND("Not found" as ?idx_mech_end) .
+}
