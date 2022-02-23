@@ -140,9 +140,9 @@ def join_data():
 
     source_1, source_2 = [row.source for row in g.query(source_query)]
 
+    # TODO: infer format (is not always json-ld?)
     graph_from = Graph()
     graph_from.parse(data=requests.get(source_1).text, format='json-ld')
-
     graph_to = Graph()
     graph_to.parse(data=requests.get(source_2).text, format='json-ld')
 
