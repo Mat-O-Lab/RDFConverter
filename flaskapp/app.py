@@ -1,5 +1,9 @@
+
+import imp
 import os
 import base64
+from rdflib import Graph
+import requests
 
 from flask import Flask, flash, request, jsonify, render_template
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -119,4 +123,30 @@ def api():
 
 @app.route('/api/join_data', methods=['POST'])
 def join_data():
-    pass
+
+    rdf_string = request.form['rdf']
+    g = Graph()
+    g.parse(data=rdf_string)
+
+    source_query = """
+    PREFIX rml: <http://semweb.mmlab.be/ns/rml#>
+    SELECT DISTINCT ?source
+    WHERE {
+        ?mapSource rml:source ?source
+    }"""
+    res = g.query(source_query)
+
+    # TODO: Give error if not exactly 2 rows returned
+
+    source_1, source_2 = [row.source for row in g.query(source_query)]
+
+    graph_from = Graph()
+    graph_from.parse(data=requests.get(source_1).text, format='json-ld')
+
+    graph_to = Graph()
+    graph_to.parse(data=requests.get(source_2).text, format='json-ld')
+
+    g += graph_from
+    g += graph_to
+
+    return g.serialize(format='ttl')
