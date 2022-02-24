@@ -137,5 +137,6 @@ def join_data():
 
     mapping_graph = map_graph(g, source)
     mapping_graph += data_graph
+    # TODO: also add method graph to graph?
 
     return mapping_graph.serialize(format='ttl')
