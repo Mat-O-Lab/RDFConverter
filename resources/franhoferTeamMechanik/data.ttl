@@ -1,0 +1,1807 @@
+@prefix base: <https://www.materials.fraunhofer.de/ontologies/MoL_TensileTest#> .
+@prefix cco:  <http://www.ontologyrepository.com/CommonCoreOntologies/> .
+@prefix mid:  <https://www.materials.fraunhofer.de/ontologies/BWMD_ontology/mid#> .
+@prefix ns:   <https://www.mydata.com/> .
+@prefix obo:  <http://purl.obolibrary.org/obo/> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+cco:has_process_part  rdf:type  owl:ObjectProperty .
+
+rdf:value  rdf:type  owl:DatatypeProperty .
+
+rdfs:label  rdf:type  owl:DatatypeProperty , owl:AnnotationProperty .
+
+xsd:decimal  rdf:type  rdfs:Datatype .
+
+xsd:string  rdf:type  rdfs:Datatype .
+
+mid:BWMD_00312  rdf:type  owl:DatatypeProperty .
+
+mid:BWMD_00315  rdf:type  owl:DatatypeProperty .
+
+mid:BWMD_00331  rdf:type  owl:ObjectProperty .
+
+mid:BWMD_00335  rdf:type  owl:ObjectProperty .
+
+mid:BWMD_00337  rdf:type  owl:ObjectProperty .
+
+mid:BWMD_00339  rdf:type  owl:ObjectProperty .
+
+mid:BWMD_00340  rdf:type  owl:ObjectProperty .
+
+base:TT_00011  rdf:type  owl:ObjectProperty .
+
+base:TT_00014  rdf:type  owl:ObjectProperty .
+
+base:TT_00015  rdf:type  owl:ObjectProperty .
+
+base:TT_00019  rdf:type  owl:ObjectProperty .
+
+base:TT_00020  rdf:type  owl:ObjectProperty .
+
+base:TT_00021  rdf:type  owl:ObjectProperty .
+
+base:TT_00022  rdf:type  owl:ObjectProperty .
+
+base:TT_00023  rdf:type  owl:ObjectProperty .
+
+base:TT_00025  rdf:type  owl:ObjectProperty .
+
+base:TT_00026  rdf:type  owl:ObjectProperty .
+
+base:TT_00037  rdf:type  owl:ObjectProperty .
+
+base:TT_00038  rdf:type  owl:ObjectProperty .
+
+base:TT_00039  rdf:type  owl:ObjectProperty .
+
+base:TT_00040  rdf:type  owl:ObjectProperty .
+
+base:TT_00041  rdf:type  owl:ObjectProperty .
+
+base:TT_00042  rdf:type  owl:ObjectProperty .
+
+base:TT_00043  rdf:type  owl:ObjectProperty .
+
+base:TT_00044  rdf:type  owl:ObjectProperty .
+
+base:TT_00045  rdf:type  owl:ObjectProperty .
+
+base:TT_00046  rdf:type  owl:ObjectProperty .
+
+base:TT_00047  rdf:type  owl:ObjectProperty .
+
+base:TT_00048  rdf:type  owl:ObjectProperty .
+
+base:TT_00049  rdf:type  owl:ObjectProperty .
+
+base:TT_00050  rdf:type  owl:ObjectProperty .
+
+base:TT_00051  rdf:type  owl:ObjectProperty .
+
+base:TT_00052  rdf:type  owl:ObjectProperty .
+
+base:TT_00053  rdf:type  owl:ObjectProperty .
+
+base:TT_00054  rdf:type  owl:ObjectProperty .
+
+base:TT_00100  rdf:type  owl:DatatypeProperty .
+
+base:TT_00101  rdf:type  owl:DatatypeProperty .
+
+base:TT_00102  rdf:type  owl:ObjectProperty .
+
+ns:     rdf:type  owl:Ontology .
+
+ns:Versuch_ABR1016zl2
+        rdf:type              owl:NamedIndividual , ns:Norm6892-2Zugversuch ;
+        rdfs:label            "ABR1016zl2" ;
+        cco:has_process_part  ns:subprocess1ABR1016zl2 , ns:subprocess2ABR1016zl2 , ns:subprocess3ABR1016zl2 .
+
+ns:Norm6892-2Zugversuch
+        rdf:type  owl:Class .
+
+ns:subprocess1ABR1016zl2
+        rdf:type        owl:NamedIndividual , base:TT_00068 ;
+        mid:BWMD_00331  ns:specimen1_state2ABR1016zl2 .
+
+ns:subprocess2ABR1016zl2
+        rdf:type        owl:NamedIndividual , base:TT_00070 ;
+        mid:BWMD_00331  ns:specimen1_state3 , ns:subprocess2_processdata ;
+        mid:BWMD_00335  ns:subprocess3ABR1016zl2 ;
+        mid:BWMD_00339  ns:subprocess2_parameter_setABR1016zl2 .
+
+ns:subprocess3ABR1016zl2
+        rdf:type        owl:NamedIndividual , base:TT_00069 ;
+        mid:BWMD_00331  ns:characteristic_values_collectionABR1016zl2 .
+
+ns:Versuch_ABR10RTzl1
+        rdf:type              owl:NamedIndividual , ns:Norm6892-2Zugversuch ;
+        rdfs:label            "ABR10RTzl1" ;
+        cco:has_process_part  ns:subprocess1ABR10RTzl1 , ns:subprocess2ABR10RTzl1 , ns:subprocess3ABR10RTzl1 .
+
+ns:subprocess1ABR10RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00068 ;
+        mid:BWMD_00331  ns:specimen1_state2ABR10RTzl1 .
+
+ns:subprocess2ABR10RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00070 ;
+        mid:BWMD_00331  ns:specimen1_state3 , ns:subprocess2_processdata ;
+        mid:BWMD_00335  ns:subprocess3ABR10RTzl1 ;
+        mid:BWMD_00339  ns:subprocess2_parameter_setABR10RTzl1 .
+
+ns:subprocess3ABR10RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00069 ;
+        mid:BWMD_00331  ns:characteristic_values_collectionABR10RTzl1 .
+
+ns:Versuch_ABR1116zl2
+        rdf:type              owl:NamedIndividual , ns:Norm6892-2Zugversuch ;
+        rdfs:label            "ABR1116zl2" ;
+        cco:has_process_part  ns:subprocess1ABR1116zl2 , ns:subprocess2ABR1116zl2 , ns:subprocess3ABR1116zl2 .
+
+ns:subprocess1ABR1116zl2
+        rdf:type        owl:NamedIndividual , base:TT_00068 ;
+        mid:BWMD_00331  ns:specimen1_state2ABR1116zl2 .
+
+ns:subprocess2ABR1116zl2
+        rdf:type        owl:NamedIndividual , base:TT_00070 ;
+        mid:BWMD_00331  ns:specimen1_state3 , ns:subprocess2_processdata ;
+        mid:BWMD_00335  ns:subprocess3ABR1116zl2 ;
+        mid:BWMD_00339  ns:subprocess2_parameter_setABR1116zl2 .
+
+ns:subprocess3ABR1116zl2
+        rdf:type        owl:NamedIndividual , base:TT_00069 ;
+        mid:BWMD_00331  ns:characteristic_values_collectionABR1116zl2 .
+
+ns:Versuch_ABR11RTzl1
+        rdf:type              owl:NamedIndividual , ns:Norm6892-2Zugversuch ;
+        rdfs:label            "ABR11RTzl1" ;
+        cco:has_process_part  ns:subprocess1ABR11RTzl1 , ns:subprocess2ABR11RTzl1 , ns:subprocess3ABR11RTzl1 .
+
+ns:subprocess1ABR11RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00068 ;
+        mid:BWMD_00331  ns:specimen1_state2ABR11RTzl1 .
+
+ns:subprocess2ABR11RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00070 ;
+        mid:BWMD_00331  ns:specimen1_state3 , ns:subprocess2_processdata ;
+        mid:BWMD_00335  ns:subprocess3ABR11RTzl1 ;
+        mid:BWMD_00339  ns:subprocess2_parameter_setABR11RTzl1 .
+
+ns:subprocess3ABR11RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00069 ;
+        mid:BWMD_00331  ns:characteristic_values_collectionABR11RTzl1 .
+
+ns:Versuch_ABR516zl3  rdf:type  owl:NamedIndividual , ns:Norm6892-2Zugversuch ;
+        rdfs:label            "ABR516zl3" ;
+        cco:has_process_part  ns:subprocess1ABR516zl3 , ns:subprocess2ABR516zl3 , ns:subprocess3ABR516zl3 .
+
+ns:subprocess1ABR516zl3
+        rdf:type        owl:NamedIndividual , base:TT_00068 ;
+        mid:BWMD_00331  ns:specimen1_state2ABR516zl3 .
+
+ns:subprocess2ABR516zl3
+        rdf:type        owl:NamedIndividual , base:TT_00070 ;
+        mid:BWMD_00331  ns:specimen1_state3 , ns:subprocess2_processdata ;
+        mid:BWMD_00335  ns:subprocess3ABR516zl3 ;
+        mid:BWMD_00339  ns:subprocess2_parameter_setABR516zl3 .
+
+ns:subprocess3ABR516zl3
+        rdf:type        owl:NamedIndividual , base:TT_00069 ;
+        mid:BWMD_00331  ns:characteristic_values_collectionABR516zl3 .
+
+ns:Versuch_ABR516zl6  rdf:type  owl:NamedIndividual , ns:Norm6892-2Zugversuch ;
+        rdfs:label            "ABR516zl6" ;
+        cco:has_process_part  ns:subprocess1ABR516zl6 , ns:subprocess2ABR516zl6 , ns:subprocess3ABR516zl6 .
+
+ns:subprocess1ABR516zl6
+        rdf:type        owl:NamedIndividual , base:TT_00068 ;
+        mid:BWMD_00331  ns:specimen1_state2ABR516zl6 .
+
+ns:subprocess2ABR516zl6
+        rdf:type        owl:NamedIndividual , base:TT_00070 ;
+        mid:BWMD_00331  ns:specimen1_state3 , ns:subprocess2_processdata ;
+        mid:BWMD_00335  ns:subprocess3ABR516zl6 ;
+        mid:BWMD_00339  ns:subprocess2_parameter_setABR516zl6 .
+
+ns:subprocess3ABR516zl6
+        rdf:type        owl:NamedIndividual , base:TT_00069 ;
+        mid:BWMD_00331  ns:characteristic_values_collectionABR516zl6 .
+
+ns:Versuch_ABR518zl4  rdf:type  owl:NamedIndividual , ns:Norm6892-2Zugversuch ;
+        rdfs:label            "ABR518zl4" ;
+        cco:has_process_part  ns:subprocess1ABR518zl4 , ns:subprocess2ABR518zl4 , ns:subprocess3ABR518zl4 .
+
+ns:subprocess1ABR518zl4
+        rdf:type        owl:NamedIndividual , base:TT_00068 ;
+        mid:BWMD_00331  ns:specimen1_state2ABR518zl4 .
+
+ns:subprocess2ABR518zl4
+        rdf:type        owl:NamedIndividual , base:TT_00070 ;
+        mid:BWMD_00331  ns:specimen1_state3 , ns:subprocess2_processdata ;
+        mid:BWMD_00335  ns:subprocess3ABR518zl4 ;
+        mid:BWMD_00339  ns:subprocess2_parameter_setABR518zl4 .
+
+ns:subprocess3ABR518zl4
+        rdf:type        owl:NamedIndividual , base:TT_00069 ;
+        mid:BWMD_00331  ns:characteristic_values_collectionABR518zl4 .
+
+ns:Versuch_ABR518zl7  rdf:type  owl:NamedIndividual , ns:Norm6892-2Zugversuch ;
+        rdfs:label            "ABR518zl7" ;
+        cco:has_process_part  ns:subprocess1ABR518zl7 , ns:subprocess2ABR518zl7 , ns:subprocess3ABR518zl7 .
+
+ns:subprocess1ABR518zl7
+        rdf:type        owl:NamedIndividual , base:TT_00068 ;
+        mid:BWMD_00331  ns:specimen1_state2ABR518zl7 .
+
+ns:subprocess2ABR518zl7
+        rdf:type        owl:NamedIndividual , base:TT_00070 ;
+        mid:BWMD_00331  ns:specimen1_state3 , ns:subprocess2_processdata ;
+        mid:BWMD_00335  ns:subprocess3ABR518zl7 ;
+        mid:BWMD_00339  ns:subprocess2_parameter_setABR518zl7 .
+
+ns:subprocess3ABR518zl7
+        rdf:type        owl:NamedIndividual , base:TT_00069 ;
+        mid:BWMD_00331  ns:characteristic_values_collectionABR518zl7 .
+
+ns:Versuch_ABR519zl5  rdf:type  owl:NamedIndividual , ns:Norm6892-2Zugversuch ;
+        rdfs:label            "ABR519zl5" ;
+        cco:has_process_part  ns:subprocess1ABR519zl5 , ns:subprocess2ABR519zl5 , ns:subprocess3ABR519zl5 .
+
+ns:subprocess1ABR519zl5
+        rdf:type        owl:NamedIndividual , base:TT_00068 ;
+        mid:BWMD_00331  ns:specimen1_state2ABR519zl5 .
+
+ns:subprocess2ABR519zl5
+        rdf:type        owl:NamedIndividual , base:TT_00070 ;
+        mid:BWMD_00331  ns:specimen1_state3 , ns:subprocess2_processdata ;
+        mid:BWMD_00335  ns:subprocess3ABR519zl5 ;
+        mid:BWMD_00339  ns:subprocess2_parameter_setABR519zl5 .
+
+ns:subprocess3ABR519zl5
+        rdf:type        owl:NamedIndividual , base:TT_00069 ;
+        mid:BWMD_00331  ns:characteristic_values_collectionABR519zl5 .
+
+ns:Versuch_ABR519zl8  rdf:type  owl:NamedIndividual , ns:Norm6892-2Zugversuch ;
+        rdfs:label            "ABR519zl8" ;
+        cco:has_process_part  ns:subprocess1ABR519zl8 , ns:subprocess2ABR519zl8 , ns:subprocess3ABR519zl8 .
+
+ns:subprocess1ABR519zl8
+        rdf:type        owl:NamedIndividual , base:TT_00068 ;
+        mid:BWMD_00331  ns:specimen1_state2ABR519zl8 .
+
+ns:subprocess2ABR519zl8
+        rdf:type        owl:NamedIndividual , base:TT_00070 ;
+        mid:BWMD_00331  ns:specimen1_state3 , ns:subprocess2_processdata ;
+        mid:BWMD_00335  ns:subprocess3ABR519zl8 ;
+        mid:BWMD_00339  ns:subprocess2_parameter_setABR519zl8 .
+
+ns:subprocess3ABR519zl8
+        rdf:type        owl:NamedIndividual , base:TT_00069 ;
+        mid:BWMD_00331  ns:characteristic_values_collectionABR519zl8 .
+
+ns:Versuch_ABR58zl2  rdf:type  owl:NamedIndividual , ns:Norm6892-2Zugversuch ;
+        rdfs:label            "ABR58zl2" ;
+        cco:has_process_part  ns:subprocess1ABR58zl2 , ns:subprocess2ABR58zl2 , ns:subprocess3ABR58zl2 .
+
+ns:subprocess1ABR58zl2
+        rdf:type        owl:NamedIndividual , base:TT_00068 ;
+        mid:BWMD_00331  ns:specimen1_state2ABR58zl2 .
+
+ns:subprocess2ABR58zl2
+        rdf:type        owl:NamedIndividual , base:TT_00070 ;
+        mid:BWMD_00331  ns:specimen1_state3 , ns:subprocess2_processdata ;
+        mid:BWMD_00335  ns:subprocess3ABR58zl2 ;
+        mid:BWMD_00339  ns:subprocess2_parameter_setABR58zl2 .
+
+ns:subprocess3ABR58zl2
+        rdf:type        owl:NamedIndividual , base:TT_00069 ;
+        mid:BWMD_00331  ns:characteristic_values_collectionABR58zl2 .
+
+ns:Versuch_ABR5RTzl1  rdf:type  owl:NamedIndividual , ns:Norm6892-2Zugversuch ;
+        rdfs:label            "ABR5RTzl1" ;
+        cco:has_process_part  ns:subprocess1ABR5RTzl1 , ns:subprocess2ABR5RTzl1 , ns:subprocess3ABR5RTzl1 .
+
+ns:subprocess1ABR5RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00068 ;
+        mid:BWMD_00331  ns:specimen1_state2ABR5RTzl1 .
+
+ns:subprocess2ABR5RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00070 ;
+        mid:BWMD_00331  ns:specimen1_state3 , ns:subprocess2_processdata ;
+        mid:BWMD_00335  ns:subprocess3ABR5RTzl1 ;
+        mid:BWMD_00339  ns:subprocess2_parameter_setABR5RTzl1 .
+
+ns:subprocess3ABR5RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00069 ;
+        mid:BWMD_00331  ns:characteristic_values_collectionABR5RTzl1 .
+
+ns:Versuch_ABR5RTzl10
+        rdf:type              owl:NamedIndividual , ns:Norm6892-2Zugversuch ;
+        rdfs:label            "ABR5RTzl10" ;
+        cco:has_process_part  ns:subprocess1ABR5RTzl10 , ns:subprocess2ABR5RTzl10 , ns:subprocess3ABR5RTzl10 .
+
+ns:subprocess1ABR5RTzl10
+        rdf:type        owl:NamedIndividual , base:TT_00068 ;
+        mid:BWMD_00331  ns:specimen1_state2ABR5RTzl10 .
+
+ns:subprocess2ABR5RTzl10
+        rdf:type        owl:NamedIndividual , base:TT_00070 ;
+        mid:BWMD_00331  ns:specimen1_state3 , ns:subprocess2_processdata ;
+        mid:BWMD_00335  ns:subprocess3ABR5RTzl10 ;
+        mid:BWMD_00339  ns:subprocess2_parameter_setABR5RTzl10 .
+
+ns:subprocess3ABR5RTzl10
+        rdf:type        owl:NamedIndividual , base:TT_00069 ;
+        mid:BWMD_00331  ns:characteristic_values_collectionABR5RTzl10 .
+
+ns:Versuch_ABR819zl2  rdf:type  owl:NamedIndividual , ns:Norm6892-2Zugversuch ;
+        rdfs:label            "ABR819zl2" ;
+        cco:has_process_part  ns:subprocess1ABR819zl2 , ns:subprocess2ABR819zl2 , ns:subprocess3ABR819zl2 .
+
+ns:subprocess1ABR819zl2
+        rdf:type        owl:NamedIndividual , base:TT_00068 ;
+        mid:BWMD_00331  ns:specimen1_state2ABR819zl2 .
+
+ns:subprocess2ABR819zl2
+        rdf:type        owl:NamedIndividual , base:TT_00070 ;
+        mid:BWMD_00331  ns:specimen1_state3 , ns:subprocess2_processdata ;
+        mid:BWMD_00335  ns:subprocess3ABR819zl2 ;
+        mid:BWMD_00339  ns:subprocess2_parameter_setABR819zl2 .
+
+ns:subprocess3ABR819zl2
+        rdf:type        owl:NamedIndividual , base:TT_00069 ;
+        mid:BWMD_00331  ns:characteristic_values_collectionABR819zl2 .
+
+ns:Versuch_ABR8RTzl1  rdf:type  owl:NamedIndividual , ns:Norm6892-2Zugversuch ;
+        rdfs:label            "ABR8RTzl1" ;
+        cco:has_process_part  ns:subprocess1ABR8RTzl1 , ns:subprocess2ABR8RTzl1 , ns:subprocess3ABR8RTzl1 .
+
+ns:subprocess1ABR8RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00068 ;
+        mid:BWMD_00331  ns:specimen1_state2ABR8RTzl1 .
+
+ns:subprocess2ABR8RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00070 ;
+        mid:BWMD_00331  ns:specimen1_state3 , ns:subprocess2_processdata ;
+        mid:BWMD_00335  ns:subprocess3ABR8RTzl1 ;
+        mid:BWMD_00339  ns:subprocess2_parameter_setABR8RTzl1 .
+
+ns:subprocess3ABR8RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00069 ;
+        mid:BWMD_00331  ns:characteristic_values_collectionABR8RTzl1 .
+
+ns:Versuch_ABR919zl2  rdf:type  owl:NamedIndividual , ns:Norm6892-2Zugversuch ;
+        rdfs:label            "ABR919zl2" ;
+        cco:has_process_part  ns:subprocess1ABR919zl2 , ns:subprocess2ABR919zl2 , ns:subprocess3ABR919zl2 .
+
+ns:subprocess1ABR919zl2
+        rdf:type        owl:NamedIndividual , base:TT_00068 ;
+        mid:BWMD_00331  ns:specimen1_state2ABR919zl2 .
+
+ns:subprocess2ABR919zl2
+        rdf:type        owl:NamedIndividual , base:TT_00070 ;
+        mid:BWMD_00331  ns:specimen1_state3 , ns:subprocess2_processdata ;
+        mid:BWMD_00335  ns:subprocess3ABR919zl2 ;
+        mid:BWMD_00339  ns:subprocess2_parameter_setABR919zl2 .
+
+ns:subprocess3ABR919zl2
+        rdf:type        owl:NamedIndividual , base:TT_00069 ;
+        mid:BWMD_00331  ns:characteristic_values_collectionABR919zl2 .
+
+ns:Versuch_ABR9RTzl1  rdf:type  owl:NamedIndividual , ns:Norm6892-2Zugversuch ;
+        rdfs:label            "ABR9RTzl1" ;
+        cco:has_process_part  ns:subprocess1ABR9RTzl1 , ns:subprocess2ABR9RTzl1 , ns:subprocess3ABR9RTzl1 .
+
+ns:subprocess1ABR9RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00068 ;
+        mid:BWMD_00331  ns:specimen1_state2ABR9RTzl1 .
+
+ns:subprocess2ABR9RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00070 ;
+        mid:BWMD_00331  ns:specimen1_state3 , ns:subprocess2_processdata ;
+        mid:BWMD_00335  ns:subprocess3ABR9RTzl1 ;
+        mid:BWMD_00339  ns:subprocess2_parameter_setABR9RTzl1 .
+
+ns:subprocess3ABR9RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00069 ;
+        mid:BWMD_00331  ns:characteristic_values_collectionABR9RTzl1 .
+
+ns:characteristic_values_collection
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_area ;
+        base:TT_00023  ns:elongation_after_fracture ;
+        base:TT_00025  ns:proof_strength_plastic_extension , ns:proof_strength_total_extension ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strength ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+base:TT_00074  rdf:type  owl:Class .
+
+ns:yield_strength  rdf:type  owl:NamedIndividual , base:TT_00072 ;
+        base:TT_00020  ns:upper_yield_strength ;
+        base:TT_00021  ns:lower_yield_strength .
+
+ns:reduction_of_area  rdf:type  owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "reduction of area in mm/mm"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fracture
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "elongation after fracture in mm/mm"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extension
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  ""^^xsd:decimal , 183.0 , 196.0 , 233.0 , 236.0 , 245.0 , 246.0 , 279.0 , 280.0 , 292.0 , 300.0 , 324.0 , 340.0 , 365.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:proof_strength_total_extension
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  "proof strength, total extension in MPa"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:modulus_of_elasticity
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  "modulus of elasticity in mm/mm"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00085 .
+
+ns:maximum_force  rdf:type  owl:NamedIndividual , mid:BWMD_00033 ;
+        mid:BWMD_00315  "maximum force in N"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00090 .
+
+ns:permanent_elongation
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "permanent elongation in mm/mm"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:permanent_extension
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "permanent extension in mm/mm"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:plastic_extension_at_maximum_force
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "plastic extension at max force in mm/mm"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:tensile_strength  rdf:type  owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  "tensile strength in MPa"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:total_extension_at_fracture
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "total extension at fracture in mm/mm"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:total_extension_at_maximum_force
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "total extension at maximum force in mm/mm"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:yield_point_extension
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "yield point extension in mm/mm"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:hasDuration  rdf:type  owl:ObjectProperty .
+
+ns:specimen1_state1ABR1016zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess1ABR1016zl2 .
+
+mid:BWMD_00048  rdf:type  owl:Class .
+
+ns:specimen1_state1ABR10RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess1ABR10RTzl1 .
+
+ns:specimen1_state1ABR1116zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess1ABR1116zl2 .
+
+ns:specimen1_state1ABR11RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess1ABR11RTzl1 .
+
+ns:specimen1_state1ABR516zl3
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess1ABR516zl3 .
+
+ns:specimen1_state1ABR516zl6
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess1ABR516zl6 .
+
+ns:specimen1_state1ABR518zl4
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess1ABR518zl4 .
+
+ns:specimen1_state1ABR518zl7
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess1ABR518zl7 .
+
+ns:specimen1_state1ABR519zl5
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess1ABR519zl5 .
+
+ns:specimen1_state1ABR519zl8
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess1ABR519zl8 .
+
+ns:specimen1_state1ABR58zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess1ABR58zl2 .
+
+ns:specimen1_state1ABR5RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess1ABR5RTzl1 .
+
+ns:specimen1_state1ABR5RTzl10
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess1ABR5RTzl10 .
+
+ns:specimen1_state1ABR819zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess1ABR819zl2 .
+
+ns:specimen1_state1ABR8RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess1ABR8RTzl1 .
+
+ns:specimen1_state1ABR919zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess1ABR919zl2 .
+
+ns:specimen1_state1ABR9RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess1ABR9RTzl1 .
+
+obo:BFO_0000038  rdf:type  owl:Class .
+
+mid:BWMD_00012  rdf:type  owl:Class .
+
+mid:BWMD_00033  rdf:type  owl:Class .
+
+mid:BWMD_00068  rdf:type  owl:Class .
+
+base:TT_00085  rdf:type  owl:NamedIndividual .
+
+base:TT_00089  rdf:type  owl:NamedIndividual .
+
+base:TT_00090  rdf:type  owl:NamedIndividual .
+
+base:TT_00093  rdf:type  owl:NamedIndividual .
+
+ns:characteristic_values_collectionABR1016zl2
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_areaABR1016zl2 ;
+        base:TT_00023  ns:elongation_after_fractureABR1016zl2 ;
+        base:TT_00025  ns:proof_strength_total_extension , ns:proof_strength_plastic_extensionABR1016zl2 ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strengthABR1016zl2 ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+ns:reduction_of_areaABR1016zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "56.12%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fractureABR1016zl2
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "17.30%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extensionABR1016zl2
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  230.0 , 245.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:tensile_strengthABR1016zl2
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  268.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:characteristic_values_collectionABR10RTzl1
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_areaABR10RTzl1 ;
+        base:TT_00023  ns:elongation_after_fractureABR10RTzl1 ;
+        base:TT_00025  ns:proof_strength_total_extension , ns:proof_strength_plastic_extensionABR10RTzl1 ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strengthABR10RTzl1 ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+ns:reduction_of_areaABR10RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "64.29%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fractureABR10RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "8.20%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extensionABR10RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  263.0 , 280.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:tensile_strengthABR10RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  362.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:characteristic_values_collectionABR1116zl2
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_areaABR1116zl2 ;
+        base:TT_00023  ns:elongation_after_fractureABR1116zl2 ;
+        base:TT_00025  ns:proof_strength_total_extension , ns:proof_strength_plastic_extensionABR1116zl2 ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strengthABR1116zl2 ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+ns:reduction_of_areaABR1116zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "41.19%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fractureABR1116zl2
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "15.70%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extensionABR1116zl2
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  215.0 , 233.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:tensile_strengthABR1116zl2
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  257.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:characteristic_values_collectionABR11RTzl1
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_areaABR11RTzl1 ;
+        base:TT_00023  ns:elongation_after_fractureABR11RTzl1 ;
+        base:TT_00025  ns:proof_strength_total_extension , ns:proof_strength_plastic_extensionABR11RTzl1 ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strengthABR11RTzl1 ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+ns:reduction_of_areaABR11RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "47.47%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fractureABR11RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "7.70%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extensionABR11RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  264.0 , 279.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:tensile_strengthABR11RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  360.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:characteristic_values_collectionABR516zl3
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_areaABR516zl3 ;
+        base:TT_00023  ns:elongation_after_fractureABR516zl3 ;
+        base:TT_00025  ns:proof_strength_total_extension , ns:proof_strength_plastic_extensionABR516zl3 ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strengthABR516zl3 ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+ns:reduction_of_areaABR516zl3
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "15.54%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fractureABR516zl3
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "13%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extensionABR516zl3
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  313.0 , 324.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:tensile_strengthABR516zl3
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  346.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:characteristic_values_collectionABR516zl6
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_areaABR516zl6 ;
+        base:TT_00023  ns:elongation_after_fractureABR516zl6 ;
+        base:TT_00025  ns:proof_strength_total_extension , ns:proof_strength_plastic_extensionABR516zl6 ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strengthABR516zl6 ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+ns:reduction_of_areaABR516zl6
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "19.22%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fractureABR516zl6
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  ""^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extensionABR516zl6
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  ""^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:tensile_strengthABR516zl6
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  ""^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:characteristic_values_collectionABR518zl4
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_areaABR518zl4 ;
+        base:TT_00023  ns:elongation_after_fractureABR518zl4 ;
+        base:TT_00025  ns:proof_strength_total_extension , ns:proof_strength_plastic_extensionABR518zl4 ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strengthABR518zl4 ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+ns:reduction_of_areaABR518zl4
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "16.23%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fractureABR518zl4
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "11%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extensionABR518zl4
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  288.0 , 300.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:tensile_strengthABR518zl4
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  320.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:characteristic_values_collectionABR518zl7
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_areaABR518zl7 ;
+        base:TT_00023  ns:elongation_after_fractureABR518zl7 ;
+        base:TT_00025  ns:proof_strength_total_extension , ns:proof_strength_plastic_extensionABR518zl7 ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strengthABR518zl7 ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+ns:reduction_of_areaABR518zl7
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "18.78%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fractureABR518zl7
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  ""^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extensionABR518zl7
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  ""^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:tensile_strengthABR518zl7
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  ""^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:characteristic_values_collectionABR519zl5
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_areaABR519zl5 ;
+        base:TT_00023  ns:elongation_after_fractureABR519zl5 ;
+        base:TT_00025  ns:proof_strength_total_extension , ns:proof_strength_plastic_extensionABR519zl5 ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strengthABR519zl5 ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+ns:reduction_of_areaABR519zl5
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "16.91%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fractureABR519zl5
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  ""^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extensionABR519zl5
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  ""^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:tensile_strengthABR519zl5
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  ""^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:characteristic_values_collectionABR519zl8
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_areaABR519zl8 ;
+        base:TT_00023  ns:elongation_after_fractureABR519zl8 ;
+        base:TT_00025  ns:proof_strength_total_extension , ns:proof_strength_plastic_extensionABR519zl8 ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strengthABR519zl8 ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+ns:reduction_of_areaABR519zl8
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  ""^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fractureABR519zl8
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "12%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extensionABR519zl8
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  280.0 , 292.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:tensile_strengthABR519zl8
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  307.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:characteristic_values_collectionABR58zl2
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_areaABR58zl2 ;
+        base:TT_00023  ns:elongation_after_fractureABR58zl2 ;
+        base:TT_00025  ns:proof_strength_total_extension , ns:proof_strength_plastic_extensionABR58zl2 ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strengthABR58zl2 ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+ns:reduction_of_areaABR58zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "9.32%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fractureABR58zl2
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "7%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extensionABR58zl2
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  321.0 , 340.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:tensile_strengthABR58zl2
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  407.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:characteristic_values_collectionABR5RTzl1
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_areaABR5RTzl1 ;
+        base:TT_00023  ns:elongation_after_fractureABR5RTzl1 ;
+        base:TT_00025  ns:proof_strength_total_extension , ns:proof_strength_plastic_extensionABR5RTzl1 ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strengthABR5RTzl1 ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+ns:reduction_of_areaABR5RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "9.59%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fractureABR5RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "5.30%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extensionABR5RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  341.0 , 365.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:tensile_strengthABR5RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  428.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:characteristic_values_collectionABR5RTzl10
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_areaABR5RTzl10 ;
+        base:TT_00023  ns:elongation_after_fractureABR5RTzl10 ;
+        base:TT_00025  ns:proof_strength_total_extension , ns:proof_strength_plastic_extensionABR5RTzl10 ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strengthABR5RTzl10 ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+ns:reduction_of_areaABR5RTzl10
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  ""^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fractureABR5RTzl10
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  ""^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extensionABR5RTzl10
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  ""^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:tensile_strengthABR5RTzl10
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  ""^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:characteristic_values_collectionABR819zl2
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_areaABR819zl2 ;
+        base:TT_00023  ns:elongation_after_fractureABR819zl2 ;
+        base:TT_00025  ns:proof_strength_total_extension , ns:proof_strength_plastic_extensionABR819zl2 ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strengthABR819zl2 ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+ns:reduction_of_areaABR819zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "19.68%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fractureABR819zl2
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "20%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extensionABR819zl2
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  181.0 , 196.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:tensile_strengthABR819zl2
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  216.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:characteristic_values_collectionABR8RTzl1
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_areaABR8RTzl1 ;
+        base:TT_00023  ns:elongation_after_fractureABR8RTzl1 ;
+        base:TT_00025  ns:proof_strength_total_extension , ns:proof_strength_plastic_extensionABR8RTzl1 ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strengthABR8RTzl1 ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+ns:reduction_of_areaABR8RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "14.14%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fractureABR8RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "7.90%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extensionABR8RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  226.0 , 246.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:tensile_strengthABR8RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  342.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:characteristic_values_collectionABR919zl2
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_areaABR919zl2 ;
+        base:TT_00023  ns:elongation_after_fractureABR919zl2 ;
+        base:TT_00025  ns:proof_strength_total_extension , ns:proof_strength_plastic_extensionABR919zl2 ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strengthABR919zl2 ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+ns:reduction_of_areaABR919zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "18.38%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fractureABR919zl2
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "19.50%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extensionABR919zl2
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  168.0 , 183.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:tensile_strengthABR919zl2
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  210.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:characteristic_values_collectionABR9RTzl1
+        rdf:type       owl:NamedIndividual , base:TT_00074 ;
+        base:TT_00019  ns:yield_strength ;
+        base:TT_00022  ns:reduction_of_areaABR9RTzl1 ;
+        base:TT_00023  ns:elongation_after_fractureABR9RTzl1 ;
+        base:TT_00025  ns:proof_strength_total_extension , ns:proof_strength_plastic_extensionABR9RTzl1 ;
+        base:TT_00026  ns:modulus_of_elasticity ;
+        base:TT_00040  ns:maximum_force ;
+        base:TT_00045  ns:permanent_elongation ;
+        base:TT_00046  ns:permanent_extension ;
+        base:TT_00047  ns:plastic_extension_at_maximum_force ;
+        base:TT_00051  ns:tensile_strengthABR9RTzl1 ;
+        base:TT_00052  ns:total_extension_at_fracture ;
+        base:TT_00053  ns:total_extension_at_maximum_force ;
+        base:TT_00054  ns:yield_point_extension .
+
+ns:reduction_of_areaABR9RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "18.36%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00084 .
+
+ns:elongation_after_fractureABR9RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00071 ;
+        mid:BWMD_00315  "8.30%"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00083 .
+
+ns:proof_strength_plastic_extensionABR9RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  222.0 , 236.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+ns:tensile_strengthABR9RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  330.0 ;
+        mid:BWMD_00340  base:TT_00081 .
+
+base:TT_00071  rdf:type  owl:Class .
+
+base:TT_00083  rdf:type  owl:NamedIndividual .
+
+ns:lower_yield_strength
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  "lower yield strength in MPa"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00081 .
+
+base:TT_00072  rdf:type  owl:Class .
+
+base:TT_00081  rdf:type  owl:NamedIndividual .
+
+mid:BWMD_00286  rdf:type  owl:Class .
+
+base:TT_00084  rdf:type  owl:NamedIndividual .
+
+ns:specimen1_state2ABR1016zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess2ABR1016zl2 ;
+        base:TT_00011   ns:specimen1_state2_length ;
+        base:TT_00015   ns:specimen1_state2_diameter ;
+        base:TT_00043   ns:specimen1_state2_area ;
+        base:TT_00100   "197-2" .
+
+ns:specimen1_state2_length
+        rdf:type        owl:NamedIndividual , mid:BWMD_00127 ;
+        mid:BWMD_00315  "Original gauge length in mm"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00088 .
+
+ns:specimen1_state2_diameter
+        rdf:type        owl:NamedIndividual , mid:BWMD_00129 ;
+        mid:BWMD_00340  base:TT_00088 ;
+        base:TT_00101   "Original diameter of a circular test piece in mm"^^xsd:decimal .
+
+ns:specimen1_state2_area
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "Original cross-sectional area of the parallel length in mm*mm"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00094 .
+
+ns:specimen1_state2ABR10RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess2ABR10RTzl1 ;
+        base:TT_00011   ns:specimen1_state2_length ;
+        base:TT_00015   ns:specimen1_state2_diameter ;
+        base:TT_00043   ns:specimen1_state2_area ;
+        base:TT_00100   "197-1" .
+
+ns:specimen1_state2ABR1116zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess2ABR1116zl2 ;
+        base:TT_00011   ns:specimen1_state2_length ;
+        base:TT_00015   ns:specimen1_state2_diameter ;
+        base:TT_00043   ns:specimen1_state2_area ;
+        base:TT_00100   "3-2" .
+
+ns:specimen1_state2ABR11RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess2ABR11RTzl1 ;
+        base:TT_00011   ns:specimen1_state2_length ;
+        base:TT_00015   ns:specimen1_state2_diameter ;
+        base:TT_00043   ns:specimen1_state2_area ;
+        base:TT_00100   "3-1" .
+
+ns:specimen1_state2ABR516zl3
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess2ABR516zl3 ;
+        base:TT_00011   ns:specimen1_state2_length ;
+        base:TT_00015   ns:specimen1_state2_diameter ;
+        base:TT_00043   ns:specimen1_state2_area ;
+        base:TT_00100   "22-3" .
+
+ns:specimen1_state2ABR516zl6
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess2ABR516zl6 ;
+        base:TT_00011   ns:specimen1_state2_length ;
+        base:TT_00015   ns:specimen1_state2_diameter ;
+        base:TT_00043   ns:specimen1_state2_area ;
+        base:TT_00100   "22-6" .
+
+ns:specimen1_state2ABR518zl4
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess2ABR518zl4 ;
+        base:TT_00011   ns:specimen1_state2_length ;
+        base:TT_00015   ns:specimen1_state2_diameter ;
+        base:TT_00043   ns:specimen1_state2_area ;
+        base:TT_00100   "22-4" .
+
+ns:specimen1_state2ABR518zl7
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess2ABR518zl7 ;
+        base:TT_00011   ns:specimen1_state2_length ;
+        base:TT_00015   ns:specimen1_state2_diameter ;
+        base:TT_00043   ns:specimen1_state2_area ;
+        base:TT_00100   "22-7" .
+
+ns:specimen1_state2ABR519zl5
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess2ABR519zl5 ;
+        base:TT_00011   ns:specimen1_state2_length ;
+        base:TT_00015   ns:specimen1_state2_diameter ;
+        base:TT_00043   ns:specimen1_state2_area ;
+        base:TT_00100   "22-5" .
+
+ns:specimen1_state2ABR519zl8
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess2ABR519zl8 ;
+        base:TT_00011   ns:specimen1_state2_length ;
+        base:TT_00015   ns:specimen1_state2_diameter ;
+        base:TT_00043   ns:specimen1_state2_area ;
+        base:TT_00100   "22-8" .
+
+ns:specimen1_state2ABR58zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess2ABR58zl2 ;
+        base:TT_00011   ns:specimen1_state2_length ;
+        base:TT_00015   ns:specimen1_state2_diameter ;
+        base:TT_00043   ns:specimen1_state2_area ;
+        base:TT_00100   "22-2" .
+
+ns:specimen1_state2ABR5RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess2ABR5RTzl1 ;
+        base:TT_00011   ns:specimen1_state2_length ;
+        base:TT_00015   ns:specimen1_state2_diameter ;
+        base:TT_00043   ns:specimen1_state2_area ;
+        base:TT_00100   "22-1" .
+
+ns:specimen1_state2ABR5RTzl10
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess2ABR5RTzl10 ;
+        base:TT_00011   ns:specimen1_state2_length ;
+        base:TT_00015   ns:specimen1_state2_diameter ;
+        base:TT_00043   ns:specimen1_state2_area ;
+        base:TT_00100   "22-10" .
+
+ns:specimen1_state2ABR819zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess2ABR819zl2 ;
+        base:TT_00011   ns:specimen1_state2_length ;
+        base:TT_00015   ns:specimen1_state2_diameter ;
+        base:TT_00043   ns:specimen1_state2_area ;
+        base:TT_00100   "43-2" .
+
+ns:specimen1_state2ABR8RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess2ABR8RTzl1 ;
+        base:TT_00011   ns:specimen1_state2_length ;
+        base:TT_00015   ns:specimen1_state2_diameter ;
+        base:TT_00043   ns:specimen1_state2_area ;
+        base:TT_00100   "43-1" .
+
+ns:specimen1_state2ABR919zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess2ABR919zl2 ;
+        base:TT_00011   ns:specimen1_state2_length ;
+        base:TT_00015   ns:specimen1_state2_diameter ;
+        base:TT_00043   ns:specimen1_state2_area ;
+        base:TT_00100   "1-2" .
+
+ns:specimen1_state2ABR9RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00048 ;
+        mid:BWMD_00337  ns:subprocess2ABR9RTzl1 ;
+        base:TT_00011   ns:specimen1_state2_length ;
+        base:TT_00015   ns:specimen1_state2_diameter ;
+        base:TT_00043   ns:specimen1_state2_area ;
+        base:TT_00100   "1-1" .
+
+ns:specimen1_state3_Diameter
+        rdf:type        owl:NamedIndividual , mid:BWMD_00129 ;
+        mid:BWMD_00315  "Diamter after fracture in mm"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00088 .
+
+mid:BWMD_00129  rdf:type  owl:Class .
+
+base:TT_00088  rdf:type  owl:NamedIndividual .
+
+ns:specimen1_state3_Length
+        rdf:type        owl:NamedIndividual , mid:BWMD_00127 ;
+        mid:BWMD_00315  "Final gauge length after fracture in mm"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00088 .
+
+mid:BWMD_00127  rdf:type  owl:Class .
+
+ns:specimen1_state3_mInimum_cross_section_area
+        rdf:type        owl:NamedIndividual , mid:BWMD_00286 ;
+        mid:BWMD_00315  "Minimum cross-sectional area after fracture in mm²"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00094 .
+
+base:TT_00094  rdf:type  owl:NamedIndividual .
+
+ns:subprocess2_Indicated_temperature_i_bottom
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        rdfs:label      "Indicated Temperature Bottom"@en ;
+        mid:BWMD_00315  "Indicated Temperature Bottom"^^xsd:decimal ;
+        base:TT_00102   base:TT_00086 .
+
+mid:BWMD_00266  rdf:type  owl:Class .
+
+base:TT_00086  rdf:type  owl:NamedIndividual .
+
+ns:subprocess2_Indicated_temperature_i_mid
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        rdfs:label      "Indicated Temperature Mid"@en ;
+        mid:BWMD_00315  "Indicated Temperature Mid"^^xsd:decimal ;
+        base:TT_00102   base:TT_00086 .
+
+ns:subprocess2_Indicated_temperature_i_top
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        rdfs:label      "Indicated Temperature Top"@en ;
+        mid:BWMD_00315  "Indicated Temperature Top"^^xsd:decimal ;
+        base:TT_00102   base:TT_00086 .
+
+ns:subprocess2_parameter_setABR1016zl2
+        rdf:type       owl:NamedIndividual , mid:BWMD_00009 ;
+        base:TT_00037  ns:subprocess_Crosshead_separation_rate ;
+        base:TT_00038  ns:subprocess2_extensometer_gauge_length ;
+        base:TT_00041  ns:subprocess2_method ;
+        base:TT_00044  ns:subprocess2_extensometer_parallel_length ;
+        base:TT_00048  ns:subprocess2_strain_rateABR1016zl2 ;
+        base:TT_00049  ns:subprocess2_stress_rate ;
+        base:TT_00050  ns:subprocess2_test_temperatureABR1016zl2 .
+
+mid:BWMD_00009  rdf:type  owl:Class .
+
+ns:subprocess_Crosshead_separation_rate
+        rdf:type        owl:NamedIndividual , base:TT_00073 ;
+        mid:BWMD_00315  "Crosshead separation rate in mm/s"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00093 .
+
+ns:subprocess2_extensometer_gauge_length
+        rdf:type        owl:NamedIndividual , mid:BWMD_00127 ;
+        mid:BWMD_00315  "Extensometer gauge length in mm"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00088 .
+
+ns:subprocess2_method
+        rdf:type        owl:NamedIndividual , mid:BWMD_00012 ;
+        mid:BWMD_00315  "value" .
+
+ns:subprocess2_extensometer_parallel_length
+        rdf:type        owl:NamedIndividual , mid:BWMD_00127 ;
+        mid:BWMD_00315  "Parallel length in mm"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00088 .
+
+ns:subprocess2_strain_rateABR1016zl2
+        rdf:type        owl:NamedIndividual , base:TT_00095 ;
+        mid:BWMD_00315  0.00010 ;
+        mid:BWMD_00340  base:TT_00092 .
+
+ns:subprocess2_stress_rate
+        rdf:type        owl:NamedIndividual , base:TT_00073 ;
+        mid:BWMD_00315  "Stress rate in MPa/s"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00089 .
+
+ns:subprocess2_test_temperatureABR1016zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        mid:BWMD_00315  160.0 ;
+        mid:BWMD_00340  base:TT_00086 .
+
+ns:subprocess2_parameter_setABR10RTzl1
+        rdf:type       owl:NamedIndividual , mid:BWMD_00009 ;
+        base:TT_00037  ns:subprocess_Crosshead_separation_rate ;
+        base:TT_00038  ns:subprocess2_extensometer_gauge_length ;
+        base:TT_00041  ns:subprocess2_method ;
+        base:TT_00044  ns:subprocess2_extensometer_parallel_length ;
+        base:TT_00048  ns:subprocess2_strain_rateABR10RTzl1 ;
+        base:TT_00049  ns:subprocess2_stress_rate ;
+        base:TT_00050  ns:subprocess2_test_temperatureABR10RTzl1 .
+
+ns:subprocess2_strain_rateABR10RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00095 ;
+        mid:BWMD_00315  0.00010 ;
+        mid:BWMD_00340  base:TT_00092 .
+
+ns:subprocess2_test_temperatureABR10RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        mid:BWMD_00315  20.0 ;
+        mid:BWMD_00340  base:TT_00086 .
+
+ns:subprocess2_parameter_setABR1116zl2
+        rdf:type       owl:NamedIndividual , mid:BWMD_00009 ;
+        base:TT_00037  ns:subprocess_Crosshead_separation_rate ;
+        base:TT_00038  ns:subprocess2_extensometer_gauge_length ;
+        base:TT_00041  ns:subprocess2_method ;
+        base:TT_00044  ns:subprocess2_extensometer_parallel_length ;
+        base:TT_00048  ns:subprocess2_strain_rateABR1116zl2 ;
+        base:TT_00049  ns:subprocess2_stress_rate ;
+        base:TT_00050  ns:subprocess2_test_temperatureABR1116zl2 .
+
+ns:subprocess2_strain_rateABR1116zl2
+        rdf:type        owl:NamedIndividual , base:TT_00095 ;
+        mid:BWMD_00315  0.00010 ;
+        mid:BWMD_00340  base:TT_00092 .
+
+ns:subprocess2_test_temperatureABR1116zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        mid:BWMD_00315  160.0 ;
+        mid:BWMD_00340  base:TT_00086 .
+
+ns:subprocess2_parameter_setABR11RTzl1
+        rdf:type       owl:NamedIndividual , mid:BWMD_00009 ;
+        base:TT_00037  ns:subprocess_Crosshead_separation_rate ;
+        base:TT_00038  ns:subprocess2_extensometer_gauge_length ;
+        base:TT_00041  ns:subprocess2_method ;
+        base:TT_00044  ns:subprocess2_extensometer_parallel_length ;
+        base:TT_00048  ns:subprocess2_strain_rateABR11RTzl1 ;
+        base:TT_00049  ns:subprocess2_stress_rate ;
+        base:TT_00050  ns:subprocess2_test_temperatureABR11RTzl1 .
+
+ns:subprocess2_strain_rateABR11RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00095 ;
+        mid:BWMD_00315  0.00010 ;
+        mid:BWMD_00340  base:TT_00092 .
+
+ns:subprocess2_test_temperatureABR11RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        mid:BWMD_00315  20.0 ;
+        mid:BWMD_00340  base:TT_00086 .
+
+ns:subprocess2_parameter_setABR516zl3
+        rdf:type       owl:NamedIndividual , mid:BWMD_00009 ;
+        base:TT_00037  ns:subprocess_Crosshead_separation_rate ;
+        base:TT_00038  ns:subprocess2_extensometer_gauge_length ;
+        base:TT_00041  ns:subprocess2_method ;
+        base:TT_00044  ns:subprocess2_extensometer_parallel_length ;
+        base:TT_00048  ns:subprocess2_strain_rateABR516zl3 ;
+        base:TT_00049  ns:subprocess2_stress_rate ;
+        base:TT_00050  ns:subprocess2_test_temperatureABR516zl3 .
+
+ns:subprocess2_strain_rateABR516zl3
+        rdf:type        owl:NamedIndividual , base:TT_00095 ;
+        mid:BWMD_00315  0.00010 ;
+        mid:BWMD_00340  base:TT_00092 .
+
+ns:subprocess2_test_temperatureABR516zl3
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        mid:BWMD_00315  160.0 ;
+        mid:BWMD_00340  base:TT_00086 .
+
+ns:subprocess2_parameter_setABR516zl6
+        rdf:type       owl:NamedIndividual , mid:BWMD_00009 ;
+        base:TT_00037  ns:subprocess_Crosshead_separation_rate ;
+        base:TT_00038  ns:subprocess2_extensometer_gauge_length ;
+        base:TT_00041  ns:subprocess2_method ;
+        base:TT_00044  ns:subprocess2_extensometer_parallel_length ;
+        base:TT_00048  ns:subprocess2_strain_rateABR516zl6 ;
+        base:TT_00049  ns:subprocess2_stress_rate ;
+        base:TT_00050  ns:subprocess2_test_temperatureABR516zl6 .
+
+ns:subprocess2_strain_rateABR516zl6
+        rdf:type        owl:NamedIndividual , base:TT_00095 ;
+        mid:BWMD_00315  0.00010 ;
+        mid:BWMD_00340  base:TT_00092 .
+
+ns:subprocess2_test_temperatureABR516zl6
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        mid:BWMD_00315  160.0 ;
+        mid:BWMD_00340  base:TT_00086 .
+
+ns:subprocess2_parameter_setABR518zl4
+        rdf:type       owl:NamedIndividual , mid:BWMD_00009 ;
+        base:TT_00037  ns:subprocess_Crosshead_separation_rate ;
+        base:TT_00038  ns:subprocess2_extensometer_gauge_length ;
+        base:TT_00041  ns:subprocess2_method ;
+        base:TT_00044  ns:subprocess2_extensometer_parallel_length ;
+        base:TT_00048  ns:subprocess2_strain_rateABR518zl4 ;
+        base:TT_00049  ns:subprocess2_stress_rate ;
+        base:TT_00050  ns:subprocess2_test_temperatureABR518zl4 .
+
+ns:subprocess2_strain_rateABR518zl4
+        rdf:type        owl:NamedIndividual , base:TT_00095 ;
+        mid:BWMD_00315  0.00010 ;
+        mid:BWMD_00340  base:TT_00092 .
+
+ns:subprocess2_test_temperatureABR518zl4
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        mid:BWMD_00315  180.0 ;
+        mid:BWMD_00340  base:TT_00086 .
+
+ns:subprocess2_parameter_setABR518zl7
+        rdf:type       owl:NamedIndividual , mid:BWMD_00009 ;
+        base:TT_00037  ns:subprocess_Crosshead_separation_rate ;
+        base:TT_00038  ns:subprocess2_extensometer_gauge_length ;
+        base:TT_00041  ns:subprocess2_method ;
+        base:TT_00044  ns:subprocess2_extensometer_parallel_length ;
+        base:TT_00048  ns:subprocess2_strain_rateABR518zl7 ;
+        base:TT_00049  ns:subprocess2_stress_rate ;
+        base:TT_00050  ns:subprocess2_test_temperatureABR518zl7 .
+
+ns:subprocess2_strain_rateABR518zl7
+        rdf:type        owl:NamedIndividual , base:TT_00095 ;
+        mid:BWMD_00315  0.00010 ;
+        mid:BWMD_00340  base:TT_00092 .
+
+ns:subprocess2_test_temperatureABR518zl7
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        mid:BWMD_00315  180.0 ;
+        mid:BWMD_00340  base:TT_00086 .
+
+ns:subprocess2_parameter_setABR519zl5
+        rdf:type       owl:NamedIndividual , mid:BWMD_00009 ;
+        base:TT_00037  ns:subprocess_Crosshead_separation_rate ;
+        base:TT_00038  ns:subprocess2_extensometer_gauge_length ;
+        base:TT_00041  ns:subprocess2_method ;
+        base:TT_00044  ns:subprocess2_extensometer_parallel_length ;
+        base:TT_00048  ns:subprocess2_strain_rateABR519zl5 ;
+        base:TT_00049  ns:subprocess2_stress_rate ;
+        base:TT_00050  ns:subprocess2_test_temperatureABR519zl5 .
+
+ns:subprocess2_strain_rateABR519zl5
+        rdf:type        owl:NamedIndividual , base:TT_00095 ;
+        mid:BWMD_00315  0.00010 ;
+        mid:BWMD_00340  base:TT_00092 .
+
+ns:subprocess2_test_temperatureABR519zl5
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        mid:BWMD_00315  190.0 ;
+        mid:BWMD_00340  base:TT_00086 .
+
+ns:subprocess2_parameter_setABR519zl8
+        rdf:type       owl:NamedIndividual , mid:BWMD_00009 ;
+        base:TT_00037  ns:subprocess_Crosshead_separation_rate ;
+        base:TT_00038  ns:subprocess2_extensometer_gauge_length ;
+        base:TT_00041  ns:subprocess2_method ;
+        base:TT_00044  ns:subprocess2_extensometer_parallel_length ;
+        base:TT_00048  ns:subprocess2_strain_rateABR519zl8 ;
+        base:TT_00049  ns:subprocess2_stress_rate ;
+        base:TT_00050  ns:subprocess2_test_temperatureABR519zl8 .
+
+ns:subprocess2_strain_rateABR519zl8
+        rdf:type        owl:NamedIndividual , base:TT_00095 ;
+        mid:BWMD_00315  0.00010 ;
+        mid:BWMD_00340  base:TT_00092 .
+
+ns:subprocess2_test_temperatureABR519zl8
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        mid:BWMD_00315  190.0 ;
+        mid:BWMD_00340  base:TT_00086 .
+
+ns:subprocess2_parameter_setABR58zl2
+        rdf:type       owl:NamedIndividual , mid:BWMD_00009 ;
+        base:TT_00037  ns:subprocess_Crosshead_separation_rate ;
+        base:TT_00038  ns:subprocess2_extensometer_gauge_length ;
+        base:TT_00041  ns:subprocess2_method ;
+        base:TT_00044  ns:subprocess2_extensometer_parallel_length ;
+        base:TT_00048  ns:subprocess2_strain_rateABR58zl2 ;
+        base:TT_00049  ns:subprocess2_stress_rate ;
+        base:TT_00050  ns:subprocess2_test_temperatureABR58zl2 .
+
+ns:subprocess2_strain_rateABR58zl2
+        rdf:type        owl:NamedIndividual , base:TT_00095 ;
+        mid:BWMD_00315  0.00010 ;
+        mid:BWMD_00340  base:TT_00092 .
+
+ns:subprocess2_test_temperatureABR58zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        mid:BWMD_00315  80.0 ;
+        mid:BWMD_00340  base:TT_00086 .
+
+ns:subprocess2_parameter_setABR5RTzl1
+        rdf:type       owl:NamedIndividual , mid:BWMD_00009 ;
+        base:TT_00037  ns:subprocess_Crosshead_separation_rate ;
+        base:TT_00038  ns:subprocess2_extensometer_gauge_length ;
+        base:TT_00041  ns:subprocess2_method ;
+        base:TT_00044  ns:subprocess2_extensometer_parallel_length ;
+        base:TT_00048  ns:subprocess2_strain_rateABR5RTzl1 ;
+        base:TT_00049  ns:subprocess2_stress_rate ;
+        base:TT_00050  ns:subprocess2_test_temperatureABR5RTzl1 .
+
+ns:subprocess2_strain_rateABR5RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00095 ;
+        mid:BWMD_00315  0.00010 ;
+        mid:BWMD_00340  base:TT_00092 .
+
+ns:subprocess2_test_temperatureABR5RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        mid:BWMD_00315  20.0 ;
+        mid:BWMD_00340  base:TT_00086 .
+
+ns:subprocess2_parameter_setABR5RTzl10
+        rdf:type       owl:NamedIndividual , mid:BWMD_00009 ;
+        base:TT_00037  ns:subprocess_Crosshead_separation_rate ;
+        base:TT_00038  ns:subprocess2_extensometer_gauge_length ;
+        base:TT_00041  ns:subprocess2_method ;
+        base:TT_00044  ns:subprocess2_extensometer_parallel_length ;
+        base:TT_00048  ns:subprocess2_strain_rateABR5RTzl10 ;
+        base:TT_00049  ns:subprocess2_stress_rate ;
+        base:TT_00050  ns:subprocess2_test_temperatureABR5RTzl10 .
+
+ns:subprocess2_strain_rateABR5RTzl10
+        rdf:type        owl:NamedIndividual , base:TT_00095 ;
+        mid:BWMD_00315  0.00010 ;
+        mid:BWMD_00340  base:TT_00092 .
+
+ns:subprocess2_test_temperatureABR5RTzl10
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        mid:BWMD_00315  20.0 ;
+        mid:BWMD_00340  base:TT_00086 .
+
+ns:subprocess2_parameter_setABR819zl2
+        rdf:type       owl:NamedIndividual , mid:BWMD_00009 ;
+        base:TT_00037  ns:subprocess_Crosshead_separation_rate ;
+        base:TT_00038  ns:subprocess2_extensometer_gauge_length ;
+        base:TT_00041  ns:subprocess2_method ;
+        base:TT_00044  ns:subprocess2_extensometer_parallel_length ;
+        base:TT_00048  ns:subprocess2_strain_rateABR819zl2 ;
+        base:TT_00049  ns:subprocess2_stress_rate ;
+        base:TT_00050  ns:subprocess2_test_temperatureABR819zl2 .
+
+ns:subprocess2_strain_rateABR819zl2
+        rdf:type        owl:NamedIndividual , base:TT_00095 ;
+        mid:BWMD_00315  0.00010 ;
+        mid:BWMD_00340  base:TT_00092 .
+
+ns:subprocess2_test_temperatureABR819zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        mid:BWMD_00315  190.0 ;
+        mid:BWMD_00340  base:TT_00086 .
+
+ns:subprocess2_parameter_setABR8RTzl1
+        rdf:type       owl:NamedIndividual , mid:BWMD_00009 ;
+        base:TT_00037  ns:subprocess_Crosshead_separation_rate ;
+        base:TT_00038  ns:subprocess2_extensometer_gauge_length ;
+        base:TT_00041  ns:subprocess2_method ;
+        base:TT_00044  ns:subprocess2_extensometer_parallel_length ;
+        base:TT_00048  ns:subprocess2_strain_rateABR8RTzl1 ;
+        base:TT_00049  ns:subprocess2_stress_rate ;
+        base:TT_00050  ns:subprocess2_test_temperatureABR8RTzl1 .
+
+ns:subprocess2_strain_rateABR8RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00095 ;
+        mid:BWMD_00315  0.00010 ;
+        mid:BWMD_00340  base:TT_00092 .
+
+ns:subprocess2_test_temperatureABR8RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        mid:BWMD_00315  20.0 ;
+        mid:BWMD_00340  base:TT_00086 .
+
+ns:subprocess2_parameter_setABR919zl2
+        rdf:type       owl:NamedIndividual , mid:BWMD_00009 ;
+        base:TT_00037  ns:subprocess_Crosshead_separation_rate ;
+        base:TT_00038  ns:subprocess2_extensometer_gauge_length ;
+        base:TT_00041  ns:subprocess2_method ;
+        base:TT_00044  ns:subprocess2_extensometer_parallel_length ;
+        base:TT_00048  ns:subprocess2_strain_rateABR919zl2 ;
+        base:TT_00049  ns:subprocess2_stress_rate ;
+        base:TT_00050  ns:subprocess2_test_temperatureABR919zl2 .
+
+ns:subprocess2_strain_rateABR919zl2
+        rdf:type        owl:NamedIndividual , base:TT_00095 ;
+        mid:BWMD_00315  0.00010 ;
+        mid:BWMD_00340  base:TT_00092 .
+
+ns:subprocess2_test_temperatureABR919zl2
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        mid:BWMD_00315  190.0 ;
+        mid:BWMD_00340  base:TT_00086 .
+
+ns:subprocess2_parameter_setABR9RTzl1
+        rdf:type       owl:NamedIndividual , mid:BWMD_00009 ;
+        base:TT_00037  ns:subprocess_Crosshead_separation_rate ;
+        base:TT_00038  ns:subprocess2_extensometer_gauge_length ;
+        base:TT_00041  ns:subprocess2_method ;
+        base:TT_00044  ns:subprocess2_extensometer_parallel_length ;
+        base:TT_00048  ns:subprocess2_strain_rateABR9RTzl1 ;
+        base:TT_00049  ns:subprocess2_stress_rate ;
+        base:TT_00050  ns:subprocess2_test_temperatureABR9RTzl1 .
+
+ns:subprocess2_strain_rateABR9RTzl1
+        rdf:type        owl:NamedIndividual , base:TT_00095 ;
+        mid:BWMD_00315  0.00010 ;
+        mid:BWMD_00340  base:TT_00092 .
+
+ns:subprocess2_test_temperatureABR9RTzl1
+        rdf:type        owl:NamedIndividual , mid:BWMD_00266 ;
+        mid:BWMD_00315  20.0 ;
+        mid:BWMD_00340  base:TT_00086 .
+
+ns:subprocess2_soaking_time
+        rdf:type        owl:NamedIndividual , obo:BFO_0000038 ;
+        rdf:value       "Soaking Time"^^xsd:decimal ;
+        rdfs:label      "Soaking Time"@en ;
+        mid:BWMD_00312  "min" .
+
+base:TT_00095  rdf:type  owl:Class .
+
+base:TT_00092  rdf:type  owl:NamedIndividual .
+
+ns:upper_yield_strength
+        rdf:type        owl:NamedIndividual , base:TT_00072 ;
+        mid:BWMD_00315  "upper yield strength in MPa"^^xsd:decimal ;
+        mid:BWMD_00340  base:TT_00081 .
+
+base:TT_00073  rdf:type  owl:Class .
+
+base:TT_00068  rdf:type  owl:Class .
+
+base:TT_00070  rdf:type  owl:Class .
+
+ns:specimen1_state3  rdf:type  owl:NamedIndividual , mid:BWMD_00048 ;
+        base:TT_00014  ns:specimen1_state3_Diameter ;
+        base:TT_00039  ns:specimen1_state3_Length ;
+        base:TT_00042  ns:specimen1_state3_mInimum_cross_section_area .
+
+ns:subprocess2_processdata
+        rdf:type        owl:NamedIndividual , mid:BWMD_00068 ;
+        base:TT_00050   ns:subprocess2_Indicated_temperature_i_bottom , ns:subprocess2_Indicated_temperature_i_mid , ns:subprocess2_Indicated_temperature_i_top ;
+        ns:hasDuration  ns:subprocess2_soaking_time .
+
+base:TT_00069  rdf:type  owl:Class .
