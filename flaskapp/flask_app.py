@@ -30,63 +30,53 @@ swaggerui_blueprint = get_swaggerui_blueprint(
     }
 )
 """
-"""
-app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
-separators = ["auto", ";", ",", "\\t", "\\t+",
-              "|", "\s+", "\s+|\\t+|\s+\\t+|\\t+\s+"]
-encodings = ['auto', 'ISO-8859-1', 'UTF-8', 'ascii', 'latin-1', 'cp273']
-"""
-"""
+
+# app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
+
 class StartForm(FlaskForm):
     data_url = URLField(
-        'URL Meta Data',
+        'URL Field Mapping',
         validators=[DataRequired()],
-        description='Paste URL to a data file, e.g. csv, TRA'
+        description='Paste URL to a field mapping'
     )
-    separator_sel = SelectField(
-        'Choose Separator, default: auto detect',
-        choices=separators,
-        description='select a separator for your data manually',
-        default='auto'
-        )
-    encoding_sel = SelectField(
-        'Choose Encoding, default: auto detect',
-        choices=encodings,
-        description='select an encoding for your data manually',
-        default='auto'
-        )
-"""
+    shacl_url = URLField(
+        'URL SHACL Shape Repository',
+        validators=[DataRequired()],
+        description='Paste URL to a SHACL Shape Repository'
+    )
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     logo = './static/resources/MatOLab-Logo.svg'
     concept = './static/resources/RDFConverter_Concept.drawio.svg'
-    #start_form = StartForm()
+    start_form = StartForm()
     message = ''
     result = ''
     return render_template(
         "index.html",
         logo=logo,
         concept=concept,
-        #start_form=start_form,
+        start_form=start_form,
         message=message,
         result=result
         )
 
-"""
+
 @app.route('/create_annotator', methods=['POST'])
 def create_annotator():
     logo = './static/resources/MatOLab-Logo.svg'
+    concept = './static/resources/RDFConverter_Concept.drawio.svg'
     start_form = StartForm()
     message = ''
     result = ''
-
+    """
     if start_form.validate_on_submit():
         annotator = CSV_Annotator(
             separator=start_form.separator_sel.data,
             encoding=start_form.encoding_sel.data
         )
-
+    """
+    """
         try:
             meta_file_name, result = annotator.process(
                 start_form.data_url.data)
@@ -105,14 +95,16 @@ def create_annotator():
                 payload=payload,
                 filename=meta_file_name
             )
+    """
     return render_template(
         "index.html",
         logo=logo,
+        concept=concept,
         start_form=start_form,
-        message=message,
-        result=result
+        message="message",
+        result="seodprihgneropfdihgrs9ß<üpfhjgpdjfryig"
     )
-"""
+
 
 # old APi CSVToCSVW
 """

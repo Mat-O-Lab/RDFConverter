@@ -29,8 +29,38 @@
           Description RDFConverter
       </p>
       <p>
-        <img src="{{ concept }}" alt="mat-o-lab-logo"/>
+        <img src="{{ concept }}" alt="concept-RDFConverter"/>
       </p>
+
+      <form class='pb-3' method="post" action="{{ url_for('create_annotator') }}">
+        <div class="mb-3">
+          {{ start_form.csrf_token }}
+          {{ start_form.data_url.label }}
+          {{ start_form.data_url(class="form-control", **{'aria-describedby': 'urlHelp'}) }}
+          <div id="urlHelp" class="form-text">{{ start_form.data_url.description }}</div>
+          <div class="invalid-feedback">
+            {% if start_form.data_url.errors %}
+                <ul class="errors">
+                {% for error in start_form.data_url.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+          </div>
+          {{ start_form.shacl_url.label }}
+          {{ start_form.shacl_url(class="form-control", **{'aria-describedby': 'urlHelp'}) }}
+          <div id="urlHelp" class="form-text">{{ start_form.shacl_url.description }}</div>
+          <div class="invalid-feedback">
+            {% if start_form.shacl_url.errors %}
+                <ul class="errors">
+                {% for error in start_form.shacl_url.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+          </div>
+        <button class="form-group btn btn-primary btn-lg" type="submit">Start Conversion</button>
+      </form>
 
     </div>
     {% with messages = get_flashed_messages() %}
