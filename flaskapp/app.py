@@ -14,6 +14,10 @@ from wtforms.validators import DataRequired
 
 from config import config
 
+# dependencies related to rml conversion
+import pretty_yarrrml2rml as yarrrml2rml
+import yaml
+
 from rmlmapper import find_data_source, map_graph
 
 config_name = os.environ.get("APP_MODE") or "development"
@@ -110,17 +114,43 @@ def create_annotator():
     )
 
 
-# old APi CSVToCSVW
-"""
-@app.route("/api", methods=["GET", "POST"])
-def api():
-    if request.method == "POST":
-        content = request.get_json()
-        annotator = CSV_Annotator(
-            encoding=content['encoding'], separator=content['separator'])
-        filename, file_data = annotator.process(content['data_url'])
-    return jsonify({"filename": filename, "filedata": file_data})
-"""
+@app.route('/yarrrmltorml', methods=['POST'])
+def translate():
+    print("------------------------START TRANSLATING YARRRML TO RML-------------------------------")
+
+    yarrrml_data = yaml.safe_load(request.values['test'])
+
+    list_initial_sources = yarrrml2rml.source_mod.get_initial_sources(yarrrml_data)
+    rml_mapping = [yarrrml2rml.mapping_mod.add_prefix(yarrrml_data)]
+    try:
+        for mapping in yarrrml_data.get(yarrrml2rml.constants.YARRRML_MAPPINGS):
+            subject_list = yarrrml2rml.subject_mod.add_subject(yarrrml_data, mapping)
+            source_list = yarrrml2rml.source_mod.add_source(yarrrml_data, mapping, list_initial_sources)
+            pred = yarrrml2rml.predicate_object_mod.add_predicate_object_maps(yarrrml_data, mapping)
+            it = 0
+            for source in source_list:
+                for subject in subject_list:
+                    map_aux = yarrrml2rml.mapping_mod.add_mapping(mapping, it)
+                    if type(source) is list:
+                        rml_mapping.append(map_aux + source[0] + subject + pred + source[1])
+                    else:
+                        rml_mapping.append(map_aux + source + subject + pred)
+                    rml_mapping[len(rml_mapping) - 1] = rml_mapping[len(rml_mapping) - 1][:-2]
+                    rml_mapping.append(".\n\n\n")
+                    it = it + 1
+
+        print("RML content successfully created!\n Starting the validation with RDFLib....")
+        print(rml_mapping)
+        rml_mapping_string = "".join(rml_mapping)
+        
+    except Exception as e:
+        print("------------------------ERROR-------------------------------")
+        print("RML content not generated: " + str(e))
+        return None
+
+    print("------------------------END TRANSLATION-------------------------------")
+
+    return rml_mapping_string
 
 @app.route('/api/join_data', methods=['POST'])
 def join_data():
