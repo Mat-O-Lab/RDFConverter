@@ -155,11 +155,14 @@ def translate():
 @app.route('/api/join_data', methods=['POST'])
 def join_data():
 
-    rml_string = request.form['rdf']
+    rml_url = request.form['rml']
     g = Graph()
-    g.parse(data=rml_string)
+    g.parse(rml_url, format='ttl')
 
-    source = find_data_source(g)
+    if 'source' in request.form.keys():
+        source = request.form['source']
+    else:
+        source = find_data_source(g)
 
     # TODO: infer format (is not always json-ld?)
     data_graph = Graph()
