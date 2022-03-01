@@ -114,7 +114,7 @@ def create_annotator():
     )
 
 
-@app.route('/yarrrmltorml', methods=['POST'])
+@app.route('/api/yarrrmltorml', methods=['POST'])
 def translate():
     print("------------------------START TRANSLATING YARRRML TO RML-------------------------------")
 
