@@ -1,0 +1,96 @@
+{
+    "openapi": "3.0.0",
+    "info":{
+        "description": "RDFConverter",
+        "version": "1.0.0",
+        "title": "RDFConverter",
+        "contact": {
+            "name": "Thomas Hanke",
+            "email": "thomas.hanke@imws.fraunhofer.de"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        }
+    },
+    "servers":[
+        {
+            "url": "/"
+        }
+    ],
+    "schemes": [
+      "https",
+      "http"
+    ],
+    "paths": {
+      "/api/join_data": {
+              "post": {
+                  "tags": [
+                      "Join Data"
+                  ],
+                  "summary": "Apply the RML mapping to the data.",
+                  "description": "Apply the RML mapping specified in the rml_url to the data_url.",
+                  "parameters": [
+                      {
+                      "in": "body",
+                      "name": "rml_url",
+                      "type": "string",
+                      "format": "uri",
+                      "required": "true",
+                      "description": "URL to a file containing an RML Mapping"
+                      },
+                      {
+                        "in": "body",
+                        "name": "data_url",
+                        "type": "string",
+                        "format": "uri",
+                        "required": "true",
+                        "description": "URL to RDF data to which the mapping should be applied."
+                        }
+
+                  ],
+                  "produces": [
+                      "text/plain"
+                  ],
+                  "responses": {
+                          "200": {
+                              "description": "Mapped RDF data."
+                            },
+                          "404": {
+                              "description": "File not found."
+                              },
+  
+                          "500":{
+                              "description": "Internal server error"
+                          }
+  
+                      }
+                  }
+              }
+    },
+  
+    "components" : {
+      "schemas" : {}
+    },
+    "securityDefinitions": {
+      "api_key": {
+        "type": "apiKey",
+        "name": "api_key",
+        "in": "header"
+      }
+    },
+    "definitions": {
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "filedata": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+  
