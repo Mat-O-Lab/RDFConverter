@@ -159,8 +159,8 @@ def join_data():
     g = Graph()
     g.parse(rml_url, format='ttl')
 
-    if 'source' in request.form.keys():
-        source = request.form['source']
+    if 'data_url' in request.form.keys():
+        source = request.form['data_url']
     else:
         source = find_data_source(g)
 
