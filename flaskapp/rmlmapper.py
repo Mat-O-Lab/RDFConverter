@@ -28,6 +28,19 @@ def find_method_graph(rules: str):
 	source = re.findall(r'\@prefix\ method\:\ <(.+)>', rules).pop()
 	return source[:-1] if source[-1] == '/' else source
 
+def count_rules(graph: Graph):
+	src = graph.value(predicate=RDF.type, object=RML.LogicalSource)
+	maps = graph.subjects(RML.logicalSource, src)
+	# return the number of TriplesMaps of any source
+	return len([elem for elem in maps if (elem, RDF.type, RR.TriplesMap) in graph])
+
+def count_rules_str(graph_str: str):
+	graph = Graph()
+	graph.parse(data=graph_str, format='ttl')
+	src = graph.value(predicate=RDF.type, object=RML.LogicalSource)
+	maps = graph.subjects(RML.logicalSource, src)
+	# return the number of TriplesMaps of any source
+	return len([elem for elem in maps if (elem, RDF.type, RR.TriplesMap) in graph])
 
 # find the subject of a specified TriplesMap
 def find_subject_label(graph: Graph, triples_node):

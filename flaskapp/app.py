@@ -22,7 +22,7 @@ from config import config
 import pretty_yarrrml2rml as yarrrml2rml
 import yaml
 
-from rmlmapper import find_data_source, find_method_graph
+from rmlmapper import find_data_source, find_method_graph, count_rules_str
 
 config_name = os.environ.get("APP_MODE") or "development"
 
@@ -189,7 +189,11 @@ def join_data():
 
     mapping_graph = Graph()
     mapping_graph.parse(data=sub_res.stdout, format='ttl')
+
+    num_mappings_applied = len(mapping_graph)
+    num_mappings_possible = count_rules_str(rml_rules)
+
     mapping_graph += data_graph
     mapping_graph += method_graph
 
-    return mapping_graph.serialize(format='ttl')
+    return {'graph': mapping_graph.serialize(format='ttl'), 'num_mappings_applied': num_mappings_applied, 'num_mappings_skipped': num_mappings_possible-num_mappings_applied}
