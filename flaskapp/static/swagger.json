@@ -23,6 +23,38 @@
     "http"
   ],
   "paths": {
+    "/api/YARRRML2RML": {
+      "post": {
+        "tags": [
+          "Join Data"
+        ],
+        "summary": "Convert YARRRML to RML",
+        "description": "Given an YARRRML content, it generates RDF containing the RML rules.",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "yarrrml_url",
+            "type": "string",
+            "format": "uri",
+            "required": "true",
+            "description": "URL to a file containing an YARRRML description"
+          }
+        ],
+        "produces": [
+          "text/plain"
+        ],
+        "responses": {
+          "200": {
+            "description": "RDF data containing the RML rules."
+          },
+          "404": {
+            "description": "File not found."
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
     "/api/join_data": {
       "post": {
         "tags": [
