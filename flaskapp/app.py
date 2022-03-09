@@ -3,6 +3,7 @@ import imp
 import os
 import base64
 from rdflib import Graph
+from rdflib.util import guess_format
 
 from flask import Flask, flash, request, jsonify, render_template
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -173,3 +174,18 @@ def join_data():
     # TODO: also add method graph to graph?
 
     return mapping_graph.serialize(format='ttl')
+
+@app.route('/api/rdfvalidator', methods=['POST'])
+def validate():
+
+    shapes_url = request.form['shapes_url']
+    rdf_url = request.form['rdf_url']
+
+    shapes_graph = Graph()
+    shapes_graph.parse(shapes_url, format=guess_format(shapes_url))
+    rdf_graph = Graph()
+    rdf_graph.parse(rdf_url, format=guess_format(rdf_url))
+
+    validation_result = Graph() # add call to pyshacl here
+
+    return validation_result.serialize(format='ttl')
