@@ -26,13 +26,9 @@
     <div class="container-fluid mb-3">
       <h1 class="display-5 fw-bold">RDFConverter</h1>
       <p class="col-md-12 ps-0 fs-4">
-          Description RDFConverter
+        Conversion and validation of YARRRML and Chowlk files to RDF
       </p>
-      <p>
-        <img src="{{ concept }}" alt="concept-RDFConverter"/>
-      </p>
-
-      <form class='pb-3' method="post" action="{{ url_for('create_annotator') }}">
+      <form class='pb-3' method="post" action="{{ url_for('index') }}">
         <div class="mb-3">
           {{ start_form.csrf_token }}
           {{ start_form.data_url.label }}
@@ -42,6 +38,18 @@
             {% if start_form.data_url.errors %}
                 <ul class="errors">
                 {% for error in start_form.data_url.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+          </div>
+          {{ start_form.opt_data_csvw_url.label }}
+          {{ start_form.opt_data_csvw_url(class="form-control", **{'aria-describedby': 'urlHelp'}) }}
+          <div id="urlHelp" class="form-text">{{ start_form.opt_data_csvw_url.description }}</div>
+          <div class="invalid-feedback">
+            {% if start_form.opt_data_csvw_url.errors %}
+                <ul class="errors">
+                {% for error in start_form.opt_data_csvw_url.errors %}
                     <li>{{ error }}</li>
                 {% endfor %}
                 </ul>
@@ -59,14 +67,26 @@
                 </ul>
             {% endif %}
           </div>
+          {{ start_form.opt_shacl_shape_url.label }}
+          {{ start_form.opt_shacl_shape_url(class="form-control", **{'aria-describedby': 'urlHelp'}) }}
+          <div id="urlHelp" class="form-text">{{ start_form.opt_shacl_shape_url.description }}</div>
+          <div class="invalid-feedback">
+            {% if start_form.opt_shacl_shape_url.errors %}
+                <ul class="errors">
+                {% for error in start_form.opt_shacl_shape_url.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+          </div>
         <button class="form-group btn btn-primary btn-lg" type="submit">Start Conversion</button>
       </form>
 
     </div>
     {% with messages = get_flashed_messages() %}
-    <div class="container-fluid collapse {% if messages or result %} show {% endif %}" id="mappingForm">
+    <div class="container-fluid collapse {% if messages %} show {% endif %}" id="mappingForm">
       <div class="card card-body">
-        <h5 class="card-title">Result</h5>
+        <h5 class="card-title">Errors</h5>
         {% if messages %}
         <div class="alert alert-primary" role="alert">
             <ul class=flashes>
@@ -76,6 +96,12 @@
             </ul>
         </div>
         {% endif %}
+      </div>
+    </div>
+
+    <div class="container-fluid collapse {% if result %} show {% endif %}" id="mappingForm">
+      <div class="card card-body">
+        <h5 class="card-title">Result</h5>
         <code class="prettyprint" style="white-space: pre-wrap;">{{ result }}</code>
       </div>
       <a class="form-group btn btn-primary btn-lg my-3" download="{{ filename }}" href="data:text/json;base64,{{ payload }}" role="button">Download</a>
@@ -89,6 +115,6 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js?lang=yaml&css&skin=sunburst"></script>
 {{super()}}
 {% endblock %}
