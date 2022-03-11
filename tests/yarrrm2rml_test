@@ -1,0 +1,9 @@
+import unittest
+
+from YARRRML2RML.yarrrml2rml import translate
+
+class TranslateTest(unittest.TestCase):
+    def test_convert(self):
+        data = [1, 2, 3, 4, 5]
+        result = sum(data) 
+        self.assertEqual(result, 15)
