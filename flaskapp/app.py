@@ -75,14 +75,14 @@ def index():
         opt_data_csvw_url = bool(request.values.get('opt_data_csvw_url'))
         shacl_url = bool(request.values.get('shacl_url'))
         opt_shacl_shape_url = bool(request.values.get('opt_shacl_shape_url'))
-        if (data_url ^ opt_data_csvw_url) and (shacl_url ^ opt_shacl_shape_url):
+        if ((data_url ^ opt_data_csvw_url) and (shacl_url ^ opt_shacl_shape_url)) or ((data_url ^ opt_data_csvw_url) and not shacl_url and not opt_shacl_shape_url):
             result = "edsojng<osifdrujb ghiursfdbgiposedunopidsgnbgifdsubgi"
         else:
             if not data_url ^ opt_data_csvw_url:
                 msg = 'One Mapping URL field must be set'
                 flash(msg)
-            if not shacl_url ^ opt_shacl_shape_url:
-                msg = 'One SHACL URL field must be set'
+            if shacl_url and opt_shacl_shape_url:
+                msg = 'Only one SHACL URL field can be set'
                 flash(msg)
 
     return render_template(
