@@ -12,6 +12,7 @@ from flask_bootstrap import Bootstrap
 
 from wtforms import URLField, SelectField
 from wtforms.validators import DataRequired
+from pyshacl import validate
 
 from config import config
 
@@ -186,6 +187,19 @@ def validate():
     rdf_graph = Graph()
     rdf_graph.parse(rdf_url, format=guess_format(rdf_url))
 
-    validation_result = Graph() # add call to pyshacl here
-
-    return validation_result.serialize(format='ttl')
+    try:
+        results = validate(
+            rdf_graph,
+            shacl_graph=shapes_graph,
+            ont_graph=None,  # can use a Web URL for a graph containing extra ontological information
+            inference='none',
+            abort_on_first=False,
+            allow_infos=False,
+            allow_warnings=False,
+            meta_shacl=False,
+            advanced=False,
+            js=False,
+            debug=False)
+    except Exception as e:
+        return e
+    return results
