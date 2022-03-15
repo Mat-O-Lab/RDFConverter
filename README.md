@@ -1,7 +1,6 @@
 # RDFConverter
 Conversion and validation of YARRRML and Chowlk files to RDF
-![RDFConverter_Concept drawio](https://user-images.githubusercontent.com/9248325/158338711-73935d1a-2c99-4a4c-8c1a-a133c2937a4c.png)
-
+![RDFConverter_Concept drawio](https://user-images.githubusercontent.com/9248325/158355253-41fecd06-2487-449c-b91c-115182af9794.png)
 
 ## Input: A json file containing two URLs: 
 -	yarrrml file (https://github.com/Mat-O-Lab/resources/blob/main/mappings/Zugversuch_eng_ETFE-Ref%252BGroesseneffekt2-map.yaml)
