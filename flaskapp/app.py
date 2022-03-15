@@ -2,6 +2,7 @@
 import imp
 import os
 import base64
+from html5lib import serialize
 from rdflib import Graph
 from rdflib.util import guess_format
 
@@ -188,7 +189,7 @@ def validate():
     rdf_graph.parse(rdf_url, format=guess_format(rdf_url))
 
     try:
-        results = validate(
+        conforms, g, _ = validate(
             rdf_graph,
             shacl_graph=shapes_graph,
             ont_graph=None,  # can use a Web URL for a graph containing extra ontological information
@@ -201,5 +202,6 @@ def validate():
             js=False,
             debug=False)
     except Exception as e:
-        return e
-    return results
+        return e, 400
+
+    return {'valid': conforms, 'graph': g.serialize(format='ttl')}
