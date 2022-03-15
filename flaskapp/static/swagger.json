@@ -63,10 +63,78 @@
           }
         }
       }
+    },
+    "/api/validation": {
+      "post": {
+        "tags": [
+          "Validate RDF against SHACL"
+        ],
+        "summary": "Validate some RDF data against SHACL shapes.",
+        "description": "Validate some RDF data against SHACL shapes.",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "shapes_url",
+            "type": "string",
+            "format": "uri",
+            "required": "true",
+            "description": "URL to a file containing SHACL shapes."
+          },
+          {
+            "in": "body",
+            "name": "rdf_url",
+            "type": "string",
+            "format": "uri",
+            "required": "true",
+            "description": "URL to RDF data which should be validated against the SHACL shapes."
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Json containing the Validation report and a boolean variable indicating whether the RDF conforms to she SHCAL shapes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/shacl_report"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found."
+          },
+          "400": {
+            "description": "The validation has produced an error."
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
     }
   },
   "components": {
-    "schemas": {}
+    "schemas": {
+      "shacl_report":{
+        "description": "Report of SHACL validation.",
+        "required": "true",
+        "type": "object",
+        "properties": {
+          "valid":{
+            "type": "boolean",
+            "description": "True if RDF is valid according to SHACL shape."
+          },
+          "graph" : {
+            "type" : "string",
+            "description": "RDF triples describing the validation report of the SHACL validation."
+          }
+        }
+
+        }
+    }
   },
   "securityDefinitions": {
     "api_key": {
