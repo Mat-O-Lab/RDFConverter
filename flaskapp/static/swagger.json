@@ -49,11 +49,18 @@
           }
         ],
         "produces": [
-          "text/plain"
+          "application/json"
         ],
         "responses": {
           "200": {
-            "description": "Mapped RDF data."
+            "description": "Mapped RDF data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinData"
+                }
+              }
+            }
           },
           "404": {
             "description": "File not found."
@@ -66,7 +73,26 @@
     }
   },
   "components": {
-    "schemas": {}
+    "schemas": {
+      "JoinData": {
+        "description": "Mapped RDF Data and count of applied or skipped rules",
+        "type": "object",
+        "properties": {
+          "graph": {
+            "type": "string",
+            "description": "Mapped RDF Graph in turtle format."
+          },
+          "num_mappings_applied": {
+            "type": "integer",
+            "description": "Count of mappings from data to method graph that have been applied."
+          },
+          "num_mappings_skipped": {
+            "type": "integer",
+            "description": "Count of mappings from data to method graph that have been skipped because they could not be applied."
+          }
+        }
+      }
+    }
   },
   "securityDefinitions": {
     "api_key": {
