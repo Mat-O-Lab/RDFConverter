@@ -71,7 +71,7 @@
         }
       }
     },
-    "/api/validation": {
+    "/api/rdfvalidator": {
       "post": {
         "tags": [
           "Validate RDF against SHACL"
