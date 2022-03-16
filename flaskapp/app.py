@@ -156,7 +156,7 @@ def translate():
 
     return rml_mapping_string
 
-@app.route('/api/join_data', methods=['POST'])
+@app.route('/api/joindata', methods=['POST'])
 def join_data():
 
     rml_url = request.form['rml_url']

@@ -23,7 +23,7 @@
     "http"
   ],
   "paths": {
-    "/api/join_data": {
+    "/api/joindata": {
       "post": {
         "tags": [
           "Join Data"
