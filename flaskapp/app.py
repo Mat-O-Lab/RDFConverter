@@ -203,13 +203,16 @@ def join_data():
 @app.route('/api/rdfvalidator', methods=['POST'])
 def validate():
 
-    shapes_url = request.form['shapes_url']
-    rdf_url = request.form['rdf_url']
+    try:
+        shapes_url = request.form['shapes_url']
+        rdf_url = request.form['rdf_url']
 
-    shapes_graph = Graph()
-    shapes_graph.parse(shapes_url, format=guess_format(shapes_url))
-    rdf_graph = Graph()
-    rdf_graph.parse(rdf_url, format=guess_format(rdf_url))
+        shapes_graph = Graph()
+        shapes_graph.parse(shapes_url, format=guess_format(shapes_url))
+        rdf_graph = Graph()
+        rdf_graph.parse(rdf_url, format=guess_format(rdf_url))
+    except:
+        return "Could not read graph!", 400
 
     try:
         conforms, g, _ = validate(
