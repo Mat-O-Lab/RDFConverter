@@ -4,8 +4,6 @@ WORKDIR /app
 
 COPY . .
 
-RUN pip3 install -r requirements.txt
-
 # from https://stackoverflow.com/a/44058196
 # Install OpenJDK-8
 RUN apt-get update && \
@@ -22,5 +20,7 @@ RUN apt-get update && \
 # Setup JAVA_HOME -- useful for docker commandline
 ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
 RUN export JAVA_HOME
+
+RUN pip3 install -r requirements.txt
 
 CMD ["gunicorn", "-b", "0.0.0.0:5000", "wsgi:app", "--workers=3"]
