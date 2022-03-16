@@ -10,7 +10,7 @@ from flask_wtf import FlaskForm
 from flask_bootstrap import Bootstrap
 
 from wtforms import URLField, SelectField
-from wtforms.validators import Datarequired, Optional
+from wtforms.validators import DataRequired, Optional
 
 from config import config
 
