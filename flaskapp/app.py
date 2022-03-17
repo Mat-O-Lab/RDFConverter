@@ -118,7 +118,7 @@ def create_annotator():
 def translate():
     print("------------------------START TRANSLATING YARRRML TO RML-------------------------------")
 
-    yarrrml_data = yaml.safe_load(request.values['test'])
+    yarrrml_data = yaml.safe_load(request.values['yarrrml'])
 
     list_initial_sources = yarrrml2rml.source_mod.get_initial_sources(yarrrml_data)
     rml_mapping = [yarrrml2rml.mapping_mod.add_prefix(yarrrml_data)]
@@ -139,14 +139,14 @@ def translate():
                     rml_mapping.append(".\n\n\n")
                     it = it + 1
 
-        print("RML content successfully created!\n Starting the validation with RDFLib....")
+        print("RML content successfully created!")
         print(rml_mapping)
         rml_mapping_string = "".join(rml_mapping)
         
     except Exception as e:
         print("------------------------ERROR-------------------------------")
         print("RML content not generated: " + str(e))
-        return None
+        return "Error Occured!", 500
 
     print("------------------------END TRANSLATION-------------------------------")
 
