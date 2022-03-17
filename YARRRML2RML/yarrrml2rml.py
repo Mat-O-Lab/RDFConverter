@@ -18,7 +18,7 @@ app = Flask(__name__)
 def translate():
     print("------------------------START TRANSLATING YARRRML TO RML-------------------------------")
 
-    yarrrml_data = yaml.safe_load(request.values['test'])
+    yarrrml_data = yaml.safe_load(request.values['yarrrml'])
 
     print("yarrrm: ", yarrrml_data)
 
