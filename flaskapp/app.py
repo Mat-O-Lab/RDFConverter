@@ -4,6 +4,7 @@ import subprocess
 import imp
 import os
 import base64
+from html5lib import serialize
 from rdflib import Graph
 from rdflib.util import guess_format
 import requests
@@ -15,6 +16,7 @@ from flask_bootstrap import Bootstrap
 
 from wtforms import URLField, SelectField
 from wtforms.validators import DataRequired
+from pyshacl import validate
 
 from config import config
 
@@ -197,3 +199,35 @@ def join_data():
     mapping_graph += method_graph
 
     return {'graph': mapping_graph.serialize(format='ttl'), 'num_mappings_applied': num_mappings_applied, 'num_mappings_skipped': num_mappings_possible-num_mappings_applied}
+
+@app.route('/api/rdfvalidator', methods=['POST'])
+def validate():
+
+    try:
+        shapes_url = request.form['shapes_url']
+        rdf_url = request.form['rdf_url']
+
+        shapes_graph = Graph()
+        shapes_graph.parse(shapes_url, format=guess_format(shapes_url))
+        rdf_graph = Graph()
+        rdf_graph.parse(rdf_url, format=guess_format(rdf_url))
+    except:
+        return "Could not read graph!", 400
+
+    try:
+        conforms, g, _ = validate(
+            rdf_graph,
+            shacl_graph=shapes_graph,
+            ont_graph=None,  # can use a Web URL for a graph containing extra ontological information
+            inference='none',
+            abort_on_first=False,
+            allow_infos=False,
+            allow_warnings=False,
+            meta_shacl=False,
+            advanced=False,
+            js=False,
+            debug=False)
+    except Exception as e:
+        return e, 400
+
+    return {'valid': conforms, 'graph': g.serialize(format='ttl')}
