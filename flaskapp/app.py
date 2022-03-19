@@ -167,30 +167,29 @@ def join_data():
     data_url = find_data_source(rml_rules)
     method_url = find_method_graph(rml_rules)
 
-    # replace data url from mappingfile with new data url specified in request
+    # replace rml source from mappingfile with local file 
+    # because rmlmapper webapi does not work with remote sources
+    rml_rules = rml_rules.replace(f'rml:source "{data_url}"', 'rml:source "source.json"')
+
     if 'data_url' in request.form.keys():
-        rml_rules.replace(data_url, request.form['data_url'])
         data_url = request.form['data_url']
 
-    # call rmlmapper.jar to map rml to rdf
-    sub_res = subprocess.run(
-        ['java', '-jar', 'rmlmapper-4.15.0-r361-all.jar', '-m', rml_rules],
-        text=True,
-        capture_output=True,
-        timeout=5
-        )
+    # call rmlmapper webapi
+    d = {'rml': rml_rules, 'sources': {'source.json': requests.get(data_url).text}, 'serialization': 'turtle'}
+    r = requests.post('http://localhost:4000/execute', json=d)
 
-    if sub_res.stderr:
-        print(sub_res.stderr)
-        return "Could not map rml to rdf!", 400
-
+    if r.status_code != 200:
+        print(r.text)
+        return r.text, 400
+    res = r.json()['output']
+    
     data_graph = Graph()
     data_graph.parse(data_url, format=guess_format(data_url))
     method_graph = Graph()
     method_graph.parse(method_url, format=guess_format(method_url))
 
     mapping_graph = Graph()
-    mapping_graph.parse(data=sub_res.stdout, format='ttl')
+    mapping_graph.parse(data=res, format='ttl')
 
     num_mappings_applied = len(mapping_graph)
     num_mappings_possible = count_rules_str(rml_rules)
