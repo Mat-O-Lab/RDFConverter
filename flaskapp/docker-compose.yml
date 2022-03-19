@@ -1,6 +1,12 @@
 version: "3.7"
 
 services:
+  rmlmapper:
+    container_name: rmlmapper-webapi
+    build: https://github.com/RMLio/rmlmapper-webapi-js.git
+    ports:
+      - 4000:4000
+
   flask:
     container_name: flask
     build: .
