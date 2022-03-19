@@ -1,0 +1,10 @@
+rdfconverter:
+  unittest:
+    yarrrml2rml:
+      data:
+        input: "./tests/data/yarrrml-input-test.yml"
+        expectedOutput: "./tests/data/mapping-expected.rml.ttl"
+      address:
+        host: "http://127.0.0.1"
+        port: "5000"
+        contextroot: "rmlconversion"
