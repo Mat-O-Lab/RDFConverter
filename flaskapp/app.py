@@ -176,7 +176,7 @@ def join_data():
 
     # call rmlmapper webapi
     d = {'rml': rml_rules, 'sources': {'source.json': requests.get(data_url).text}, 'serialization': 'turtle'}
-    r = requests.post('http://localhost:4000/execute', json=d)
+    r = requests.post('http://rmlmapper:4000/execute', json=d)
 
     if r.status_code != 200:
         print(r.text)

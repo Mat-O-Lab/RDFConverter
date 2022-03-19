@@ -4,8 +4,11 @@ services:
   rmlmapper:
     container_name: rmlmapper-webapi
     build: https://github.com/RMLio/rmlmapper-webapi-js.git
-    ports:
-      - 4000:4000
+    expose:
+      - 4000
+    restart: always
+    networks:
+      - flask
 
   flask:
     container_name: flask
