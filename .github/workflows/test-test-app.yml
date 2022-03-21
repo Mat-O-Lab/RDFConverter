@@ -35,4 +35,5 @@ jobs:
         
       # Build the app and run tests
       - name: Run Test
-        run: pytest tests/sum_test.py
+        # run: pytest tests/sum_test.py
+        run: python -m unittest discover tests
