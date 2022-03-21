@@ -1,4 +1,5 @@
 # RDFConverter
+[![Build](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/build.yml/badge.svg)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/build.yml)  
 Conversion and validation of YARRRML and Chowlk files to RDF
 ![RDFConverter_Concept drawio](https://user-images.githubusercontent.com/9248325/158355253-41fecd06-2487-449c-b91c-115182af9794.png)
 
