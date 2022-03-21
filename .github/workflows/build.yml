@@ -5,7 +5,7 @@ on:
     branches:
       - development
 jobs:
-  run-servlet-validate:
+  build-app:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
