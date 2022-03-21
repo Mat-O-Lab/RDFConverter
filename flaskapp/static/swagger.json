@@ -23,7 +23,39 @@
     "http"
   ],
   "paths": {
-    "/api/join_data": {
+    "/api/yarrrmltorml": {
+      "post": {
+        "tags": [
+          "Join Data"
+        ],
+        "summary": "Convert YARRRML to RML",
+        "description": "Given an YARRRML content, it generates RDF containing the RML rules.",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "yarrrml_url",
+            "type": "string",
+            "format": "uri",
+            "required": "true",
+            "description": "URL to a file containing an YARRRML description"
+          }
+        ],
+        "produces": [
+          "text/plain"
+        ],
+        "responses": {
+          "200": {
+            "description": "RDF data containing the RML rules."
+          },
+          "404": {
+            "description": "File not found."
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    "/api/joindata": {
       "post": {
         "tags": [
           "Join Data"
@@ -49,11 +81,18 @@
           }
         ],
         "produces": [
-          "text/plain"
+          "application/json"
         ],
         "responses": {
           "200": {
-            "description": "Mapped RDF data."
+            "description": "Mapped RDF data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinData"
+                }
+              }
+            }
           },
           "404": {
             "description": "File not found."
@@ -63,10 +102,95 @@
           }
         }
       }
+    },
+    "/api/rdfvalidator": {
+      "post": {
+        "tags": [
+          "Validate RDF against SHACL"
+        ],
+        "summary": "Validate some RDF data against SHACL shapes.",
+        "description": "Validate some RDF data against SHACL shapes.",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "shapes_url",
+            "type": "string",
+            "format": "uri",
+            "required": "true",
+            "description": "URL to a file containing SHACL shapes."
+          },
+          {
+            "in": "body",
+            "name": "rdf_url",
+            "type": "string",
+            "format": "uri",
+            "required": "true",
+            "description": "URL to RDF data which should be validated against the SHACL shapes."
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Json containing the Validation report and a boolean variable indicating whether the RDF conforms to she SHCAL shapes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/shacl_report"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found."
+          },
+          "400": {
+            "description": "The validation has produced an error."
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
     }
   },
   "components": {
-    "schemas": {}
+    "schemas": {
+      "shacl_report": {
+        "description": "Report of SHACL validation.",
+        "required": "true",
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "description": "True if RDF is valid according to SHACL shape."
+          },
+          "graph": {
+            "type": "string",
+            "description": "RDF triples describing the validation report of the SHACL validation."
+          }
+        }
+      },
+      "JoinData": {
+        "description": "Mapped RDF Data and count of applied or skipped rules",
+        "type": "object",
+        "properties": {
+          "graph": {
+            "type": "string",
+            "description": "Mapped RDF Graph in turtle format."
+          },
+          "num_mappings_applied": {
+            "type": "integer",
+            "description": "Count of mappings from data to method graph that have been applied."
+          },
+          "num_mappings_skipped": {
+            "type": "integer",
+            "description": "Count of mappings from data to method graph that have been skipped because they could not be applied."
+          }
+        }
+      }
+    }
   },
   "securityDefinitions": {
     "api_key": {

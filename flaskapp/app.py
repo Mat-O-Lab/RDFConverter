@@ -1,8 +1,13 @@
 
+from re import sub
+import subprocess
 import imp
 import os
 import base64
+from html5lib import serialize
 from rdflib import Graph
+from rdflib.util import guess_format
+import requests
 
 from flask import Flask, flash, request, jsonify, render_template
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -11,6 +16,8 @@ from flask_bootstrap import Bootstrap
 
 from wtforms import URLField, SelectField
 from wtforms.validators import DataRequired, Optional
+from pyshacl import validate
+
 
 from config import config
 
@@ -18,7 +25,7 @@ from config import config
 import pretty_yarrrml2rml as yarrrml2rml
 import yaml
 
-from rmlmapper import find_data_source, map_graph
+from rmlmapper import find_data_source, find_method_graph, count_rules_str
 
 config_name = os.environ.get("APP_MODE") or "development"
 
@@ -97,7 +104,7 @@ def index():
 def translate():
     print("------------------------START TRANSLATING YARRRML TO RML-------------------------------")
 
-    yarrrml_data = yaml.safe_load(request.values['test'])
+    yarrrml_data = yaml.safe_load(request.values['yarrrml'])
 
     list_initial_sources = yarrrml2rml.source_mod.get_initial_sources(yarrrml_data)
     rml_mapping = [yarrrml2rml.mapping_mod.add_prefix(yarrrml_data)]
@@ -118,37 +125,88 @@ def translate():
                     rml_mapping.append(".\n\n\n")
                     it = it + 1
 
-        print("RML content successfully created!\n Starting the validation with RDFLib....")
+        print("RML content successfully created!")
         print(rml_mapping)
         rml_mapping_string = "".join(rml_mapping)
         
     except Exception as e:
         print("------------------------ERROR-------------------------------")
         print("RML content not generated: " + str(e))
-        return None
+        return "Error Occured!", 500
 
     print("------------------------END TRANSLATION-------------------------------")
 
     return rml_mapping_string
 
-@app.route('/api/join_data', methods=['POST'])
+@app.route('/api/joindata', methods=['POST'])
 def join_data():
 
-    rml_url = request.form['rml']
-    g = Graph()
-    g.parse(rml_url, format='ttl')
+    rml_url = request.form['rml_url']
+    rml_rules = requests.get(rml_url).text
+    
+    data_url = find_data_source(rml_rules)
+    method_url = find_method_graph(rml_rules)
+
+    # replace rml source from mappingfile with local file 
+    # because rmlmapper webapi does not work with remote sources
+    rml_rules = rml_rules.replace(f'rml:source "{data_url}"', 'rml:source "source.json"')
 
     if 'data_url' in request.form.keys():
-        source = request.form['data_url']
-    else:
-        source = find_data_source(g)
+        data_url = request.form['data_url']
 
-    # TODO: infer format (is not always json-ld?)
+    # call rmlmapper webapi
+    d = {'rml': rml_rules, 'sources': {'source.json': requests.get(data_url).text}, 'serialization': 'turtle'}
+    r = requests.post('http://rmlmapper:4000/execute', json=d)
+
+    if r.status_code != 200:
+        print(r.text)
+        return r.text, 400
+    res = r.json()['output']
+    
     data_graph = Graph()
-    data_graph.parse(source, format='json-ld')
+    data_graph.parse(data_url, format=guess_format(data_url))
+    method_graph = Graph()
+    method_graph.parse(method_url, format=guess_format(method_url))
 
-    mapping_graph = map_graph(g, source)
+    mapping_graph = Graph()
+    mapping_graph.parse(data=res, format='ttl')
+
+    num_mappings_applied = len(mapping_graph)
+    num_mappings_possible = count_rules_str(rml_rules)
+
     mapping_graph += data_graph
-    # TODO: also add method graph to graph?
+    mapping_graph += method_graph
 
-    return mapping_graph.serialize(format='ttl')
+    return {'graph': mapping_graph.serialize(format='ttl'), 'num_mappings_applied': num_mappings_applied, 'num_mappings_skipped': num_mappings_possible-num_mappings_applied}
+
+@app.route('/api/rdfvalidator', methods=['POST'])
+def validate():
+
+    try:
+        shapes_url = request.form['shapes_url']
+        rdf_url = request.form['rdf_url']
+
+        shapes_graph = Graph()
+        shapes_graph.parse(shapes_url, format=guess_format(shapes_url))
+        rdf_graph = Graph()
+        rdf_graph.parse(rdf_url, format=guess_format(rdf_url))
+    except:
+        return "Could not read graph!", 400
+
+    try:
+        conforms, g, _ = validate(
+            rdf_graph,
+            shacl_graph=shapes_graph,
+            ont_graph=None,  # can use a Web URL for a graph containing extra ontological information
+            inference='none',
+            abort_on_first=False,
+            allow_infos=False,
+            allow_warnings=False,
+            meta_shacl=False,
+            advanced=False,
+            js=False,
+            debug=False)
+    except Exception as e:
+        return e, 400
+
+    return {'valid': conforms, 'graph': g.serialize(format='ttl')}

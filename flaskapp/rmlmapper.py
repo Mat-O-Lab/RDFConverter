@@ -1,6 +1,7 @@
 from rdflib import Graph, Namespace, RDF, URIRef
 import requests
 import json
+import re
 
 RR = Namespace('http://www.w3.org/ns/r2rml#')
 RML = Namespace('http://semweb.mmlab.be/ns/rml#')
@@ -19,9 +20,27 @@ def map_graph(g: Graph, data_source: str) -> Graph:
 	
 	return join_graph
 
-def find_data_source(graph: Graph):
-	source_node = graph.value(predicate=RDF.type, object=RML.LogicalSource)
-	return graph.value(source_node, RML.source)
+def find_data_source(rules: str):
+	source = re.findall(r'\@prefix\ data\:\ <(.+)>', rules).pop()
+	return source[:-1] if source[-1] == '/' else source
+
+def find_method_graph(rules: str):
+	source = re.findall(r'\@prefix\ method\:\ <(.+)>', rules).pop()
+	return source[:-1] if source[-1] == '/' else source
+
+def count_rules(graph: Graph):
+	src = graph.value(predicate=RDF.type, object=RML.LogicalSource)
+	maps = graph.subjects(RML.logicalSource, src)
+	# return the number of TriplesMaps of any source
+	return len([elem for elem in maps if (elem, RDF.type, RR.TriplesMap) in graph])
+
+def count_rules_str(graph_str: str):
+	graph = Graph()
+	graph.parse(data=graph_str, format='ttl')
+	src = graph.value(predicate=RDF.type, object=RML.LogicalSource)
+	maps = graph.subjects(RML.logicalSource, src)
+	# return the number of TriplesMaps of any source
+	return len([elem for elem in maps if (elem, RDF.type, RR.TriplesMap) in graph])
 
 # find the subject of a specified TriplesMap
 def find_subject_label(graph: Graph, triples_node):

@@ -1,0 +1,17 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - development
+jobs:
+  build-app:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Build App
+        run: docker-compose -f flaskapp/docker-compose.yml up -d
+      - name: Ping App
+        run: ping -c1 -W1 localhost:5000
