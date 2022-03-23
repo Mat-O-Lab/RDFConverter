@@ -1,6 +1,3 @@
 /.idea/
-/target/
-/yarrrml-parser/node_modules/
-/yarrrml-parser/bin/
 /.vscode/
 /*/__pycache__

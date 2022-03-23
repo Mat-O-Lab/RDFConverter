@@ -1,11 +1,27 @@
 version: "3.7"
 
 services:
-  app:
-    build: .
-    ports:
-      - "8080:8080"
-  yarrrml-parser:
-    build: yarrrml-parser
+  rmlmapper:
+    container_name: rmlmapper-webapi
+    build: https://github.com/RMLio/rmlmapper-webapi-js.git
     expose:
-      - "3000"
+      - 4000
+    restart: always
+    networks:
+      - flask
+
+  flask:
+    container_name: flask
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - 5000:5000
+    restart: always
+    networks:
+      - flask
+
+networks:
+  flask:
+    name: RDFConverter
+    driver: bridge
