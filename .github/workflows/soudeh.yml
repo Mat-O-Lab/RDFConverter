@@ -1,0 +1,31 @@
+name: unittest with Docker
+# workflow triggered by any push on any branch
+on: [push]
+jobs:
+  build:
+    name: Pytest in Pipenv
+    # runs on the latest Ubuntu
+    runs-on: ubuntu-latest 
+     
+    steps: 
+    - uses: actions/checkout@v2
+    - name: Build the stack
+      run: docker-compose up -d
+      
+    #- name: Install dependencies
+     # run: |
+      #  python -m pip install --upgrade pip
+       # pip install -r requirements.txt; 
+        
+    #- name: Test with pytest
+     # run: |
+      #    python -m unittest discover tests
+      
+    - name: unit test
+      run: docker exec  -it  python -m unittest discover tests
+
+    # runs within your Docker container
+    container:
+      image: docker://python:3-alpine
+    # checkout your code from your repository
+    # and runs pytest in your pipenv environment
