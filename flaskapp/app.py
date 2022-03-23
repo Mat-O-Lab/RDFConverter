@@ -15,8 +15,9 @@ from flask_wtf import FlaskForm
 from flask_bootstrap import Bootstrap
 
 from wtforms import URLField, SelectField
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, Optional
 from pyshacl import validate
+
 
 from config import config
 
@@ -50,75 +51,54 @@ swaggerui_blueprint = get_swaggerui_blueprint(
 class StartForm(FlaskForm):
     data_url = URLField(
         'URL Field Mapping',
-        validators=[DataRequired()],
+        validators=[Optional()],
         description='Paste URL to a field mapping'
+    )
+    opt_data_csvw_url = URLField(
+        'Optional: URL CSVW Json-LD',
+        validators=[Optional()],
+        description='Paste URL to a CSVW Json-LD'
     )
     shacl_url = URLField(
         'URL SHACL Shape Repository',
-        validators=[DataRequired()],
+        validators=[Optional()],
         description='Paste URL to a SHACL Shape Repository'
+    )
+    opt_shacl_shape_url = URLField(
+        'Optional: URL SHACL Shape',
+        validators=[Optional()],
+        description='Paste URL to a SHACL Shape'
     )
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     logo = './static/resources/MatOLab-Logo.svg'
-    concept = './static/resources/RDFConverter_Concept.drawio.svg'
     start_form = StartForm()
     message = ''
     result = ''
+    
+    if request.method == 'POST' and start_form.validate():
+        data_url = bool(request.values.get('data_url'))
+        opt_data_csvw_url = bool(request.values.get('opt_data_csvw_url'))
+        shacl_url = bool(request.values.get('shacl_url'))
+        opt_shacl_shape_url = bool(request.values.get('opt_shacl_shape_url'))
+        if ((data_url ^ opt_data_csvw_url) and (shacl_url ^ opt_shacl_shape_url)) or ((data_url ^ opt_data_csvw_url) and not shacl_url and not opt_shacl_shape_url):
+            result = "Result"
+        else:
+            if not data_url ^ opt_data_csvw_url:
+                msg = 'One Mapping URL field must be set'
+                flash(msg)
+            if shacl_url and opt_shacl_shape_url:
+                msg = 'Only one SHACL URL field can be set'
+                flash(msg)
+
     return render_template(
         "index.html",
         logo=logo,
-        concept=concept,
         start_form=start_form,
         message=message,
         result=result
         )
-
-
-@app.route('/create_annotator', methods=['POST'])
-def create_annotator():
-    logo = './static/resources/MatOLab-Logo.svg'
-    concept = './static/resources/RDFConverter_Concept.drawio.svg'
-    start_form = StartForm()
-    message = ''
-    result = ''
-    """
-    if start_form.validate_on_submit():
-        annotator = CSV_Annotator(
-            separator=start_form.separator_sel.data,
-            encoding=start_form.encoding_sel.data
-        )
-    """
-    """
-        try:
-            meta_file_name, result = annotator.process(
-                start_form.data_url.data)
-        except (ValueError, TypeError) as error:
-            flash(str(error))
-        else:
-            b64 = base64.b64encode(result.encode())
-            payload = b64.decode()
-
-            return render_template(
-                "index.html",
-                logo=logo,
-                start_form=start_form,
-                message=message,
-                result=result,
-                payload=payload,
-                filename=meta_file_name
-            )
-    """
-    return render_template(
-        "index.html",
-        logo=logo,
-        concept=concept,
-        start_form=start_form,
-        message="message",
-        result="seodprihgneropfdihgrs9ß<üpfhjgpdjfryig"
-    )
-
 
 @app.route('/api/yarrrmltorml', methods=['POST'])
 def translate():
