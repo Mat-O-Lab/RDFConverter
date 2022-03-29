@@ -50,7 +50,7 @@ class test_StartForm(unittest.TestCase):
             'rml_url': CFG['rdfconverter']['unittest']['joindata']['data']['test2']['input1'],
             'data_url': CFG['rdfconverter']['unittest']['joindata']['data']['test2']['input2']
         }
-        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['joindata']['contextroot'])
+        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['joindata']['contextroot'], payload)
         res_graph = Graph()
         res_graph.parse(data=res.text, format='ttl')
 
@@ -62,16 +62,26 @@ class test_StartForm(unittest.TestCase):
         iso1 = to_isomorphic(res_graph)
         iso2 = to_isomorphic(expect_graph)
 
-        _, in_first, in_second = graph_diff(iso1, iso2)
+        _, _, in_second = graph_diff(iso1, iso2)
 
         # all nodes of the second graph are included in both graphs
         self.assertEqual(len(in_second), 0)
 
     def validate_conforms(self):
-        pass
+        payload = {
+            "rdf_url": CFG['rdfconverter']['unittest']['validation']['data']['test1']['rdf'],
+            "shacl_url": CFG['rdfconverter']['unittest']['validation']['data']['test1']['shacl']
+        }
+        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['joindata']['contextroot'], payload)
+        self.assertTrue(res.json()['valid'])
 
     def validate_does_not_conform(self):
-        pass
+        payload = {
+            "rdf_url": CFG['rdfconverter']['unittest']['validation']['data']['test2']['rdf'],
+            "shacl_url": CFG['rdfconverter']['unittest']['validation']['data']['test2']['shacl']
+        }
+        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['joindata']['contextroot'], payload)
+        self.assertFalse(res.json()['valid'])
 
 
 

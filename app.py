@@ -182,7 +182,7 @@ def join_data():
     return {'graph': mapping_graph.serialize(format='ttl'), 'num_mappings_applied': num_mappings_applied, 'num_mappings_skipped': num_mappings_possible-num_mappings_applied}
 
 @app.route('/api/rdfvalidator', methods=['POST'])
-def validate():
+def validate_rdf():
 
     try:
         shapes_url = request.form['shapes_url']
@@ -208,7 +208,8 @@ def validate():
             advanced=False,
             js=False,
             debug=False)
-    except Exception as e:
-        return e, 400
 
-    return {'valid': conforms, 'graph': g.serialize(format='ttl')}
+    except Exception as e:
+        return str(e), 400
+
+    return {'valid': conforms, 'graph': g.serialize(format='ttl')}, 200
