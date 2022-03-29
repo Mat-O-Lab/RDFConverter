@@ -67,7 +67,7 @@ class test_StartForm(unittest.TestCase):
         # all nodes of the second graph are included in both graphs
         self.assertEqual(len(in_second), 0)
 
-    def validate_conforms(self):
+    def test_validate_conforms(self):
         payload = {
             "rdf_url": CFG['rdfconverter']['unittest']['validation']['data']['test1']['rdf'],
             "shacl_url": CFG['rdfconverter']['unittest']['validation']['data']['test1']['shacl']
@@ -75,7 +75,7 @@ class test_StartForm(unittest.TestCase):
         res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['joindata']['contextroot'], payload)
         self.assertTrue(res.json()['valid'])
 
-    def validate_does_not_conform(self):
+    def test_validate_does_not_conform(self):
         payload = {
             "rdf_url": CFG['rdfconverter']['unittest']['validation']['data']['test2']['rdf'],
             "shacl_url": CFG['rdfconverter']['unittest']['validation']['data']['test2']['shacl']
