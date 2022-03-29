@@ -2,7 +2,7 @@ name: unittest with Docker
 # workflow triggered by any push on any branch
 on: 
   push:
-    branches: [ local-branch-git-action ]
+    branches: [ development ]
 jobs:
   build:
     name: Pytest in Pipenv
