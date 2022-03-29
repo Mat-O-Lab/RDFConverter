@@ -142,17 +142,19 @@ def translate():
 def join_data():
 
     rml_url = request.form['rml_url']
-    rml_rules = requests.get(rml_url).text
+    rml_rules: str = requests.get(rml_url).text
     
     data_url = find_data_source(rml_rules)
     method_url = find_method_graph(rml_rules)
 
+    # replace all urls in data with new spec
+    if 'data_url' in request.form.keys():
+        rml_rules = rml_rules.replace(data_url, request.form['data_url'])
+        data_url = request.form['data_url']
+
     # replace rml source from mappingfile with local file 
     # because rmlmapper webapi does not work with remote sources
     rml_rules = rml_rules.replace(f'rml:source "{data_url}"', 'rml:source "source.json"')
-
-    if 'data_url' in request.form.keys():
-        data_url = request.form['data_url']
 
     # call rmlmapper webapi
     d = {'rml': rml_rules, 'sources': {'source.json': requests.get(data_url).text}, 'serialization': 'turtle'}
