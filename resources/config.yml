@@ -26,4 +26,4 @@ rdfconverter:
         test2:
           shacl: "https://github.com/Mat-O-Lab/resources/raw/main/rdfconverter/tests/validation/shacl1.ttl"
           rdf: "https://github.com/Mat-O-Lab/resources/raw/main/rdfconverter/tests/validation/rdf2.ttl"
-      contextroot: "api/rdfvalidation"
+      contextroot: "api/rdfvalidator"

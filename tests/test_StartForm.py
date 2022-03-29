@@ -28,9 +28,9 @@ class test_StartForm(unittest.TestCase):
 
     def test_joindata(self):
         payload = {'rml_url': CFG['rdfconverter']['unittest']['joindata']['data']['test1']['input']}
-        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['joindata']['contextroot'])
+        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['joindata']['contextroot'], payload)
         res_graph = Graph()
-        res_graph.parse(data=res.text, format='ttl')
+        res_graph.parse(data=res.json()['graph'], format='ttl')
 
         expectation = requests.get(CFG['rdfconverter']['unittest']['joindata']['data']['test1']['expectedOutput'])
         expect_graph = Graph()
@@ -52,7 +52,7 @@ class test_StartForm(unittest.TestCase):
         }
         res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['joindata']['contextroot'], payload)
         res_graph = Graph()
-        res_graph.parse(data=res.text, format='ttl')
+        res_graph.parse(data=res.json()['graph'], format='ttl')
 
         expectation = requests.get(CFG['rdfconverter']['unittest']['joindata']['data']['test2']['expectedOutput'])
         expect_graph = Graph()
@@ -70,24 +70,18 @@ class test_StartForm(unittest.TestCase):
     def test_validate_conforms(self):
         payload = {
             "rdf_url": CFG['rdfconverter']['unittest']['validation']['data']['test1']['rdf'],
-            "shacl_url": CFG['rdfconverter']['unittest']['validation']['data']['test1']['shacl']
+            "shapes_url": CFG['rdfconverter']['unittest']['validation']['data']['test1']['shacl']
         }
-        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['joindata']['contextroot'], payload)
+        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['validation']['contextroot'], payload)
         self.assertTrue(res.json()['valid'])
 
     def test_validate_does_not_conform(self):
         payload = {
             "rdf_url": CFG['rdfconverter']['unittest']['validation']['data']['test2']['rdf'],
-            "shacl_url": CFG['rdfconverter']['unittest']['validation']['data']['test2']['shacl']
+            "shapes_url": CFG['rdfconverter']['unittest']['validation']['data']['test2']['shacl']
         }
-        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['joindata']['contextroot'], payload)
+        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['validation']['contextroot'], payload)
         self.assertFalse(res.json()['valid'])
-
-
-
-        
-
-    
 
 if __name__ == '__main__':
     unittest.main()
