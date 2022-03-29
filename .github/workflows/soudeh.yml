@@ -11,8 +11,12 @@ jobs:
      
     steps: 
     - uses: actions/checkout@v2
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: "3.x"
     - name: Build the stack
-      run: docker-compose up -d
+      run: docker exec  -it docker-compose up -d
       
     #- name: Install dependencies
      # run: |
@@ -24,11 +28,6 @@ jobs:
       #    python -m unittest discover tests
       
     - name: unit test
-      run: docker exec  -it  python -m unittest discover tests
+      run: python -m unittest discover tests
 
     # runs within your Docker container
-    container:
-      image: docker://python:3-alpine
-    # runs within your Docker container
-    # checkout your code from your repository
-    # and runs pytest in your pipenv environment
