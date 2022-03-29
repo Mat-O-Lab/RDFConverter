@@ -54,7 +54,7 @@
             "description": "Internal server error"
           }
         }
-      }
+      },
     "/api/joindata": {
       "post": {
         "tags": [
