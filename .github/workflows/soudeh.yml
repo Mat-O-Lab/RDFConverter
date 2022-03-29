@@ -16,7 +16,7 @@ jobs:
       with:
         python-version: "3.x"
     - name: Build the stack
-      run: docker exec  -it docker-compose up -d
+      run: docker-compose up -d
       
     #- name: Install dependencies
      # run: |
