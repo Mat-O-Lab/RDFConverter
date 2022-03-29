@@ -17,7 +17,8 @@ jobs:
         python-version: "3.x"
 
     - name: install requirements.txt
-      run: pip install -r tests/requirements.txt
+      working-directory: ./tests
+      run: pip install -r requirements.txt
     - name: Build the stack
       run: docker-compose up -d
       
