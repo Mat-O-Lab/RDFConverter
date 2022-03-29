@@ -1,0 +1,10 @@
+
+<https://raw.githubusercontent.com/Mat-O-Lab/resources/main/mechanics/data/polymer_tensile/Zugversuch_eng_ETFE-Ref%2BGroesseneffekt2-metadata.json/.%2FAktuelleProbe>
+  <http://purl.obolibrary.org/obo/0010002> "https://raw.githubusercontent.com/Mat-O-Lab/MSEO/main/methods/DIN_EN_ISO_527-3.drawio.ttl/SpecimenName" .
+
+<https://raw.githubusercontent.com/Mat-O-Lab/resources/main/mechanics/data/polymer_tensile/Zugversuch_eng_ETFE-Ref%2BGroesseneffekt2-metadata.json/.%2FProbenbreiteB0>
+  <http://purl.obolibrary.org/obo/0010002> "https://raw.githubusercontent.com/Mat-O-Lab/MSEO/main/methods/DIN_EN_ISO_527-3.drawio.ttl/SpecimenName" .
+
+<https://raw.githubusercontent.com/Mat-O-Lab/resources/main/mechanics/data/polymer_tensile/Zugversuch_eng_ETFE-Ref%2BGroesseneffekt2-metadata.json/.%2FProbendickeA0>
+  <http://purl.obolibrary.org/obo/0010002> "https://raw.githubusercontent.com/Mat-O-Lab/MSEO/main/methods/DIN_EN_ISO_527-3.drawio.ttl/SpecimenName" .
+
