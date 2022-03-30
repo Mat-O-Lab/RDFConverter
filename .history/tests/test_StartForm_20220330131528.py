@@ -13,7 +13,7 @@ ENDPOINT = CFG['rdfconverter']['unittest']['location']['host'] + ':' + CFG['rdfc
 
 class test_StartForm(unittest.TestCase):
     def test_translate(self):
-        yarrrml = urllib.request.urlopen(CFG['rdfconverter']['unittest']['yarrrml2rml']['data']['input']).read()
+        yarrrml = urllib.request.urlopen(cfg['rdfconverter']['unittest']['yarrrml2rml']['data']['input']).read()
 
         payload = {'yarrrml': yarrrml}
         rml_output = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['yarrrml2rml']['contextroot'], payload)

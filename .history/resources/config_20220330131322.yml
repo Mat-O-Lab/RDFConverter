@@ -7,7 +7,7 @@ rdfconverter:
       data:
         input: "https://raw.githubusercontent.com/Mat-O-Lab/resources/main/mappings/Zugversuch_eng_ETFE-Ref%252BGroesseneffekt2-map.yaml"
         expectedOutput: "./tests/data//yarrrmltorml/mapping-expected.rml.ttl"
-      contextroot: "api/yarrrmltorml"
+      contextroot: "rmlconversion"
     joindata:
       data:
         test1:

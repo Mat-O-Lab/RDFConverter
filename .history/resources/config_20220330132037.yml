@@ -1,7 +1,7 @@
 rdfconverter:
   unittest:
     location:
-      host: "http://127.0.0.1"
+      host: "http://141.63.251.72"
       port: "5000"
     yarrrml2rml:
       data:
