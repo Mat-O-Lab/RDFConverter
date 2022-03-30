@@ -1,4 +1,3 @@
-import imp
 import unittest
 import requests
 import yaml
