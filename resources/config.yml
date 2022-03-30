@@ -5,9 +5,9 @@ rdfconverter:
       port: "5000"
     yarrrml2rml:
       data:
-        input: "./tests/data/yarrrmltorml/yarrrml-input-test.yml"
+        input: "https://raw.githubusercontent.com/Mat-O-Lab/resources/main/mappings/Zugversuch_eng_ETFE-Ref%252BGroesseneffekt2-map.yaml"
         expectedOutput: "./tests/data//yarrrmltorml/mapping-expected.rml.ttl"
-      contextroot: "rmlconversion"
+      contextroot: "api/yarrrmltorml"
     joindata:
       data:
         test1:
