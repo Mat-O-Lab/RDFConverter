@@ -6,7 +6,7 @@ WORKDIR /app
 COPY requirements.txt .
 
 # hotfix install problems
-RUN pip3 install --no-deps pretty_yarrrml2rml
+#RUN pip3 install --no-deps pretty_yarrrml2rml
 RUN pip3 install -r requirements.txt
 
 COPY . .
