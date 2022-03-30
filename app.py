@@ -143,8 +143,8 @@ def translate():
 @app.route('/api/joindata', methods=['POST'])
 def join_data():
 
-    rml_url = request.form['rml_url']
-    rml_rules: str = requests.get(rml_url).text
+    rml_url = request.form.get('rml_url', None)
+    rml_rules: str = requests.get(rml_url).text if rml_url else request.form['rml_data']
     
     data_url = find_data_source(rml_rules)
     method_url = find_method_graph(rml_rules)
@@ -187,13 +187,15 @@ def join_data():
 def validate_rdf():
 
     try:
-        shapes_url = request.form['shapes_url']
-        rdf_url = request.form['rdf_url']
+        shapes_url = request.form.get('shapes_url', None)
+        shapes_data = requests.get(shapes_url).text if shapes_url else request.form['shapes_data']
+        rdf_url = request.form.get('rdf_url', None)
+        rdf_data = requests.get(rdf_url).text if rdf_url else request.form['rdf_data']
 
         shapes_graph = Graph()
-        shapes_graph.parse(shapes_url, format=guess_format(shapes_url))
+        shapes_graph.parse(data=shapes_data, format=guess_format(shapes_url) if shapes_url else 'ttl')
         rdf_graph = Graph()
-        rdf_graph.parse(rdf_url, format=guess_format(rdf_url))
+        rdf_graph.parse(data=rdf_data, format=guess_format(rdf_url) if rdf_url else 'ttl')
     except:
         return "Could not read graph!", 400
 
