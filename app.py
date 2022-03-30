@@ -216,4 +216,4 @@ def validate_rdf():
     except Exception as e:
         return str(e), 400
 
-    return {'valid': conforms, 'graph': g.serialize(format='ttl')}, 200
+    return {'valid': conforms, 'graph': g.serialize(format='ttl')}
