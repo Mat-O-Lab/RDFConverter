@@ -163,7 +163,7 @@ def join_data():
     r = requests.post('http://rmlmapper:4000/execute', json=d)
 
     if r.status_code != 200:
-        print(r.text)
+        app.logger.error(r.text)
         return r.text, 400
     res = r.json()['output']
     
@@ -196,7 +196,8 @@ def validate_rdf():
         shapes_graph.parse(data=shapes_data, format=guess_format(shapes_url) if shapes_url else 'ttl')
         rdf_graph = Graph()
         rdf_graph.parse(data=rdf_data, format=guess_format(rdf_url) if rdf_url else 'ttl')
-    except:
+    except Exception as e:
+        app.logger.error(e)
         return "Could not read graph!", 400
 
     try:
@@ -214,6 +215,7 @@ def validate_rdf():
             debug=False)
 
     except Exception as e:
+        app.logger.error(e)
         return str(e), 400
 
     return {'valid': conforms, 'graph': g.serialize(format='ttl')}
