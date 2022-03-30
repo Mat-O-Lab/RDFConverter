@@ -34,7 +34,9 @@ app.config.from_object(config[config_name])
 
 bootstrap = Bootstrap(app)
 
-"""
+
+
+
 SWAGGER_URL = "/api/docs"
 API_URL = "/static/swagger.json"
 swaggerui_blueprint = get_swaggerui_blueprint(
@@ -44,9 +46,9 @@ swaggerui_blueprint = get_swaggerui_blueprint(
         "app_name": "RDFConverter"
     }
 )
-"""
 
-# app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
+
+app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
 class StartForm(FlaskForm):
     data_url = URLField(
