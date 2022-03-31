@@ -1,6 +1,5 @@
-
 import json
-from re import sub
+from re import sub, search
 import subprocess
 import imp
 import os
@@ -10,11 +9,10 @@ from rdflib import Graph
 from rdflib.util import guess_format
 import requests
 
-from flask import Flask, flash, request, jsonify, render_template, request, abort
+from flask import Flask, flash, request, jsonify, render_template, request, abort, send_file
 from flask_swagger_ui import get_swaggerui_blueprint
 from flask_wtf import FlaskForm
 from flask_bootstrap import Bootstrap
-from werkzeug.exceptions import HTTPException
 
 from wtforms import URLField, SelectField
 from wtforms.validators import DataRequired, Optional
@@ -90,7 +88,9 @@ def index():
 
         if ((data_url ^ opt_data_csvw_url) and (shacl_url ^ opt_shacl_shape_url)) or ((data_url ^ opt_data_csvw_url) and not shacl_url and not opt_shacl_shape_url):
             if data_url:
-                data_url = request.values.get('data_url').replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
+                data_url = request.values.get('data_url')
+                if not search("raw", data_url):
+                    data_url = data_url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
                 r = requests.get(data_url)
 
                 yarrrml = r.text
@@ -99,41 +99,46 @@ def index():
                 rml_output = rml_output.text
                 payload = {'rml_data': rml_output}
             else:
-                data_csvw_url = request.values.get('opt_data_csvw_url').replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
-                #r = requests.get(data_csvw_url)
-                #rml_output = r
+                data_csvw_url = request.values.get('opt_data_csvw_url')
+                if not search("raw", data_csvw_url):
+                    data_csvw_url = data_csvw_url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
                 rml_output = data_csvw_url
                 payload = {'rml_url': rml_output}
             result_json = requests.post("http://localhost:5000/api/joindata", payload).text
             if result_json == "400":
                 abort(400)
-            download = result_json
-            graph_rdf = result_json[0]
+            result_json = json.loads(result_json)
+            res_graph = result_json["graph"]
 
             if shacl_url ^ opt_shacl_shape_url:
                 if shacl_url:
-                    shacl_data_url = request.values.get('shacl_url').replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
-                    r = requests.get(shacl_data_url)
-                    shacl_data = r.text
-                    payload = {'shapes_data': shacl_data, 'rdf_data': graph_rdf}
+                    shacl_data_url = request.values.get('shacl_url')
+                    if not search("raw", shacl_data_url):
+                        shacl_data_url = shacl_data_url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
+                    payload = {'shapes_data': shacl_data_url, 'rdf_data': res_graph}
                 else:
-                    shacl_data_url = request.values.get('opt_shacl_shape_url').replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
-                    r = requests.get(shacl_data_url)
-                    shacl_data = r.text
-                    payload = {'shapes_url': shacl_data, 'rdf_data': graph_rdf}
+                    opt_shacl_shape_url = request.values.get('opt_shacl_shape_url')
+                    if not search("raw", opt_shacl_shape_url):
+                        opt_shacl_shape_url = opt_shacl_shape_url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
+                    payload = {'shapes_url': opt_shacl_shape_url, 'rdf_data': res_graph}
 
-                result = requests.post("http://localhost:5000/api/rdfvalidator", payload)
+                result_json = requests.post("http://localhost:5000/api/rdfvalidator", payload)
+                result = result_json.text
+                result = json.loads(result)
+                with open('data.json', 'w') as f:
+                    json.dump(result, f)
             else:
-                result = result_json
-            
+                result = str(result_json)
+                with open('data.json', 'w') as f:
+                    json.dump(result, f)
+                
             return render_template(
                 "index.html",
                 logo=logo,
                 start_form=start_form,
                 message=message,
                 result=result,
-                payload=download,
-                filename='rdf_graph'
+                payload=payload,
                 )
         else:
             if not data_url ^ opt_data_csvw_url:
@@ -236,7 +241,11 @@ def validate_rdf():
 
     try:
         shapes_url = request.form.get('shapes_url', None)
-        shapes_data = requests.get(shapes_url).text if shapes_url else request.form['shapes_data']
+        if shapes_url:
+            shapes_data = requests.get(shapes_url).text
+        else:
+            shapes_url = request.form.get('shapes_data', None)
+            shapes_data = requests.get(shapes_url).text
         rdf_url = request.form.get('rdf_url', None)
         rdf_data = requests.get(rdf_url).text if rdf_url else request.form['rdf_data']
 
@@ -267,3 +276,10 @@ def validate_rdf():
         abort(400, description=str(e))
 
     return {'valid': conforms, 'graph': g.serialize(format='ttl')}
+
+@app.route('/downloadData')
+def download_data():
+    return send_file('data.json',
+        mimetype='application/json',
+        attachment_filename='rdf_data.json',
+        as_attachment=True)
