@@ -99,7 +99,7 @@
       </div>
     </div>
 
-    <div class="container-fluid collapse {% if result %} show {% endif %}" id="mappingForm">
+    <div class="container-fluid collapse {% if result and not messages %} show {% endif %}" id="mappingForm">
       <div class="card card-body">
         <h5 class="card-title">Result</h5>
         <code class="prettyprint" style="white-space: pre-wrap;">{{ result }}</code>
