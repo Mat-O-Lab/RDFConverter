@@ -1,5 +1,5 @@
-
-from re import sub
+import json
+from re import sub, search
 import subprocess
 import imp
 import os
@@ -9,7 +9,7 @@ from rdflib import Graph
 from rdflib.util import guess_format
 import requests
 
-from flask import Flask, flash, request, jsonify, render_template
+from flask import Flask, flash, request, jsonify, render_template, request, abort, send_file
 from flask_swagger_ui import get_swaggerui_blueprint
 from flask_wtf import FlaskForm
 from flask_bootstrap import Bootstrap
@@ -80,12 +80,66 @@ def index():
     result = ''
     
     if request.method == 'POST' and start_form.validate():
+
         data_url = bool(request.values.get('data_url'))
         opt_data_csvw_url = bool(request.values.get('opt_data_csvw_url'))
         shacl_url = bool(request.values.get('shacl_url'))
         opt_shacl_shape_url = bool(request.values.get('opt_shacl_shape_url'))
+
         if ((data_url ^ opt_data_csvw_url) and (shacl_url ^ opt_shacl_shape_url)) or ((data_url ^ opt_data_csvw_url) and not shacl_url and not opt_shacl_shape_url):
-            result = "Result"
+            if data_url:
+                data_url = request.values.get('data_url')
+                if not search("raw", data_url):
+                    data_url = data_url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
+                r = requests.get(data_url)
+
+                yarrrml = r.text
+                payload = {'yarrrml': yarrrml}
+                rml_output = requests.post("http://localhost:5000/api/yarrrmltorml", payload)
+                rml_output = rml_output.text
+                payload = {'rml_data': rml_output}
+            else:
+                data_csvw_url = request.values.get('opt_data_csvw_url')
+                if not search("raw", data_csvw_url):
+                    data_csvw_url = data_csvw_url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
+                rml_output = data_csvw_url
+                payload = {'rml_url': rml_output}
+            result_json = requests.post("http://localhost:5000/api/joindata", payload).text
+            if result_json == "400":
+                abort(400)
+            result_json = json.loads(result_json)
+            res_graph = result_json["graph"]
+
+            if shacl_url ^ opt_shacl_shape_url:
+                if shacl_url:
+                    shacl_data_url = request.values.get('shacl_url')
+                    if not search("raw", shacl_data_url):
+                        shacl_data_url = shacl_data_url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
+                    payload = {'shapes_data': shacl_data_url, 'rdf_data': res_graph}
+                else:
+                    opt_shacl_shape_url = request.values.get('opt_shacl_shape_url')
+                    if not search("raw", opt_shacl_shape_url):
+                        opt_shacl_shape_url = opt_shacl_shape_url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
+                    payload = {'shapes_url': opt_shacl_shape_url, 'rdf_data': res_graph}
+
+                result_json = requests.post("http://localhost:5000/api/rdfvalidator", payload)
+                result = result_json.text
+                result = json.loads(result)
+                with open('data.json', 'w') as f:
+                    json.dump(result, f)
+            else:
+                result = str(result_json)
+                with open('data.json', 'w') as f:
+                    json.dump(result, f)
+                
+            return render_template(
+                "index.html",
+                logo=logo,
+                start_form=start_form,
+                message=message,
+                result=result,
+                payload=payload,
+                )
         else:
             if not data_url ^ opt_data_csvw_url:
                 msg = 'One Mapping URL field must be set'
@@ -93,13 +147,13 @@ def index():
             if shacl_url and opt_shacl_shape_url:
                 msg = 'Only one SHACL URL field can be set'
                 flash(msg)
-
+    
     return render_template(
         "index.html",
         logo=logo,
         start_form=start_form,
         message=message,
-        result=result
+        result=result,
         )
 
 @app.route('/api/yarrrmltorml', methods=['POST'])
@@ -128,13 +182,14 @@ def translate():
                     it = it + 1
 
         print("RML content successfully created!")
-        print(rml_mapping)
+        #print(rml_mapping)
         rml_mapping_string = "".join(rml_mapping)
         
     except Exception as e:
         print("------------------------ERROR-------------------------------")
+        app.logger.error(e)
         print("RML content not generated: " + str(e))
-        return "Error Occured!", 500
+        abort(500, description='Error Occured: RML content could not be generated')
 
     print("------------------------END TRANSLATION-------------------------------")
 
@@ -142,10 +197,9 @@ def translate():
 
 @app.route('/api/joindata', methods=['POST'])
 def join_data():
-
+    
     rml_url = request.form.get('rml_url', None)
     rml_rules: str = requests.get(rml_url).text if rml_url else request.form['rml_data']
-    
     data_url = find_data_source(rml_rules)
     method_url = find_method_graph(rml_rules)
 
@@ -161,12 +215,11 @@ def join_data():
     # call rmlmapper webapi
     d = {'rml': rml_rules, 'sources': {'source.json': requests.get(data_url).text}, 'serialization': 'turtle'}
     r = requests.post('http://rmlmapper:4000/execute', json=d)
-
     if r.status_code != 200:
         app.logger.error(r.text)
-        return r.text, 400
+        return "400"
     res = r.json()['output']
-    
+
     data_graph = Graph()
     data_graph.parse(data_url, format=guess_format(data_url))
     method_graph = Graph()
@@ -188,7 +241,11 @@ def validate_rdf():
 
     try:
         shapes_url = request.form.get('shapes_url', None)
-        shapes_data = requests.get(shapes_url).text if shapes_url else request.form['shapes_data']
+        if shapes_url:
+            shapes_data = requests.get(shapes_url).text
+        else:
+            shapes_url = request.form.get('shapes_data', None)
+            shapes_data = requests.get(shapes_url).text
         rdf_url = request.form.get('rdf_url', None)
         rdf_data = requests.get(rdf_url).text if rdf_url else request.form['rdf_data']
 
@@ -198,7 +255,7 @@ def validate_rdf():
         rdf_graph.parse(data=rdf_data, format=guess_format(rdf_url) if rdf_url else 'ttl')
     except Exception as e:
         app.logger.error(e)
-        return "Could not read graph!", 400
+        abort(400, description="Could not read graph!")
 
     try:
         conforms, g, _ = validate(
@@ -216,6 +273,13 @@ def validate_rdf():
 
     except Exception as e:
         app.logger.error(e)
-        return str(e), 400
+        abort(400, description=str(e))
 
     return {'valid': conforms, 'graph': g.serialize(format='ttl')}
+
+@app.route('/downloadData')
+def download_data():
+    return send_file('data.json',
+        mimetype='application/json',
+        attachment_filename='rdf_data.json',
+        as_attachment=True)
