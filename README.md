@@ -6,7 +6,8 @@ It is a service for converting and validating YARRRML and Chowlk files to RDF, w
 ![RDFConverter_Concept drawio](https://user-images.githubusercontent.com/9248325/158355253-41fecd06-2487-449c-b91c-115182af9794.png)
 
 ## Requirements
-- [Docker](https://www.docker.com/) should be running! - **IT'S MANDATORY!** Our RML parser also depends on another docker instance.
+- [Docker](https://www.docker.com/) should be running! - **IT'S MANDATORY!** 
+  - Our RML parser also depends on another docker instance.
 
 ## Input: A json file containing two URLs: 
 -	yarrrml file (https://github.com/Mat-O-Lab/resources/blob/main/mappings/Zugversuch_eng_ETFE-Ref%252BGroesseneffekt2-map.yaml)
