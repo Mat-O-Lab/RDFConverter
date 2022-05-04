@@ -1,0 +1,28 @@
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX ns: <https://www.mydata.com/>
+PREFIX base: <https://www.materials.fraunhofer.de/ontologies/MoL_TensileTest#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+PREFIX mid: <https://www.materials.fraunhofer.de/ontologies/BWMD_ontology/mid#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX cco: <http://www.ontologyrepository.com/CommonCoreOntologies/>
+
+
+SELECT DISTINCT ?experiment_id ?testpiece_id ?machine ?test_temperature ?Rp02_value ?Rp01_value ?plastic1 ?plastic2 WHERE {
+?experiment a ns:Norm6892-2Zugversuch .
+?experiment rdfs:label ?experiment_id .
+?experiment cco:has_process_part/mid:BWMD_00331/base:TT_00100 ?testpiece_id .
+BIND("Not mapped in data" as ?machine) .
+?experiment cco:has_process_part/mid:BWMD_00339/base:TT_00050/mid:BWMD_00315 ?test_temperature .
+?experiment cco:has_process_part/mid:BWMD_00331/base:TT_00025 ?plastic1, ?plastic2 .
+
+?plastic1 mid:BWMD_00315 ?Rp02_value .
+#?plastic1 base:TT_00031/mid:BWMD_00315 "0.2"^^xsd:decimal .
+
+?plastic2 mid:BWMD_00315 ?Rp01_value .
+#?plastic2 base:TT_00031/mid:BWMD_00315 "0.1"^^xsd:decimal .
+
+} LIMIT 100
