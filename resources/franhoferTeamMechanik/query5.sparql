@@ -1,0 +1,22 @@
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+prefix base: <https://purl.matolab.org/mseo/methods/tensile_test/>
+prefix cco: <http://www.ontologyrepository.com/CommonCoreOntologies/>
+prefix obo: <http://purl.obolibrary.org/obo/>
+prefix mid: <https://purl.matolab.org/mseo/mid/>
+prefix DIN515: <https://www.din.de/norm/DIN515/>
+prefix DIN573-3: <https://www.din.de/norm/DIN573_3/>
+
+
+
+SELECT ?test_piece_id ?all_values_class ?all_values
+WHERE {
+?test_piece a mid:Specimen .
+?test_piece rdfs:label ?test_piece_id .
+?test_piece (<>|!<>)* ?all_values_class.
+?all_values_class rdf:type owl:NamedIndividual.
+?all_values_class ?property ?all_values.
+FILTER (isLiteral(?all_values))
+}
