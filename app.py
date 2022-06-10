@@ -18,7 +18,6 @@ from wtforms import URLField, SelectField
 from wtforms.validators import DataRequired, Optional
 from pyshacl import validate
 
-
 from config import config
 
 # dependencies related to rml conversion
@@ -34,9 +33,6 @@ app.config.from_object(config[config_name])
 
 bootstrap = Bootstrap(app)
 
-
-
-
 SWAGGER_URL = "/api/docs"
 API_URL = "/static/swagger.json"
 swaggerui_blueprint = get_swaggerui_blueprint(
@@ -46,7 +42,6 @@ swaggerui_blueprint = get_swaggerui_blueprint(
         "app_name": "RDFConverter"
     }
 )
-
 
 app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
@@ -104,41 +99,7 @@ def index():
 
 @app.route('/api/yarrrmltorml', methods=['POST'])
 def translate():
-    print("------------------------START TRANSLATING YARRRML TO RML-------------------------------")
-
-    yarrrml_data = yaml.safe_load(request.values['yarrrml'])
-
-    list_initial_sources = yarrrml2rml.source_mod.get_initial_sources(yarrrml_data)
-    rml_mapping = [yarrrml2rml.mapping_mod.add_prefix(yarrrml_data)]
-    try:
-        for mapping in yarrrml_data.get(yarrrml2rml.constants.YARRRML_MAPPINGS):
-            subject_list = yarrrml2rml.subject_mod.add_subject(yarrrml_data, mapping)
-            source_list = yarrrml2rml.source_mod.add_source(yarrrml_data, mapping, list_initial_sources)
-            pred = yarrrml2rml.predicate_object_mod.add_predicate_object_maps(yarrrml_data, mapping)
-            it = 0
-            for source in source_list:
-                for subject in subject_list:
-                    map_aux = yarrrml2rml.mapping_mod.add_mapping(mapping, it)
-                    if type(source) is list:
-                        rml_mapping.append(map_aux + source[0] + subject + pred + source[1])
-                    else:
-                        rml_mapping.append(map_aux + source + subject + pred)
-                    rml_mapping[len(rml_mapping) - 1] = rml_mapping[len(rml_mapping) - 1][:-2]
-                    rml_mapping.append(".\n\n\n")
-                    it = it + 1
-
-        print("RML content successfully created!")
-        print(rml_mapping)
-        rml_mapping_string = "".join(rml_mapping)
-        
-    except Exception as e:
-        print("------------------------ERROR-------------------------------")
-        print("RML content not generated: " + str(e))
-        return "Error Occured!", 500
-
-    print("------------------------END TRANSLATION-------------------------------")
-
-    return rml_mapping_string
+    return requests.post('http://yarrrml-parser:3000/', request.values['yarrrml']).text
 
 @app.route('/api/joindata', methods=['POST'])
 def join_data():
