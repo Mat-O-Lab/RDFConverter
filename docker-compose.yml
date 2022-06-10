@@ -21,7 +21,16 @@ services:
     networks:
       - flask
 
+  yarrrml-parser:
+    container_name: yarrrml-parser
+    build: yarrrml-parser
+    expose:
+      - 3000
+    restart: always
+    networks:
+      - flask
+
 networks:
   flask:
     name: RDFConverter
-    driver: bridge
+    driver: bridges

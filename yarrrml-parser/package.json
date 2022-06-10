@@ -1,0 +1,21 @@
+{
+  "name": "yarrrml-parser",
+  "version": "1.0.0",
+  "main": "src/app.ts",
+  "license": "MIT",
+  "dependencies": {
+    "@rmlio/yarrrml-parser": "https://github.com/RMLio/yarrrml-parser.git",
+    "@types/node": "^17.0.0",
+    "express": "^4.17.2",
+    "typescript": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.13",
+    "ts-node": "^10.4.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node ./bin/app.js",
+    "dev": "ts-node ./src/app.ts"
+  }
+}
