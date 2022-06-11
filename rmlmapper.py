@@ -1,4 +1,4 @@
-from rdflib import Graph, Namespace, RDF, URIRef
+from rdflib import Graph, Namespace, RDF, URIRef, Literal
 import requests
 import json
 import re
@@ -20,13 +20,20 @@ def map_graph(g: Graph, data_source: str) -> Graph:
 	
 	return join_graph
 
-def find_data_source(rules: str):
-	source = re.findall(r'\@prefix\ data\:\ <(.+)>', rules).pop()
-	return source[:-1] if source[-1] == '/' else source
+def find_data_source(rules: Graph):
+	# any source triple is ok, they have the same literal values
+	return next(rules[:RML.source:])[1].value
 
-def find_method_graph(rules: str):
-	source = re.findall(r'\@prefix\ method\:\ <(.+)>', rules).pop()
-	return source[:-1] if source[-1] == '/' else source
+def replace_data_source(rules: Graph, new_source: str):
+	data_source_origin = find_data_source(rules)
+	sources = list(rules.subjects(RML.source, Literal(data_source_origin)))
+	for source in sources:
+		rules.set((source, RML.source, Literal(new_source)))
+	
+
+
+def find_method_graph(rules: Graph):
+	pass
 
 def count_rules(graph: Graph):
 	src = graph.value(predicate=RDF.type, object=RML.LogicalSource)
@@ -37,10 +44,7 @@ def count_rules(graph: Graph):
 def count_rules_str(graph_str: str):
 	graph = Graph()
 	graph.parse(data=graph_str, format='ttl')
-	src = graph.value(predicate=RDF.type, object=RML.LogicalSource)
-	maps = graph.subjects(RML.logicalSource, src)
-	# return the number of TriplesMaps of any source
-	return len([elem for elem in maps if (elem, RDF.type, RR.TriplesMap) in graph])
+	return count_rules(graph)
 
 # find the subject of a specified TriplesMap
 def find_subject_label(graph: Graph, triples_node):

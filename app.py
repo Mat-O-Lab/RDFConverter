@@ -1,4 +1,5 @@
 
+from dataclasses import replace
 from re import sub
 import subprocess
 import imp
@@ -24,7 +25,7 @@ from config import config
 import pretty_yarrrml2rml as yarrrml2rml
 import yaml
 
-from rmlmapper import find_data_source, find_method_graph, count_rules_str
+from rmlmapper import find_data_source, replace_data_source, find_method_graph, count_rules_str
 
 config_name = os.environ.get("APP_MODE") or "development"
 
@@ -99,28 +100,35 @@ def index():
 
 @app.route('/api/yarrrmltorml', methods=['POST'])
 def translate():
-    return requests.post('http://yarrrml-parser:3000/', request.values['yarrrml']).text
+    app.logger.info('POST /api/yarrrmltorml')
+    rules = requests.post('http://yarrrml-parser:3000', data={'yarrrml': request.values['yarrrml']}).text
+    return rules
 
 @app.route('/api/joindata', methods=['POST'])
 def join_data():
 
     rml_url = request.form.get('rml_url', None)
     rml_rules: str = requests.get(rml_url).text if rml_url else request.form['rml_data']
-    
-    data_url = find_data_source(rml_rules)
-    method_url = find_method_graph(rml_rules)
 
-    # replace all urls in data with new spec
-    if 'data_url' in request.form.keys():
-        rml_rules = rml_rules.replace(data_url, request.form['data_url'])
-        data_url = request.form['data_url']
+    rml_graph = Graph()
+    rml_graph.parse(data=rml_rules, format='ttl')
+
+    data_url = find_data_source(rml_graph)
+    #method_url = find_method_graph(rml_graph)
 
     # replace rml source from mappingfile with local file 
     # because rmlmapper webapi does not work with remote sources
-    rml_rules = rml_rules.replace(f'rml:source "{data_url}"', 'rml:source "source.json"')
+    replace_data_source(rml_graph, 'source.json')
+
+    rml_rules_new = rml_graph.serialize(format='ttl')
+
+    # replace data_url with specified override
+    if 'data_url' in request.form.keys():
+        rml_rules_new = rml_rules_new.replace(data_url, request.form['data_url'])
+        data_url = request.form['data_url']
 
     # call rmlmapper webapi
-    d = {'rml': rml_rules, 'sources': {'source.json': requests.get(data_url).text}, 'serialization': 'turtle'}
+    d = {'rml': rml_rules_new, 'sources': {'source.json': requests.get(data_url).text}, 'serialization': 'turtle'}
     r = requests.post('http://rmlmapper:4000/execute', json=d)
 
     if r.status_code != 200:
@@ -130,8 +138,8 @@ def join_data():
     
     data_graph = Graph()
     data_graph.parse(data_url, format=guess_format(data_url))
-    method_graph = Graph()
-    method_graph.parse(method_url, format=guess_format(method_url))
+    #method_graph = Graph()
+    #method_graph.parse(method_url, format=guess_format(method_url))
 
     mapping_graph = Graph()
     mapping_graph.parse(data=res, format='ttl')
@@ -140,8 +148,8 @@ def join_data():
     num_mappings_possible = count_rules_str(rml_rules)
 
     mapping_graph += data_graph
-    mapping_graph += method_graph
-
+    #mapping_graph += method_graph
+    app.logger.info(f'POST /api/joindata: {num_mappings_possible=}, {num_mappings_applied=}')
     return {'graph': mapping_graph.serialize(format='ttl'), 'num_mappings_applied': num_mappings_applied, 'num_mappings_skipped': num_mappings_possible-num_mappings_applied}
 
 @app.route('/api/rdfvalidator', methods=['POST'])
@@ -179,4 +187,5 @@ def validate_rdf():
         app.logger.error(e)
         return str(e), 400
 
+    app.logger.info(f'POST /api/rdfvalidator: {conforms=}')
     return {'valid': conforms, 'graph': g.serialize(format='ttl')}
