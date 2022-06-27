@@ -1,12 +1,14 @@
-FROM maven:3.8-openjdk-17 as maven_builder
+FROM python:3.8
 
-COPY src /src/
-COPY pom.xml .
+WORKDIR /app
 
-RUN mvn clean package
+# first only copy requirements and install to optimize caching
+COPY requirements.txt .
 
-FROM tomcat:jdk8-openjdk
+# hotfix install problems
+#RUN pip3 install --no-deps pretty_yarrrml2rml
+RUN pip3 install -r requirements.txt
 
-COPY --from=maven_builder /target/rdfconv.war /usr/local/tomcat/webapps
+COPY . .
 
-CMD ["catalina.sh", "run"]
+CMD ["gunicorn", "-b", "0.0.0.0:5000", "wsgi:app", "--workers=3"]

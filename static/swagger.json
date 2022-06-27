@@ -1,12 +1,12 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "description": "YARRML2RML",
+    "description": "RDFConverter",
     "version": "1.0.0",
-    "title": "YARRML2RML",
+    "title": "RDFConverter",
     "contact": {
-      "name": "Andre Valdestilhas",
-      "email": "andre.valdestilhas@bam.de"
+      "name": "Thomas Hanke",
+      "email": "thomas.hanke@imws.fraunhofer.de"
     },
     "license": {
       "name": "Apache 2.0",
@@ -18,39 +18,37 @@
       "url": "/"
     }
   ],
+  "schemes": [
+    "https",
+    "http"
+  ],
   "paths": {
-    "/api/xls_to_csv": {
-      "get": {
+    "/api/yarrrmltorml": {
+      "post": {
         "tags": [
-          "XLSToCSV"
+          "YARRRML to RML"
         ],
         "summary": "Convert YARRRML to RML",
-        "description": "Returns the RDF containing the RML rules.",
+        "description": "Given an YARRRML content, it generates RDF containing the RML rules.",
         "parameters": [
           {
-            "in": "query",
-            "name": "url",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Url to a xls file"
+            "in": "body",
+            "name": "yarrrml_url",
+            "type": "string",
+            "format": "uri",
+            "required": "true",
+            "description": "URL to a file containing an YARRRML description"
           }
+        ],
+        "produces": [
+          "text/plain"
         ],
         "responses": {
           "200": {
-            "description": "Zip file containing all csv sheets of the xls file at the specified url",
-            "content": {
-              "application/zip": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
+            "description": "RDF data containing the RML rules."
           },
           "404": {
-            "description": "File not found. Please check the validity of the url, you provided"
+            "description": "File not found."
           },
           "500": {
             "description": "Internal server error"
@@ -58,39 +56,42 @@
         }
       }
     },
-    "/api/pdf_to_csv": {
-      "get": {
+    "/api/joindata": {
+      "post": {
         "tags": [
-          "PDFToCSV"
+          "Join Data"
         ],
-        "summary": "Convert a textbased pdf file into a csv file",
-        "description": "Returns a csv file containing all tables found in the pdf file.",
+        "summary": "Apply the RML mapping to the data.",
+        "description": "Apply the RML mapping specified in the rml_url to the data_url.",
         "parameters": [
           {
-            "in": "query",
-            "name": "url",
-            "schema": {
-              "type": "string"
-            }
+            "in": "body",
+            "name": "rml_url",
+            "type": "string",
+            "format": "uri",
+            "required": "true",
+            "description": "URL to a file containing an RML Mapping"
           },
           {
-            "in": "query",
-            "name": "settings",
-            "schema": {
-              "type": "string"
-            },
-            "required": true,
-            "description": "Url to a pdf file"
+            "in": "body",
+            "name": "data_url",
+            "type": "string",
+            "format": "uri",
+            "required": "true",
+            "description": "URL to RDF data to which the mapping should be applied."
           }
+        ],
+        "produces": [
+          "application/json"
         ],
         "responses": {
           "200": {
-            "description": "A csv file containing all tables found inside the pdf file",
+            "description": "Mapped RDF data.",
             "content": {
-              "application/csv": {
+              "application/json": {
                 "schema": {
-                  "type": "string",
-                  "format": "binary"
+                  "$ref": "#/components/schemas/JoinData"
+
                 }
               }
             }
@@ -99,8 +100,116 @@
             "description": "File not found."
           },
           "500": {
-            "description": "Internal server error, check the syntax of your diagram."
+            "description": "Internal server error"
           }
+        }
+      }
+    },
+    "/api/rdfvalidator": {
+      "post": {
+        "tags": [
+          "Validate RDF against SHACL"
+        ],
+        "summary": "Validate some RDF data against SHACL shapes.",
+        "description": "Validate some RDF data against SHACL shapes.",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "shapes_url",
+            "type": "string",
+            "format": "uri",
+            "required": "true",
+            "description": "URL to a file containing SHACL shapes."
+          },
+          {
+            "in": "body",
+            "name": "rdf_url",
+            "type": "string",
+            "format": "uri",
+            "required": "true",
+            "description": "URL to RDF data which should be validated against the SHACL shapes."
+          }
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Json containing the Validation report and a boolean variable indicating whether the RDF conforms to she SHCAL shapes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/shacl_report"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found."
+          },
+          "400": {
+            "description": "The validation has produced an error."
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "shacl_report": {
+        "description": "Report of SHACL validation.",
+        "required": "true",
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "description": "True if RDF is valid according to SHACL shape."
+          },
+          "graph": {
+            "type": "string",
+            "description": "RDF triples describing the validation report of the SHACL validation."
+          }
+        }
+      },
+      "JoinData": {
+        "description": "Mapped RDF Data and count of applied or skipped rules",
+        "type": "object",
+        "properties": {
+          "graph": {
+            "type": "string",
+            "description": "Mapped RDF Graph in turtle format."
+          },
+          "num_mappings_applied": {
+            "type": "integer",
+            "description": "Count of mappings from data to method graph that have been applied."
+          },
+          "num_mappings_skipped": {
+            "type": "integer",
+            "description": "Count of mappings from data to method graph that have been skipped because they could not be applied."
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "name": "api_key",
+      "in": "header"
+    }
+  },
+  "definitions": {
+    "ApiResponse": {
+      "type": "object",
+      "properties": {
+        "filename": {
+          "type": "string"
+        },
+        "filedata": {
+          "type": "string"
         }
       }
     }

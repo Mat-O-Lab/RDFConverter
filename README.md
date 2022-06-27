@@ -1,5 +1,13 @@
 # RDFConverter
-Conversion and validation of YARRRML and Chowlk files to RDF
+[![Build](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/build.yml/badge.svg)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/build.yml)  
+[![unittest with Docker](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/soudeh.yml/badge.svg?branch=development)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/soudeh.yml)  
+It is a service for converting and validating YARRRML and Chowlk files to RDF, which is applied to Material Sciences Engineering (MSE) Methods, for example, on Cement MSE experiments.
+
+![RDFConverter_Concept drawio](https://user-images.githubusercontent.com/9248325/158355253-41fecd06-2487-449c-b91c-115182af9794.png)
+
+## Requirements
+- [Docker](https://www.docker.com/) should be running! - **IT'S MANDATORY!** 
+  - Our RML parser also depends on another docker instance.
 
 ## Input: A json file containing two URLs: 
 -	yarrrml file (https://github.com/Mat-O-Lab/resources/blob/main/mappings/Zugversuch_eng_ETFE-Ref%252BGroesseneffekt2-map.yaml)
@@ -12,18 +20,12 @@ An example of this json file is available [here](https://raw.githubusercontent.c
 The RDF content is validated according to the constraints defined on the SHACL Shapes (If provided).
 The validation will not occur on the RDF content from CHOWLk, because it does not contain instances to be validated.
 
-It is a java service on the web to be deployed with tom-cat or another java servlet container.
-
 Example of how to use the API/service on the web:
 
-http://localhost:8080/rdfconv/conv?jsonfile=https://raw.githubusercontent.com/Mat-O-Lab/rdfconverter/main/resources/conf.json
-
-# Flask app
+# Run flask app
 
 ```bash
-cd flaskapp
-
 docker-compose up
 ```
 
-Go to http://localhost:5000
+Go to http://localhost:5000/api/docs
