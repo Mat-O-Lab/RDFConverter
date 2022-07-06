@@ -29,17 +29,17 @@
           "YARRRML to RML"
         ],
         "summary": "Convert YARRRML to RML",
-        "description": "Given an YARRRML content, it generates RDF containing the RML rules.",
-        "parameters": [
-          {
-            "in": "body",
-            "name": "yarrrml_url",
-            "type": "string",
-            "format": "uri",
-            "required": "true",
-            "description": "URL to a file containing an YARRRML description"
+        "description": "Given an YARRRML file url, it generates RDF containing the RML rules.",
+        "requestBody": {
+          "required": "true",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Url"
+              }
+            }
           }
-        ],
+        },
         "produces": [
           "text/plain"
         ],
@@ -158,6 +158,18 @@
   },
   "components": {
     "schemas": {
+      "Url":{
+        "description": "Conversion object handling url to files",
+        "required": "true",
+        "type": "object",
+        "properties": {
+          "url":{
+            "type": "string",
+            "format": "uri",
+            "description": "Url to yarrrml file"
+          }
+        }
+      },
       "shacl_report": {
         "description": "Report of SHACL validation.",
         "required": "true",

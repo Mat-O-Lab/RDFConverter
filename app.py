@@ -1,29 +1,20 @@
 
-from dataclasses import replace
-from re import sub
-import subprocess
-import imp
+from fileinput import filename
 import os
-import base64
-from html5lib import serialize
 from rdflib import Graph
 from rdflib.util import guess_format
 import requests
 
-from flask import Flask, flash, request, jsonify, render_template
+from flask import Flask, flash, request, render_template
 from flask_swagger_ui import get_swaggerui_blueprint
 from flask_wtf import FlaskForm
 from flask_bootstrap import Bootstrap
 
-from wtforms import URLField, SelectField
-from wtforms.validators import DataRequired, Optional
+from wtforms import URLField
+from wtforms.validators import Optional
 from pyshacl import validate
 
 from config import config
-
-# dependencies related to rml conversion
-import pretty_yarrrml2rml as yarrrml2rml
-import yaml
 
 from rmlmapper import find_data_source, replace_data_source, find_method_graph, count_rules_str
 
@@ -45,6 +36,26 @@ swaggerui_blueprint = get_swaggerui_blueprint(
 )
 
 app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
+
+from urllib.request import urlopen
+from urllib.parse import urlparse, unquote
+def open_file(uri=''):
+    try:
+        uri_parsed = urlparse(uri)
+    except:
+        print('not an uri - if local file add file:// as prefix')
+        return None
+    else:
+        filename = unquote(uri_parsed.path).split('/')[-1]
+        if uri_parsed.scheme in ['https', 'http']:
+            filedata = urlopen(uri).read()
+
+        elif uri_parsed.scheme == 'file':
+            filedata = open(unquote(uri_parsed.path), 'rb').read()
+        else:
+            print('unknown scheme {}'.format(uri_parsed.scheme))
+            return None
+        return filedata, filename
 
 class StartForm(FlaskForm):
     data_url = URLField(
@@ -101,7 +112,9 @@ def index():
 @app.route('/api/yarrrmltorml', methods=['POST'])
 def translate():
     app.logger.info('POST /api/yarrrmltorml')
-    rules = requests.post('http://yarrrml-parser:3000', data={'yarrrml': request.values['yarrrml']}).text
+    content = request.get_json()
+    filename, filedata = open_file(content['url'])
+    rules = requests.post('http://yarrrml-parser:3000', data={'yarrrml': filedata}).text
     return rules
 
 @app.route('/api/joindata', methods=['POST'])
