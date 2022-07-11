@@ -48,7 +48,7 @@ def open_file(uri=''):
     else:
         filename = unquote(uri_parsed.path).split('/')[-1]
         if uri_parsed.scheme in ['https', 'http']:
-            filedata = urlopen(uri).read()
+            filedata = requests.get(uri).text
 
         elif uri_parsed.scheme == 'file':
             filedata = open(unquote(uri_parsed.path), 'rb').read()
@@ -87,19 +87,21 @@ def index():
     result = ''
     
     if request.method == 'POST' and start_form.validate():
-        data_url = bool(request.values.get('data_url'))
-        opt_data_csvw_url = bool(request.values.get('opt_data_csvw_url'))
-        shacl_url = bool(request.values.get('shacl_url'))
-        opt_shacl_shape_url = bool(request.values.get('opt_shacl_shape_url'))
-        if ((data_url ^ opt_data_csvw_url) and (shacl_url ^ opt_shacl_shape_url)) or ((data_url ^ opt_data_csvw_url) and not shacl_url and not opt_shacl_shape_url):
-            result = "Result"
-        else:
-            if not data_url ^ opt_data_csvw_url:
-                msg = 'One Mapping URL field must be set'
-                flash(msg)
-            if shacl_url and opt_shacl_shape_url:
-                msg = 'Only one SHACL URL field can be set'
-                flash(msg)
+        data_url = request.values.get('data_url')
+        opt_data_csvw_url = request.values.get('opt_data_csvw_url')
+        shacl_url = request.values.get('shacl_url')
+        opt_shacl_shape_url = request.values.get('opt_shacl_shape_url')
+        if not data_url:
+            flash('Must give a YARRRML file to convert!')
+        
+        rml_text = requests.post('http://localhost:5000/api/yarrrmltorml', json={'url': data_url}).text
+
+        joindata_params = {'rml_data': rml_text, 'minimal': True}
+        if opt_data_csvw_url:
+            joindata_params['data_url'] = opt_data_csvw_url
+
+        result = requests.post('http://localhost:5000/api/joindata', json=joindata_params).json()['graph']
+
 
     return render_template(
         "index.html",
@@ -111,17 +113,20 @@ def index():
 
 @app.route('/api/yarrrmltorml', methods=['POST'])
 def translate():
-    app.logger.info('POST /api/yarrrmltorml')
     content = request.get_json()
-    filename, filedata = open_file(content['url'])
+    app.logger.info(f"POST /api/yarrrmltorml {content['url']}")
+    filedata, filename = open_file(content['url'])
     rules = requests.post('http://yarrrml-parser:3000', data={'yarrrml': filedata}).text
     return rules
 
 @app.route('/api/joindata', methods=['POST'])
 def join_data():
+    content = request.get_json()
 
-    rml_url = request.form.get('rml_url', None)
-    rml_rules: str = requests.get(rml_url).text if rml_url else request.form['rml_data']
+    if 'rml_url' in content.keys():
+        rml_rules, filename = open_file(content['rml_url'])
+    else:
+        rml_rules = content['rml_data']
 
     rml_graph = Graph()
     rml_graph.parse(data=rml_rules, format='ttl')
@@ -136,9 +141,9 @@ def join_data():
     rml_rules_new = rml_graph.serialize(format='ttl')
 
     # replace data_url with specified override
-    if 'data_url' in request.form.keys():
-        rml_rules_new = rml_rules_new.replace(data_url, request.form['data_url'])
-        data_url = request.form['data_url']
+    if 'data_url' in content.keys():
+        rml_rules_new = rml_rules_new.replace(data_url, content['data_url'])
+        data_url =content['data_url']
 
     # call rmlmapper webapi
     d = {'rml': rml_rules_new, 'sources': {'source.json': requests.get(data_url).text}, 'serialization': 'turtle'}
@@ -160,7 +165,8 @@ def join_data():
     num_mappings_applied = len(mapping_graph)
     num_mappings_possible = count_rules_str(rml_rules)
 
-    mapping_graph += data_graph
+    if not ('minimal' in content.keys() and content['minimal']):
+        mapping_graph += data_graph
     #mapping_graph += method_graph
     app.logger.info(f'POST /api/joindata: {num_mappings_possible=}, {num_mappings_applied=}')
     return {'graph': mapping_graph.serialize(format='ttl'), 'num_mappings_applied': num_mappings_applied, 'num_mappings_skipped': num_mappings_possible-num_mappings_applied}

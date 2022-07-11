@@ -12,10 +12,8 @@ ENDPOINT = CFG['rdfconverter']['unittest']['location']['host'] + ':' + CFG['rdfc
 
 class test_StartForm(unittest.TestCase):
     def test_translate(self):
-        yarrrml = urllib.request.urlopen(CFG['rdfconverter']['unittest']['yarrrml2rml']['data']['input']).read()
-
-        payload = {'yarrrml': yarrrml}
-        rml_output = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['yarrrml2rml']['contextroot'], payload)
+        payload = {'url': CFG['rdfconverter']['unittest']['yarrrml2rml']['data']['input']}
+        rml_output = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['yarrrml2rml']['contextroot'], json=payload)
         with open(CFG['rdfconverter']['unittest']['yarrrml2rml']['data']['expectedOutput'], 'r') as f:
             expected_output = f.read()
         g_gen = Graph()
@@ -27,12 +25,11 @@ class test_StartForm(unittest.TestCase):
         iso2 = to_isomorphic(g_expect)
 
         _, in_first, in_second = graph_diff(iso1, iso2)
-        self.assertEqual(len(in_first), 0)
-        self.assertEqual(len(in_second), 0)
+        self.assertEqual([len(in_first), len(in_second)], [0, 0])
 
     def test_joindata(self):
-        payload = {'rml_url': CFG['rdfconverter']['unittest']['joindata']['data']['test1']['input']}
-        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['joindata']['contextroot'], payload)
+        payload = {'rml_url': CFG['rdfconverter']['unittest']['joindata']['data']['test1']['input'], 'minimal': True}
+        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['joindata']['contextroot'], json=payload)
         res_graph = Graph()
         res_graph.parse(data=res.json()['graph'], format='ttl')
  
@@ -52,9 +49,10 @@ class test_StartForm(unittest.TestCase):
     def test_joindata_with_data_url(self):
         payload = {
             'rml_url': CFG['rdfconverter']['unittest']['joindata']['data']['test2']['input1'],
-            'data_url': CFG['rdfconverter']['unittest']['joindata']['data']['test2']['input2']
+            'data_url': CFG['rdfconverter']['unittest']['joindata']['data']['test2']['input2'],
+            'minimal': True
         }
-        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['joindata']['contextroot'], payload)
+        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['joindata']['contextroot'], json=payload)
         res_graph = Graph()
         res_graph.parse(data=res.json()['graph'], format='ttl')
 
