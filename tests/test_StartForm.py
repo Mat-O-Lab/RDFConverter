@@ -22,14 +22,20 @@ class test_StartForm(unittest.TestCase):
         g_expect = Graph()
         g_gen.parse(data=rml_output.text)
         g_expect.parse(data=expected_output)
-        self.assertEqual(g_gen, g_expect)
+
+        iso1 = to_isomorphic(g_gen)
+        iso2 = to_isomorphic(g_expect)
+
+        _, in_first, in_second = graph_diff(iso1, iso2)
+        self.assertEqual(len(in_first), 0)
+        self.assertEqual(len(in_second), 0)
 
     def test_joindata(self):
         payload = {'rml_url': CFG['rdfconverter']['unittest']['joindata']['data']['test1']['input']}
         res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['joindata']['contextroot'], payload)
         res_graph = Graph()
         res_graph.parse(data=res.json()['graph'], format='ttl')
-
+ 
         expectation = requests.get(CFG['rdfconverter']['unittest']['joindata']['data']['test1']['expectedOutput'])
         expect_graph = Graph()
         expect_graph.parse(data=expectation.text, format='ttl')
