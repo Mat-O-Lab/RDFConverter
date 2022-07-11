@@ -102,13 +102,18 @@ def index():
 
         result = requests.post('http://localhost:5000/api/joindata', json=joindata_params).json()['graph']
 
+        conforms = None
+        if opt_shacl_shape_url:
+            conforms = requests.post('http://localhost:5000/api/rdfvalidator', json={'shapes_url': opt_shacl_shape_url, 'rdf_data': result}).json()['valid']
+
 
     return render_template(
         "index.html",
         logo=logo,
         start_form=start_form,
         message=message,
-        result=result
+        result=result,
+        conforms=conforms
         )
 
 @app.route('/api/yarrrmltorml', methods=['POST'])
@@ -174,16 +179,22 @@ def join_data():
 @app.route('/api/rdfvalidator', methods=['POST'])
 def validate_rdf():
 
+    content = request.get_json()
     try:
-        shapes_url = request.form.get('shapes_url', None)
-        shapes_data = requests.get(shapes_url).text if shapes_url else request.form['shapes_data']
-        rdf_url = request.form.get('rdf_url', None)
-        rdf_data = requests.get(rdf_url).text if rdf_url else request.form['rdf_data']
+        if 'shapes_url' in content:
+            shapes_data, filename = open_file(content['shapes_url'])
+        else:
+            shapes_data = content['shapes_data']
 
+        if 'rdf_url' in content:
+            rdf_data, filename = open_file(content['rdf_url'])
+        else:
+            rdf_data = content['rdf_data']
+        
         shapes_graph = Graph()
-        shapes_graph.parse(data=shapes_data, format=guess_format(shapes_url) if shapes_url else 'ttl')
+        shapes_graph.parse(data=shapes_data, format=guess_format(content['shapes_url']) if 'shapes_url' in content else 'ttl')
         rdf_graph = Graph()
-        rdf_graph.parse(data=rdf_data, format=guess_format(rdf_url) if rdf_url else 'ttl')
+        rdf_graph.parse(data=rdf_data, format=guess_format(content['rdf_url']) if 'rdf_url' in content else 'ttl')
     except Exception as e:
         app.logger.error(e)
         return "Could not read graph!", 400

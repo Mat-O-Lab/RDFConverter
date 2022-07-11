@@ -74,7 +74,7 @@ class test_StartForm(unittest.TestCase):
             "rdf_url": CFG['rdfconverter']['unittest']['validation']['data']['test1']['rdf'],
             "shapes_url": CFG['rdfconverter']['unittest']['validation']['data']['test1']['shacl']
         }
-        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['validation']['contextroot'], payload)
+        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['validation']['contextroot'], json=payload)
         self.assertTrue(res.json()['valid'])
 
     def test_validate_does_not_conform(self):
@@ -82,7 +82,7 @@ class test_StartForm(unittest.TestCase):
             "rdf_url": CFG['rdfconverter']['unittest']['validation']['data']['test2']['rdf'],
             "shapes_url": CFG['rdfconverter']['unittest']['validation']['data']['test2']['shacl']
         }
-        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['validation']['contextroot'], payload)
+        res = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['validation']['contextroot'], json=payload)
         self.assertFalse(res.json()['valid'])
 
 if __name__ == '__main__':

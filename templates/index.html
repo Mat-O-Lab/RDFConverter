@@ -102,6 +102,15 @@
     <div class="container-fluid collapse {% if result %} show {% endif %}" id="mappingForm">
       <div class="card card-body">
         <h5 class="card-title">Result</h5>
+        {% if conforms == True %}
+        <div class="alert alert-success" role="alert">
+          This result conforms to the shacl shape!
+        </div>
+        {% elif conforms == False %}
+        <div class="alert alert-danger" role="alert">
+          This result does not conform to the shacl shape!
+        </div>
+        {% endif %}
         <code class="prettyprint" style="white-space: pre-wrap;">{{ result }}</code>
       </div>
       <a class="form-group btn btn-primary btn-lg my-3" download="{{ filename }}" href="data:text/json;base64,{{ payload }}" role="button">Download</a>
