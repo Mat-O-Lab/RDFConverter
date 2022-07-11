@@ -16,15 +16,13 @@ class test_StartForm(unittest.TestCase):
 
         payload = {'yarrrml': yarrrml}
         rml_output = requests.post(ENDPOINT + CFG['rdfconverter']['unittest']['yarrrml2rml']['contextroot'], payload)
-
-        try:
-            with open(CFG['rdfconverter']['unittest']['yarrrml2rml']['data']['expectedOutput'], 'r') as f:
-                expected_output = f.read()            
-            self.assertEqual(expected_output, rml_output.text)
-            
-        except Exception as e:
-            print(str(e))
-            self.assertRaises(e, msg=e.__cause__)
+        with open(CFG['rdfconverter']['unittest']['yarrrml2rml']['data']['expectedOutput'], 'r') as f:
+            expected_output = f.read()
+        g_gen = Graph()
+        g_expect = Graph()
+        g_gen.parse(data=rml_output.text)
+        g_expect.parse(data=expected_output)
+        self.assertEqual(g_gen, g_expect)
 
     def test_joindata(self):
         payload = {'rml_url': CFG['rdfconverter']['unittest']['joindata']['data']['test1']['input']}
