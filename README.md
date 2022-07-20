@@ -29,3 +29,5 @@ docker-compose up
 ```
 
 Go to http://localhost:5000/api/docs
+
+Available online here: http://rdfconverter.matolab.org/
