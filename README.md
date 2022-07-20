@@ -1,6 +1,9 @@
 # RDFConverter
 [![Build](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/build.yml/badge.svg)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/build.yml)  
 [![unittest with Docker](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/soudeh.yml/badge.svg?branch=development)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/soudeh.yml)  
+
+Available online here: http://rdfconverter.matolab.org/
+
 It is a service for converting and validating YARRRML and Chowlk files to RDF, which is applied to Material Sciences Engineering (MSE) Methods, for example, on Cement MSE experiments.
 
 ![RDFConverter_Concept drawio](https://user-images.githubusercontent.com/9248325/158355253-41fecd06-2487-449c-b91c-115182af9794.png)
@@ -29,5 +32,3 @@ docker-compose up
 ```
 
 Go to http://localhost:5000/api/docs
-
-Available online here: http://rdfconverter.matolab.org/
