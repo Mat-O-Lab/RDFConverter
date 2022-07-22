@@ -85,11 +85,12 @@ def index():
     start_form = StartForm()
     message = ''
     result = ''
+    conforms = ''
     
     if request.method == 'POST' and start_form.validate():
         data_url = request.values.get('data_url')
         opt_data_csvw_url = request.values.get('opt_data_csvw_url')
-        shacl_url = request.values.get('shacl_url')
+        # shacl_url = request.values.get('shacl_url')
         opt_shacl_shape_url = request.values.get('opt_shacl_shape_url')
         if not data_url:
             flash('Must give a YARRRML file to convert!')
@@ -102,7 +103,6 @@ def index():
 
         result = requests.post('http://localhost:5000/api/joindata', json=joindata_params).json()['graph']
 
-        conforms = None
         if opt_shacl_shape_url:
             conforms = requests.post('http://localhost:5000/api/rdfvalidator', json={'shapes_url': opt_shacl_shape_url, 'rdf_data': result}).json()['valid']
 
