@@ -1,6 +1,5 @@
 # RDFConverter
-[![Build](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/build.yml/badge.svg)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/build.yml)  
-[![unittest with Docker](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/soudeh.yml/badge.svg?branch=development)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/soudeh.yml)  
+[![Publish Docker image](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml/badge.svg?event=workflow_dispatch)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml)Lab/RDFConverter/actions/workflows/soudeh.yml)  
 
 Available online here: http://rdfconverter.matolab.org/
 
