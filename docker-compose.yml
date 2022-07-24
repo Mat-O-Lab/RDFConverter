@@ -16,19 +16,27 @@ services:
       - 4000
     restart: always
     networks:
-      - flask
+      - rdfconverter_net
 
-  flask:
-    container_name: flask
+  rdfconverter:
+    container_name: rdfconverter
     build: .
-    volumes:
-      - .:/app
+    #volumes:
+      #- .:/app
     ports:
-      - 5000:5000
+      - 5003:5000
     restart: always
     networks:
+<<<<<<< HEAD
       - flask
 
 networks:
   flask:
     name: RDFConverter
+=======
+      - rdfconverter_net
+
+networks:
+  rdfconverter_net:
+    driver: bridge
+>>>>>>> main
