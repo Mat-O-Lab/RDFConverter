@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   yarrrml-parser:
-    build: yarrrml-parser
+    build: ./yarrrml-parser
     expose:
       - 3000
     restart: always
@@ -11,7 +11,7 @@ services:
 
   rmlmapper:
     container_name: rmlmapper-webapi
-    build: https://github.com/RMLio/rmlmapper-webapi-js.git
+    build: ./rmlmapper-webapi
     expose:
       - 4000
     restart: always

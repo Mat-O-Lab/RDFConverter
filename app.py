@@ -85,6 +85,7 @@ def index():
     start_form = StartForm()
     message = ''
     result = ''
+    conforms = None
     
     if request.method == 'POST' and start_form.validate():
         data_url = request.values.get('data_url')
@@ -102,7 +103,6 @@ def index():
 
         result = requests.post('http://localhost:5000/api/joindata', json=joindata_params).json()['graph']
 
-        conforms = None
         if opt_shacl_shape_url:
             conforms = requests.post('http://localhost:5000/api/rdfvalidator', json={'shapes_url': opt_shacl_shape_url, 'rdf_data': result}).json()['valid']
 
