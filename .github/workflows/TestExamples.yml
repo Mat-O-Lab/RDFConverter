@@ -26,11 +26,11 @@ jobs:
       - name: parse mapping to YARRRML parser
         working-directory: ${{env.WORKING_DIR}}
         run: |
-          curl -X POST "http://localhost:5003/api/yarrrmltorml" -H  "accept: */*" -H  "Content-Type: application/json" -d "{\"url\":\"${{env.MAPPING_URL}}\"}" | jq .text > example.rml
+          curl -X POST "http://localhost:5003/api/yarrrmltorml" -H  "accept: */*" -H  "Content-Type: application/json" -d '{"url":"${{env.MAPPING_URL}}"}' | jq .text > example.rml
       - name: join the method and the data meta graph
         working-directory: ${{env.WORKING_DIR}}
         run: |
-          curl -X POST "http://localhost:5000/api/joindata" -H  "accept: */*" -H  "Content-Type: application/json" -d "{\"rml_data\":\"@example.rml" | jq .graph > join.rdf
+          curl -X POST "http://localhost:5000/api/joindata" -H  "accept: */*" -H  "Content-Type: application/json" -d '{"rml_data":"@example.rml"}' | jq .graph > join.rdf
       - name: Commit files # commit the output folder
         uses: EndBug/add-and-commit@v9
         with:
