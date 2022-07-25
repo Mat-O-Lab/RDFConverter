@@ -85,8 +85,8 @@ def index():
     start_form = StartForm()
     message = ''
     result = ''
-    conforms = ''
-    
+    conforms = None
+        
     if request.method == 'POST' and start_form.validate():
         data_url = request.values.get('data_url')
         opt_data_csvw_url = request.values.get('opt_data_csvw_url')
