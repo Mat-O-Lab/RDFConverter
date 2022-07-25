@@ -166,7 +166,8 @@
           "url":{
             "type": "string",
             "format": "uri",
-            "description": "Url to yarrrml file"
+            "description": "Url to yarrrml file",
+            "example": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"
           }
         }
       },

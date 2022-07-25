@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   yarrrml-parser:
-    image: ghcr.io/mat-o-lab/yarrrml-parser:main
+    image: ghcr.io/mat-o-lab/yarrrml-parser:latest
     expose:
       - 3000
     restart: always
@@ -11,7 +11,7 @@ services:
 
   rmlmapper:
     container_name: rmlmapper-webapi
-    image: ghcr.io/mat-o-lab/rmlmapper-webapi:main
+    image: ghcr.io/mat-o-lab/rmlmapper-webapi:latest
     expose:
       - 4000
     restart: always
@@ -21,8 +21,8 @@ services:
   rdfconverter:
     container_name: rdfconverter
     build: .
-    #volumes:
-      #- .:/app
+    volumes:
+      - .:/app
     ports:
       - 5003:5000
     restart: always
