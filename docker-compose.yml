@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   yarrrml-parser:
-    build: ./yarrrml-parser
+    image: ghcr.io/mat-o-lab/yarrrml-parser:main
     expose:
       - 3000
     restart: always
@@ -11,7 +11,7 @@ services:
 
   rmlmapper:
     container_name: rmlmapper-webapi
-    build: ./rmlmapper-webapi
+    image: ghcr.io/mat-o-lab/rmlmapper-webapi:main
     expose:
       - 4000
     restart: always
