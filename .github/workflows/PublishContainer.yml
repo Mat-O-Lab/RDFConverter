@@ -5,7 +5,7 @@
 
 name: Publish Docker image
 
-on: [release, workflow_dispatch]
+on: [published, workflow_dispatch]
 
 env:
   REGISTRY: ghcr.io
