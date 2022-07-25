@@ -90,7 +90,7 @@ def index():
     if request.method == 'POST' and start_form.validate():
         data_url = request.values.get('data_url')
         opt_data_csvw_url = request.values.get('opt_data_csvw_url')
-        shacl_url = request.values.get('shacl_url')
+        # shacl_url = request.values.get('shacl_url')
         opt_shacl_shape_url = request.values.get('opt_shacl_shape_url')
         if not data_url:
             flash('Must give a YARRRML file to convert!')

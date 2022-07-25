@@ -1,0 +1,35 @@
+name: TestExamples
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+env:
+  WORKING_DIR: ./examples/
+  MAPPING_URL: 'https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml'
+
+jobs:
+  TestExamples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0        
+      - name: run app
+        run: |
+          docker-compose up -d
+          sleep 10
+          docker ps -a
+      - name: parse mapping to YARRRML parser
+        working-directory: ${{env.WORKING_DIR}}
+        run: |
+          curl -X POST "http://localhost.fraunhofer.de:5003/api/yarrrmltorml" -H  "accept: */*" -H  "Content-Type: application/json" -d "{\"url\":\"${{env.MAPPING_URL}}\"}" | jq .text > example.rml
+      - name: Commit files # commit the output folder
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: 'updated example output'
+          add: '*.* --force'
+          cwd: './examples/'
