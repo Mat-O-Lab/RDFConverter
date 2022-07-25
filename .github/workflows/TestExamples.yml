@@ -31,8 +31,7 @@ jobs:
         working-directory: ${{env.WORKING_DIR}}
         run: |
           RML=$(example.rml)
-          curl -X POST "http://localhost:5003/api/joindata" -H  "accept: */*" -H  "Content-Type: application/json" -d '{"rml_url": "https://github.com/Mat-O-Lab/RDFConverter/raw/main/examples/example.rml"}' > join.rdf
-          #curl -X POST "http://localhost:5003/api/joindata" -H  "accept: */*" -H  "Content-Type: application/json" -d '{"rml_data":"@example.rml"}' | jq .graph > join.rdf
+          curl -X POST "http://localhost:5003/api/joindata" -H  "accept: */*" -H  "Content-Type: application/json" -d "{\"rml_url\": \"https://github.com/Mat-O-Lab/RDFConverter/raw/main/examples/example.rml\"}" > join.rdf
       - name: Commit files # commit the output folder
         uses: EndBug/add-and-commit@v9
         with:
