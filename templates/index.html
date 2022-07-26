@@ -31,13 +31,13 @@
       <form class='pb-3' method="post" action="{{ url_for('index') }}">
         <div class="mb-3">
           {{ start_form.csrf_token }}
-          {{ start_form.data_url.label }}
-          {{ start_form.data_url(class="form-control", **{'aria-describedby': 'urlHelp'}) }}
-          <div id="urlHelp" class="form-text">{{ start_form.data_url.description }}</div>
+          {{ start_form.mapping_url.label }}
+          {{ start_form.mapping_url(class="form-control", **{'aria-describedby': 'urlHelp'}) }}
+          <div id="urlHelp" class="form-text">{{ start_form.mapping_url.description }}</div>
           <div class="invalid-feedback">
-            {% if start_form.data_url.errors %}
+            {% if start_form.mapping_url.errors %}
                 <ul class="errors">
-                {% for error in start_form.data_url.errors %}
+                {% for error in start_form.mapping_url.errors %}
                     <li>{{ error }}</li>
                 {% endfor %}
                 </ul>
