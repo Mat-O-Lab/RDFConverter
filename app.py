@@ -1,4 +1,3 @@
-
 from fileinput import filename
 import os
 from rdflib import Graph
@@ -58,9 +57,9 @@ def open_file(uri=''):
         return filedata, filename
 
 class StartForm(FlaskForm):
-    data_url = URLField(
+    mapping_url = URLField(
         'URL Field Mapping',
-        validators=[Optional()],
+        #validators=[Optional()],
         description='Paste URL to a field mapping'
     )
     opt_data_csvw_url = URLField(
@@ -88,20 +87,18 @@ def index():
     conforms = None
         
     if request.method == 'POST' and start_form.validate():
-        data_url = request.values.get('data_url')
+        mapping_url = request.values.get('mapping_url')
         opt_data_csvw_url = request.values.get('opt_data_csvw_url')
         # shacl_url = request.values.get('shacl_url')
         opt_shacl_shape_url = request.values.get('opt_shacl_shape_url')
-        if not data_url:
+        if not mapping_url:
             flash('Must give a YARRRML file to convert!')
         
-        rml_text = requests.post('http://localhost:5000/api/yarrrmltorml', json={'url': data_url}).text
-
-        joindata_params = {'rml_data': rml_text, 'minimal': True}
+        request_body = {'mapping_url': mapping_url}
         if opt_data_csvw_url:
-            joindata_params['data_url'] = opt_data_csvw_url
+            request_body['data_url'] = opt_data_csvw_url
 
-        result = requests.post('http://localhost:5000/api/joindata', json=joindata_params).json()['graph']
+        result = requests.post('http://localhost:5000/api/createrdf', json=request_body).json()['graph']
 
         if opt_shacl_shape_url:
             conforms = requests.post('http://localhost:5000/api/rdfvalidator', json={'shapes_url': opt_shacl_shape_url, 'rdf_data': result}).json()['valid']
@@ -124,20 +121,18 @@ def translate():
     rules = requests.post('http://yarrrml-parser:3000', data={'yarrrml': filedata}).text
     return rules
 
-@app.route('/api/joindata', methods=['POST'])
-def join_data():
+@app.route('/api/createrdf', methods=['POST'])
+def create_rdf():
     content = request.get_json()
-
-    if 'rml_url' in content.keys():
-        rml_rules, filename = open_file(content['rml_url'])
-    else:
-        rml_rules = content['rml_data']
+    app.logger.info(f"POST /api/yarrrmltorml {content['mapping_url']}")
+    filedata, filename = open_file(content['mapping_url'])
+    rml_rules = requests.post('http://yarrrml-parser:3000', data={'yarrrml': filedata}).text
 
     rml_graph = Graph()
     rml_graph.parse(data=rml_rules, format='ttl')
 
     data_url = find_data_source(rml_graph)
-    #method_url = find_method_graph(rml_graph)
+    # #method_url = find_method_graph(rml_graph)
 
     # replace rml source from mappingfile with local file 
     # because rmlmapper webapi does not work with remote sources
@@ -146,12 +141,14 @@ def join_data():
     rml_rules_new = rml_graph.serialize(format='ttl')
 
     # replace data_url with specified override
-    if 'data_url' in content.keys():
+    if 'data_url' in content.keys() and content['data_url']:
         rml_rules_new = rml_rules_new.replace(data_url, content['data_url'])
         data_url =content['data_url']
-
+    
+    data_url_content=requests.get(data_url).text
+    
     # call rmlmapper webapi
-    d = {'rml': rml_rules_new, 'sources': {'source.json': requests.get(data_url).text}, 'serialization': 'turtle'}
+    d = {'rml': rml_rules_new, 'sources': {'source.json': data_url_content}, 'serialization': 'turtle'}
     r = requests.post('http://rmlmapper:4000/execute', json=d)
 
     if r.status_code != 200:

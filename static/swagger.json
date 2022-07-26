@@ -56,54 +56,6 @@
         }
       }
     },
-    "/api/joindata": {
-      "post": {
-        "tags": [
-          "Join Data"
-        ],
-        "summary": "Apply the RML mapping to the data.",
-        "description": "Apply the RML mapping specified in the rml_url to the data_url.",
-        "parameters": [
-          {
-            "in": "body",
-            "name": "rml_url",
-            "type": "string",
-            "format": "uri",
-            "required": "true",
-            "description": "URL to a file containing an RML Mapping"
-          },
-          {
-            "in": "body",
-            "name": "data_url",
-            "type": "string",
-            "format": "uri",
-            "required": "true",
-            "description": "URL to RDF data to which the mapping should be applied."
-          }
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "responses": {
-          "200": {
-            "description": "Mapped RDF data.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JoinData"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "File not found."
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        }
-      }
-    },
     "/api/rdfvalidator": {
       "post": {
         "tags": [
@@ -154,6 +106,47 @@
           }
         }
       }
+    },
+    "/api/createrdf": {
+      "post": {
+        "tags": [
+            "Create RDF"
+        ],
+        "summary": "Create RDF from YARRRML Mappings",
+        "description": "Join metadata with knowledge graph data through a YARRRML mapping.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/create_rdf"
+              }
+            }
+          }
+        },
+        "produces": [
+            "application/json"
+        ],
+        "responses": {
+                "200": {
+                  "description": "Join of data successful.",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/JoinData"
+                      }
+                    }
+                  }
+                },
+                "404": {
+                    "description": "File not found."
+                    },
+
+                "500":{
+                    "description": "Internal server error, check the syntax of your diagram."
+                }
+
+        }
+      }
     }
   },
   "components": {
@@ -201,6 +194,27 @@
           "num_mappings_skipped": {
             "type": "integer",
             "description": "Count of mappings from data to method graph that have been skipped because they could not be applied."
+          }
+        }
+      },
+      "create_rdf":{
+        "description": "Point to an YARRRML file through url parameter",
+        "required": {"mapping_url"},
+        "type": "object",
+        "example": {
+          "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml",
+          "data_url": ""
+        },
+        "properties": {
+          "mapping_url":{
+            "type": "string",
+            "format": "uri",
+            "description": "Url to a YARRRML file with pointers to the graph data to join and the rules to apply."
+          },
+          "data_url":{
+            "type": "string",
+            "format": "uri",
+            "description": "optional field for a url to a meta data set replacing the data_url in the mapping file."
           }
         }
       }
