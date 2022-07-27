@@ -1,8 +1,12 @@
+from crypt import methods
+from dataclasses import replace
 from fileinput import filename
 import os
-from rdflib import Graph
+from rdflib import Graph, Namespace
+from rdflib.namespace import NamespaceManager
 from rdflib.util import guess_format
 import requests
+import yaml
 
 from flask import Flask, flash, request, render_template
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -127,12 +131,17 @@ def create_rdf():
     app.logger.info(f"POST /api/yarrrmltorml {content['mapping_url']}")
     filedata, filename = open_file(content['mapping_url'])
     rml_rules = requests.post('http://yarrrml-parser:3000', data={'yarrrml': filedata}).text
-
+    mapping_dict = yaml.safe_load(filedata)
+    method_url=mapping_dict['prefixes']['method']
+    data_url=mapping_dict['prefixes']['data']
+    
+    app.logger.info(f"POST /api/createpdf {method_url}")
+    
     rml_graph = Graph()
     rml_graph.parse(data=rml_rules, format='ttl')
 
     data_url = find_data_source(rml_graph)
-    # #method_url = find_method_graph(rml_graph)
+    #method_url = find_method_graph(rml_graph)
 
     # replace rml source from mappingfile with local file 
     # because rmlmapper webapi does not work with remote sources
@@ -156,22 +165,42 @@ def create_rdf():
         return r.text, 400
     res = r.json()['output']
     
-    data_graph = Graph()
-    data_graph.parse(data_url, format=guess_format(data_url))
+    #data_graph = Graph()
+    #data_graph.parse(data_url, format=guess_format(data_url))
     #method_graph = Graph()
     #method_graph.parse(method_url, format=guess_format(method_url))
 
     mapping_graph = Graph()
     mapping_graph.parse(data=res, format='ttl')
-
+    
     num_mappings_applied = len(mapping_graph)
     num_mappings_possible = count_rules_str(rml_rules)
 
-    if not ('minimal' in content.keys() and content['minimal']):
-        mapping_graph += data_graph
+    joined_graph = Graph()
+    joined_graph.namespace_manager.bind('method', Namespace(method_url+'/'))
+    joined_graph.namespace_manager.bind('data', Namespace(data_url+'/'))
+    
+    #load and copy method graph and give it a new base namespace
+    templatedata, methodname=open_file(method_url)
+    # replace base url with place holder, should reference the now storage position of the resulting file
+    rdf_filename='example.rdf'
+    new_base_url="https://your_filestorage_location/"+rdf_filename
+    templatedata=templatedata.replace(method_url,new_base_url)
+    joined_graph.parse(data=templatedata, format='ttl')
+    #rdf_filename='example.rdf'
+    #new_base_url="https://your_filestorage_location/"+rdf_filename
+    #joined_graph.namespace_manager.bind('base', new_base_url,replace=True)
+    #joined_graph.parse(method_url, format='ttl')
+    joined_graph.parse(data=res, format='ttl')
+    #joined_graph.bind("base", Namespace(data_url+'/'),replace=True)
+    
+
+    #if not ('minimal' in content.keys() and content['minimal']):
+        #mapping_graph += data_graph
+
     #mapping_graph += method_graph
     app.logger.info(f'POST /api/joindata: {num_mappings_possible=}, {num_mappings_applied=}')
-    return {'graph': mapping_graph.serialize(format='ttl'), 'num_mappings_applied': num_mappings_applied, 'num_mappings_skipped': num_mappings_possible-num_mappings_applied}
+    return {'graph': joined_graph.serialize(format='turtle'), 'num_mappings_applied': num_mappings_applied, 'num_mappings_skipped': num_mappings_possible-num_mappings_applied}
 
 @app.route('/api/rdfvalidator', methods=['POST'])
 def validate_rdf():

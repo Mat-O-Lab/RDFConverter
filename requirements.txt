@@ -13,7 +13,7 @@ Werkzeug==2.0.3
 WTForms==3.0.1
 html5lib
 gunicorn
-rdflib>=6
+rdflib>=6.1.0
 requests
 pyyaml
 pyshacl
