@@ -2,7 +2,6 @@
 @prefix cco: <http://www.ontologyrepository.com/CommonCoreOntologies/> .
 @prefix data: <https://github.com/Mat-O-Lab/CSVToCSVW/raw/main/examples/example-metadata.json/> .
 @prefix dc: <http://purl.org/dc/elements/1.1/> .
-@prefix method: <https://github.com/Mat-O-Lab/MSEO/raw/main/methods/DIN_EN_ISO_527-3.drawio.ttl/> .
 @prefix mseo: <https://purl.matolab.org/mseo/mid/> .
 @prefix ns1: <http://qudt.org/schema/qudt/> .
 @prefix ns2: <http://www.w3.org/ns/csvw#> .
@@ -267,7 +266,7 @@ cco:RatioInformationContentEntity a owl:Class ;
 
 data:AktuelleProbe0 a ns3:Annotation ;
     rdfs:label \"aktuelle Probe\" ;
-    obo:RO_0010002 method:SpecimenName ;
+    obo:RO_0010002 base:SpecimenName ;
     ns2:rownum 0 ;
     ns3:hasBody [ a ns1:Quantity ;
             ns1:value 17 ] .
@@ -285,7 +284,7 @@ data:Datum15 a ns3:Annotation ;
             ns1:value \"2008-02-20 00:00:00\"^^xsd:dateTime ] .
 
 data:Dehnung a ns2:Column ;
-    obo:RO_0010002 method:StrainMeasurementInformation ;
+    obo:RO_0010002 base:StrainMeasurementInformation ;
     ns1:unit <http://qudt.org/vocab/unit/PERCENT> ;
     ns2:title \"Dehnung\" .
 
@@ -516,9 +515,6 @@ base:SpecimenMaterial a cco:PortionOfMaterial,
         base:ElongationAtBreak,
         base:ElongationAtMaximumForce .
 
-base:SpecimenName a cco:NonNameIdentifier,
-        owl:NamedIndividual .
-
 base:SpecimenShape a cco:Cuboidal,
         owl:NamedIndividual .
 
@@ -648,6 +644,9 @@ base:MeanWidth a cco:MeanPointEstimateMeasurementInformationContentEntity,
         owl:NamedIndividual ;
     cco:is_measured_by base:WidthMeasurementInformation .
 
+base:SpecimenName a cco:NonNameIdentifier,
+        owl:NamedIndividual .
+
 base:TestMachine a owl:NamedIndividual,
         mseo:UniversalTestingMachine ;
     obo:BFO_0000051 base:LenghtMeasurementDevice,
@@ -679,11 +678,6 @@ cco:Thickness a owl:Class ;
 cco:Width a owl:Class ;
     rdfs:label \"Width\" .
 
-base:StrainMeasurementInformation a cco:NominalMeasurementInformationContentEntity,
-        owl:NamedIndividual ;
-    cco:is_measured_by base:LenghtMeasurementInformation,
-        base:StartLenghtMeasurementInformation .
-
 base:StressMeasurementInformation a cco:NominalMeasurementInformationContentEntity,
         owl:NamedIndividual ;
     cco:is_measured_by base:ForceMeasurementInformation .
@@ -693,6 +687,11 @@ cco:ActOfMeasuring a owl:Class ;
 
 base:LenghtMeasurementInformation a cco:NominalMeasurementInformationContentEntity,
         owl:NamedIndividual .
+
+base:StrainMeasurementInformation a cco:NominalMeasurementInformationContentEntity,
+        owl:NamedIndividual ;
+    cco:is_measured_by base:LenghtMeasurementInformation,
+        base:StartLenghtMeasurementInformation .
 
 cco:NominalMeasurementInformationContentEntity a owl:Class ;
     rdfs:label \"Nominal Measurement Information Content Entity\" .
