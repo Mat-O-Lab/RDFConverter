@@ -43,6 +43,10 @@ from urllib.request import urlopen
 from urllib.parse import urlparse, unquote
 
 OBO = Namespace('http://purl.obolibrary.org/obo/')
+CSVW = Namespace('http://www.w3.org/ns/csvw#')
+OA = Namespace('http://www.w3.org/ns/oa#')
+QUDT = Namespace('http://qudt.org/schema/qudt/')
+QUNIT = Namespace('http://qudt.org/vocab/unit/')
 
 def open_file(uri=''):
     try:
@@ -176,7 +180,10 @@ def create_rdf():
     joined_graph.namespace_manager.bind('data', Namespace(data_url), override=True, replace=True)
     joined_graph.namespace_manager.bind('method', Namespace(method_url), override=True, replace=True)
     joined_graph.namespace_manager.bind('obo', OBO, override=True, replace=True)
-    
+    joined_graph.namespace_manager.bind('csvw', CSVW)
+    joined_graph.namespace_manager.bind('oa', OA)
+    joined_graph.namespace_manager.bind('qudt', QUDT)
+    joined_graph.namespace_manager.bind('qunit', QUNIT)
     
     #app.logger.info(f'POST /api/createrdf: {data_url}')
     #load and copy method graph and give it a new base namespace
@@ -186,6 +193,7 @@ def create_rdf():
     new_base_url="https://your_filestorage_location/"+rdf_filename
     templatedata=templatedata.replace(method_url,new_base_url)
     res=res.replace(method_url,new_base_url)
+
     joined_graph.parse(data=templatedata, format='ttl')
     joined_graph.parse(data=res, format='ttl')
 
