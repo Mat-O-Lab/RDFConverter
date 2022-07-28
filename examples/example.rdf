@@ -1,13 +1,14 @@
 @prefix base: <https://your_filestorage_location/example.rdf> .
 @prefix cco: <http://www.ontologyrepository.com/CommonCoreOntologies/> .
+@prefix csvw: <http://www.w3.org/ns/csvw#> .
 @prefix data: <https://github.com/Mat-O-Lab/CSVToCSVW/raw/main/examples/example-metadata.json/> .
 @prefix dc: <http://purl.org/dc/elements/1.1/> .
 @prefix mseo: <https://purl.matolab.org/mseo/mid/> .
-@prefix ns1: <http://qudt.org/schema/qudt/> .
-@prefix ns2: <http://www.w3.org/ns/csvw#> .
-@prefix ns3: <http://www.w3.org/ns/oa#> .
+@prefix oa: <http://www.w3.org/ns/oa#> .
 @prefix obo: <http://purl.obolibrary.org/obo/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix qudt: <http://qudt.org/schema/qudt/> .
+@prefix qunit: <http://qudt.org/vocab/unit/> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -117,11 +118,11 @@ cco:process_preceeds a owl:ObjectProperty ;
     rdfs:label \"process_preceeds\" ;
     rdfs:range cco:ActOfArtifactAssembly .
 
-data: ns2:dialect [ ns2:delimiter \"	\" ;
-            ns2:encoding \"ISO-8859-1\" ;
-            ns2:headerRowCount \"2\"^^xsd:nonNegativeInteger ;
-            ns2:skipRows \"16\"^^xsd:nonNegativeInteger ] ;
-    ns2:note data:AktuelleProbe0,
+data: csvw:dialect [ csvw:delimiter \"	\" ;
+            csvw:encoding \"ISO-8859-1\" ;
+            csvw:headerRowCount \"2\"^^xsd:nonNegativeInteger ;
+            csvw:skipRows \"16\"^^xsd:nonNegativeInteger ] ;
+    csvw:note data:AktuelleProbe0,
         data:Bruchkraft13,
         data:Datum15,
         data:DehnungBeiBruch10,
@@ -137,8 +138,8 @@ data: ns2:dialect [ ns2:delimiter \"	\" ;
         data:Pruefgeschwindigkeit5,
         data:Vorkraft6,
         data:WegNachBruch7 ;
-    ns2:tableSchema [ ns2:column ( data:Pruefzeit data:Standardweg data:Standardkraft data:Dehnung data:TraverseAbs ) ] ;
-    ns2:url \"example.csv\"^^xsd:anyURI .
+    csvw:tableSchema [ csvw:column ( data:Pruefzeit data:Standardweg data:Standardkraft data:Dehnung data:TraverseAbs ) ] ;
+    csvw:url \"example.csv\"^^xsd:anyURI .
 
 mseo: a owl:Ontology ;
     dc:creator \"Thomas Hanke\" ;
@@ -224,9 +225,9 @@ base:TimeOfBreak a owl:NamedIndividual,
 obo:BFO_0000148 a owl:Class ;
     rdfs:label \"B F O_0000148\" .
 
-<http://qudt.org/vocab/unit/MilliM-PER-MIN> a ns1:Unit .
+qunit:MilliM-PER-MIN a qudt:Unit .
 
-<http://qudt.org/vocab/unit/SEC> a ns1:Unit .
+qunit:SEC a qudt:Unit .
 
 cco:ActOfPositionChange a owl:Class ;
     rdfs:label \"Act Of Position Change\" .
@@ -264,133 +265,133 @@ cco:PortionOfMaterial a owl:Class ;
 cco:RatioInformationContentEntity a owl:Class ;
     rdfs:label \"Ratio Information Content Entity\" .
 
-data:AktuelleProbe0 a ns3:Annotation ;
+data:AktuelleProbe0 a oa:Annotation ;
     rdfs:label \"aktuelle Probe\" ;
     obo:RO_0010002 base:SpecimenName ;
-    ns2:rownum 0 ;
-    ns3:hasBody [ a ns1:Quantity ;
-            ns1:value 17 ] .
+    csvw:rownum 0 ;
+    oa:hasBody [ a qudt:Quantity ;
+            qudt:value 17 ] .
 
-data:Bruchkraft13 a ns3:Annotation ;
+data:Bruchkraft13 a oa:Annotation ;
     rdfs:label \"Bruchkraft\" ;
-    ns2:rownum 13 ;
-    ns3:hasBody [ a ns1:Quantity ;
-            ns1:value \"nicht bekannt\"^^xsd:string ] .
+    csvw:rownum 13 ;
+    oa:hasBody [ a qudt:Quantity ;
+            qudt:value \"nicht bekannt\"^^xsd:string ] .
 
-data:Datum15 a ns3:Annotation ;
+data:Datum15 a oa:Annotation ;
     rdfs:label \"Datum\" ;
-    ns2:rownum 15 ;
-    ns3:hasBody [ a ns1:Quantity ;
-            ns1:value \"2008-02-20 00:00:00\"^^xsd:dateTime ] .
+    csvw:rownum 15 ;
+    oa:hasBody [ a qudt:Quantity ;
+            qudt:value \"2008-02-20 00:00:00\"^^xsd:dateTime ] .
 
-data:Dehnung a ns2:Column ;
+data:Dehnung a csvw:Column ;
     obo:RO_0010002 base:StrainMeasurementInformation ;
-    ns1:unit <http://qudt.org/vocab/unit/PERCENT> ;
-    ns2:title \"Dehnung\" .
+    qudt:unit qunit:PERCENT ;
+    csvw:title \"Dehnung\" .
 
-data:DehnungBeiBruch10 a ns3:Annotation ;
+data:DehnungBeiBruch10 a oa:Annotation ;
     rdfs:label \"Dehnung bei Bruch\" ;
-    ns2:rownum 10 ;
-    ns3:hasBody [ a ns1:Quantity ;
-            ns1:unit <http://qudt.org/vocab/unit/PERCENT> ;
-            ns1:value 309.236 ] .
+    csvw:rownum 10 ;
+    oa:hasBody [ a qudt:Quantity ;
+            qudt:unit qunit:PERCENT ;
+            qudt:value 309.236 ] .
 
-data:DehnungBeiFmax9 a ns3:Annotation ;
+data:DehnungBeiFmax9 a oa:Annotation ;
     rdfs:label \"Dehnung bei Fmax\" ;
-    ns2:rownum 9 ;
-    ns3:hasBody [ a ns1:Quantity ;
-            ns1:unit <http://qudt.org/vocab/unit/PERCENT> ;
-            ns1:value 306.402 ] .
+    csvw:rownum 9 ;
+    oa:hasBody [ a qudt:Quantity ;
+            qudt:unit qunit:PERCENT ;
+            qudt:value 306.402 ] .
 
-data:EModul8 a ns3:Annotation ;
+data:EModul8 a oa:Annotation ;
     rdfs:label \"E-Modul\" ;
-    ns2:rownum 8 ;
-    ns3:hasBody [ a ns1:Quantity ;
-            ns1:unit <http://qudt.org/vocab/unit/N-M-PER-M2> ;
-            ns1:value 1127.12 ] .
+    csvw:rownum 8 ;
+    oa:hasBody [ a qudt:Quantity ;
+            qudt:unit qunit:N-M-PER-M2 ;
+            qudt:value 1127.12 ] .
 
-data:Einspannlaenge1 a ns3:Annotation ;
+data:Einspannlaenge1 a oa:Annotation ;
     rdfs:label \"Einspannlänge\" ;
-    ns2:rownum 1 ;
-    ns3:hasBody [ a ns1:Quantity ;
-            ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
-            ns1:value 832.756 ] .
+    csvw:rownum 1 ;
+    oa:hasBody [ a qudt:Quantity ;
+            qudt:unit qunit:MilliM ;
+            qudt:value 832.756 ] .
 
-data:GeschwindigkeitEModul14 a ns3:Annotation ;
+data:GeschwindigkeitEModul14 a oa:Annotation ;
     rdfs:label \"Geschwindigkeit E-Modul\" ;
-    ns2:rownum 14 ;
-    ns3:hasBody [ a ns1:Quantity ;
-            ns1:value \"%L0/min\"^^xsd:string ] .
+    csvw:rownum 14 ;
+    oa:hasBody [ a qudt:Quantity ;
+            qudt:value \"%L0/min\"^^xsd:string ] .
 
-data:Kraftmaximum12 a ns3:Annotation ;
+data:Kraftmaximum12 a oa:Annotation ;
     rdfs:label \"Kraftmaximum\" ;
-    ns2:rownum 12 ;
-    ns3:hasBody [ a ns1:Quantity ;
-            ns1:unit <http://qudt.org/vocab/unit/N-M-PER-M2> ;
-            ns1:value 37.9483 ] .
+    csvw:rownum 12 ;
+    oa:hasBody [ a qudt:Quantity ;
+            qudt:unit qunit:N-M-PER-M2 ;
+            qudt:value 37.9483 ] .
 
-data:Messlaenge2 a ns3:Annotation ;
+data:Messlaenge2 a oa:Annotation ;
     rdfs:label \"Messlänge\" ;
-    ns2:rownum 2 ;
-    ns3:hasBody [ a ns1:Quantity ;
-            ns1:value \"nicht bekannt\"^^xsd:string ] .
+    csvw:rownum 2 ;
+    oa:hasBody [ a qudt:Quantity ;
+            qudt:value \"nicht bekannt\"^^xsd:string ] .
 
-data:ObereStreckgrenze11 a ns3:Annotation ;
+data:ObereStreckgrenze11 a oa:Annotation ;
     rdfs:label \"obere Streckgrenze\" ;
-    ns2:rownum 11 ;
-    ns3:hasBody [ a ns1:Quantity ;
-            ns1:value \"nicht bekannt\"^^xsd:string ] .
+    csvw:rownum 11 ;
+    oa:hasBody [ a qudt:Quantity ;
+            qudt:value \"nicht bekannt\"^^xsd:string ] .
 
-data:ProbenbreiteB03 a ns3:Annotation ;
+data:ProbenbreiteB03 a oa:Annotation ;
     rdfs:label \"Probenbreite b0\" ;
-    ns2:rownum 3 ;
-    ns3:hasBody [ a ns1:Quantity ;
-            ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
-            ns1:value 11.4 ] .
+    csvw:rownum 3 ;
+    oa:hasBody [ a qudt:Quantity ;
+            qudt:unit qunit:MilliM ;
+            qudt:value 11.4 ] .
 
-data:ProbendickeA04 a ns3:Annotation ;
+data:ProbendickeA04 a oa:Annotation ;
     rdfs:label \"Probendicke a0\" ;
-    ns2:rownum 4 ;
-    ns3:hasBody [ a ns1:Quantity ;
-            ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
-            ns1:value 0.2 ] .
+    csvw:rownum 4 ;
+    oa:hasBody [ a qudt:Quantity ;
+            qudt:unit qunit:MilliM ;
+            qudt:value 0.2 ] .
 
-data:Pruefgeschwindigkeit5 a ns3:Annotation ;
+data:Pruefgeschwindigkeit5 a oa:Annotation ;
     rdfs:label \"Prüfgeschwindigkeit\" ;
-    ns2:rownum 5 ;
-    ns3:hasBody [ a ns1:Quantity ;
-            ns1:unit <http://qudt.org/vocab/unit/MilliM-PER-MIN> ;
-            ns1:value 150 ] .
+    csvw:rownum 5 ;
+    oa:hasBody [ a qudt:Quantity ;
+            qudt:unit qunit:MilliM-PER-MIN ;
+            qudt:value 150 ] .
 
-data:Pruefzeit a ns2:Column ;
-    ns1:unit <http://qudt.org/vocab/unit/SEC> ;
-    ns2:title \"Prüfzeit\" .
+data:Pruefzeit a csvw:Column ;
+    qudt:unit qunit:SEC ;
+    csvw:title \"Prüfzeit\" .
 
-data:Standardkraft a ns2:Column ;
-    ns1:unit <http://qudt.org/vocab/unit/N> ;
-    ns2:title \"Standardkraft\" .
+data:Standardkraft a csvw:Column ;
+    qudt:unit qunit:N ;
+    csvw:title \"Standardkraft\" .
 
-data:Standardweg a ns2:Column ;
-    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
-    ns2:title \"Standardweg\" .
+data:Standardweg a csvw:Column ;
+    qudt:unit qunit:MilliM ;
+    csvw:title \"Standardweg\" .
 
-data:TraverseAbs a ns2:Column ;
-    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
-    ns2:title \"Traverse abs.\" .
+data:TraverseAbs a csvw:Column ;
+    qudt:unit qunit:MilliM ;
+    csvw:title \"Traverse abs.\" .
 
-data:Vorkraft6 a ns3:Annotation ;
+data:Vorkraft6 a oa:Annotation ;
     rdfs:label \"Vorkraft\" ;
-    ns2:rownum 6 ;
-    ns3:hasBody [ a ns1:Quantity ;
-            ns1:unit <http://qudt.org/vocab/unit/N> ;
-            ns1:value 0.2 ] .
+    csvw:rownum 6 ;
+    oa:hasBody [ a qudt:Quantity ;
+            qudt:unit qunit:N ;
+            qudt:value 0.2 ] .
 
-data:WegNachBruch7 a ns3:Annotation ;
+data:WegNachBruch7 a oa:Annotation ;
     rdfs:label \"Weg nach Bruch\" ;
-    ns2:rownum 7 ;
-    ns3:hasBody [ a ns1:Quantity ;
-            ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
-            ns1:value 5 ] .
+    csvw:rownum 7 ;
+    oa:hasBody [ a qudt:Quantity ;
+            qudt:unit qunit:MilliM ;
+            qudt:value 5 ] .
 
 mseo:ActOfAnalysing a owl:Class ;
     rdfs:label \"Act Of Analysing\" .
@@ -558,9 +559,9 @@ base:TestTimeInterval a owl:NamedIndividual,
 base:WidthMeasurementInformation a cco:DistanceMeasurementInformationContentEntity,
         owl:NamedIndividual .
 
-<http://qudt.org/vocab/unit/N> a ns1:DerivedUnit .
+qunit:N a qudt:DerivedUnit .
 
-<http://qudt.org/vocab/unit/N-M-PER-M2> a ns1:Unit .
+qunit:N-M-PER-M2 a qudt:Unit .
 
 cco:ActOfArtifactAssembly a owl:Class ;
     rdfs:label \"Act Of Artifact Assembly\" .
@@ -658,7 +659,7 @@ base:ThicknessMeasurementInformation a cco:DistanceMeasurementInformationContent
 base:TimeOfMaxStress a obo:BFO_0000148,
         owl:NamedIndividual .
 
-<http://qudt.org/vocab/unit/PERCENT> a ns1:Unit .
+qunit:PERCENT a qudt:Unit .
 
 cco:DecreaseOfQuality a owl:Class ;
     rdfs:label \"Decrease Of Quality\" .
@@ -696,7 +697,7 @@ base:StrainMeasurementInformation a cco:NominalMeasurementInformationContentEnti
 cco:NominalMeasurementInformationContentEntity a owl:Class ;
     rdfs:label \"Nominal Measurement Information Content Entity\" .
 
-<http://qudt.org/vocab/unit/MilliM> a ns1:DerivedUnit .
+qunit:MilliM a qudt:DerivedUnit .
 
 cco:NonNameIdentifier a owl:Class,
         owl:DatatypeProperty ;
