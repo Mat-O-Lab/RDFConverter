@@ -185,6 +185,7 @@ def create_rdf():
     rdf_filename='example.rdf'
     new_base_url="https://your_filestorage_location/"+rdf_filename
     templatedata=templatedata.replace(method_url,new_base_url)
+    res=res.replace(method_url,new_base_url)
     joined_graph.parse(data=templatedata, format='ttl')
     joined_graph.parse(data=res, format='ttl')
 
