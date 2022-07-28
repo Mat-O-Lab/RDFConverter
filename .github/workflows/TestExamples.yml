@@ -26,7 +26,9 @@ jobs:
       - name: parse mapping to YARRRML parser
         working-directory: ${{env.WORKING_DIR}}
         run: |
+          docker logs csvtocsvw
           curl -X POST "http://localhost:5003/api/yarrrmltorml" -H  "accept: */*" -H  "Content-Type: application/json" -d "{\"url\":\"${{env.MAPPING_URL}}\"}" > example.rml
+          docker logs csvtocsvw
       - name: join the method and the data meta graph
         working-directory: ${{env.WORKING_DIR}}
         run: |
