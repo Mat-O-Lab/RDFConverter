@@ -3,7 +3,6 @@ from dataclasses import replace
 from fileinput import filename
 import os
 from rdflib import Graph, Namespace
-from rdflib.namespace import NamespaceManager
 from rdflib.util import guess_format
 import requests
 import yaml
@@ -42,6 +41,9 @@ app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
 from urllib.request import urlopen
 from urllib.parse import urlparse, unquote
+
+OBO = Namespace('http://purl.obolibrary.org/obo/')
+
 def open_file(uri=''):
     try:
         uri_parsed = urlparse(uri)
@@ -129,18 +131,16 @@ def translate():
 def create_rdf():
     content = request.get_json()
     app.logger.info(f"POST /api/yarrrmltorml {content['mapping_url']}")
-    filedata, filename = open_file(content['mapping_url'])
-    rml_rules = requests.post('http://yarrrml-parser:3000', data={'yarrrml': filedata}).text
-    mapping_dict = yaml.safe_load(filedata)
+    mapping_data, mapping_filename = open_file(content['mapping_url'])
+    rml_rules = requests.post('http://yarrrml-parser:3000', data={'yarrrml': mapping_data}).text
+    mapping_dict = yaml.safe_load(mapping_data)
     method_url=mapping_dict['prefixes']['method']
     data_url=mapping_dict['prefixes']['data']
-    
-    app.logger.info(f"POST /api/createpdf {method_url}")
     
     rml_graph = Graph()
     rml_graph.parse(data=rml_rules, format='ttl')
 
-    data_url = find_data_source(rml_graph)
+    rml_data_url = find_data_source(rml_graph)
     #method_url = find_method_graph(rml_graph)
 
     # replace rml source from mappingfile with local file 
@@ -151,13 +151,13 @@ def create_rdf():
 
     # replace data_url with specified override
     if 'data_url' in content.keys() and content['data_url']:
-        rml_rules_new = rml_rules_new.replace(data_url, content['data_url'])
+        rml_rules_new = rml_rules_new.replace(rml_data_url, content['data_url'])
         data_url =content['data_url']
     
-    data_url_content=requests.get(data_url).text
-    
+    #data_url_content=requests.get(data_url).text
+    data_content, data_filename=open_file(data_url)
     # call rmlmapper webapi
-    d = {'rml': rml_rules_new, 'sources': {'source.json': data_url_content}, 'serialization': 'turtle'}
+    d = {'rml': rml_rules_new, 'sources': {'source.json': data_content}, 'serialization': 'turtle'}
     r = requests.post('http://rmlmapper:4000/execute', json=d)
 
     if r.status_code != 200:
@@ -165,11 +165,6 @@ def create_rdf():
         return r.text, 400
     res = r.json()['output']
     
-    #data_graph = Graph()
-    #data_graph.parse(data_url, format=guess_format(data_url))
-    #method_graph = Graph()
-    #method_graph.parse(method_url, format=guess_format(method_url))
-
     mapping_graph = Graph()
     mapping_graph.parse(data=res, format='ttl')
     
@@ -177,9 +172,13 @@ def create_rdf():
     num_mappings_possible = count_rules_str(rml_rules)
 
     joined_graph = Graph()
-    joined_graph.namespace_manager.bind('method', Namespace(method_url+'/'))
-    joined_graph.namespace_manager.bind('data', Namespace(data_url+'/'))
+    # set prefixes
+    joined_graph.namespace_manager.bind('data', Namespace(data_url), override=True, replace=True)
+    joined_graph.namespace_manager.bind('method', Namespace(method_url), override=True, replace=True)
+    joined_graph.namespace_manager.bind('obo', OBO, override=True, replace=True)
     
+    
+    #app.logger.info(f'POST /api/createrdf: {data_url}')
     #load and copy method graph and give it a new base namespace
     templatedata, methodname=open_file(method_url)
     # replace base url with place holder, should reference the now storage position of the resulting file
@@ -187,20 +186,25 @@ def create_rdf():
     new_base_url="https://your_filestorage_location/"+rdf_filename
     templatedata=templatedata.replace(method_url,new_base_url)
     joined_graph.parse(data=templatedata, format='ttl')
-    #rdf_filename='example.rdf'
-    #new_base_url="https://your_filestorage_location/"+rdf_filename
-    #joined_graph.namespace_manager.bind('base', new_base_url,replace=True)
-    #joined_graph.parse(method_url, format='ttl')
     joined_graph.parse(data=res, format='ttl')
-    #joined_graph.bind("base", Namespace(data_url+'/'),replace=True)
-    
+
+    #copy data entieties into joined graph
+    data_graph=Graph()
+    data_graph.namespace_manager.bind('data', Namespace('file:///app/'))
+    data_graph.parse(data=data_content, format='json-ld')
+    temp=data_graph.serialize(format="turtle")
+    temp=temp.replace('file:///app/',data_url)
+    data_graph=Graph()
+    data_graph.parse(data=temp, format='turtle')
+
+    joined_graph += data_graph
+    out=joined_graph.serialize(format="turtle")
 
     #if not ('minimal' in content.keys() and content['minimal']):
         #mapping_graph += data_graph
 
-    #mapping_graph += method_graph
-    app.logger.info(f'POST /api/joindata: {num_mappings_possible=}, {num_mappings_applied=}')
-    return {'graph': joined_graph.serialize(format='turtle'), 'num_mappings_applied': num_mappings_applied, 'num_mappings_skipped': num_mappings_possible-num_mappings_applied}
+    app.logger.info(f'POST /api/createrdf: {num_mappings_possible=}, {num_mappings_applied=}')
+    return {'graph': out, 'num_mappings_applied': num_mappings_applied, 'num_mappings_skipped': num_mappings_possible-num_mappings_applied}
 
 @app.route('/api/rdfvalidator', methods=['POST'])
 def validate_rdf():
@@ -245,3 +249,7 @@ def validate_rdf():
 
     app.logger.info(f'POST /api/rdfvalidator: {conforms=}')
     return {'valid': conforms, 'graph': g.serialize(format='ttl')}
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=app.config["DEBUG"])
