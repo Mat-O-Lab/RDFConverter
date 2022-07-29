@@ -190,7 +190,7 @@ def create_rdf():
     templatedata, methodname=open_file(method_url)
     # replace base url with place holder, should reference the now storage position of the resulting file
     rdf_filename='example.rdf'
-    new_base_url="https://your_filestorage_location/"+rdf_filename
+    new_base_url="https://your_filestorage_location/"+rdf_filename+'#'
     templatedata=templatedata.replace(method_url,new_base_url)
     res=res.replace(method_url,new_base_url)
 
