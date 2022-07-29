@@ -31,4 +31,5 @@ services:
 
 networks:
   rdfconverter_net:
+    name: rdfconverter_net
     driver: bridge
