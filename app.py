@@ -188,6 +188,8 @@ def create_rdf():
     joined_graph.namespace_manager.bind('oa', OA)
     joined_graph.namespace_manager.bind('qudt', QUDT)
     joined_graph.namespace_manager.bind('qunit', QUNIT)
+    joined_graph.namespace_manager.bind('mseo', MSEO)
+    joined_graph.namespace_manager.bind('cco', CCO)
     joined_graph.parse(CCO, format='turtle')
     joined_graph.parse(str(MSEO), format='xml')
     #app.logger.info(f'POST /api/createrdf: {data_url}')
