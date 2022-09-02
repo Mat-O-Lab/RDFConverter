@@ -14,30 +14,30 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 obo:BFO_0000040 a owl:ObjectProperty ;
-    rdfs:label \"b f o_0000040\" .
+    rdfs:label "b f o_0000040" .
 
 obo:BFO_0000051 a owl:ObjectProperty ;
-    rdfs:label \"b f o_0000051\" ;
+    rdfs:label "b f o_0000051" ;
     rdfs:range cco:InformationLine,
         mseo:MeasurementRegion .
 
 obo:RO_0000086 a owl:ObjectProperty ;
-    rdfs:label \"r o_0000086\" .
+    rdfs:label "r o_0000086" .
 
 obo:RO_0010001 a owl:ObjectProperty ;
-    rdfs:label \"r o_0010001\" .
+    rdfs:label "r o_0010001" .
 
 cco:Force a owl:Class ;
-    rdfs:label \"Force\" .
+    rdfs:label "Force" .
 
 cco:ProperAccelaration a owl:Class ;
-    rdfs:label \"Proper Accelaration\" .
+    rdfs:label "Proper Accelaration" .
 
 cco:Speed a owl:Class ;
-    rdfs:label \"Speed\" .
+    rdfs:label "Speed" .
 
 cco:affects a owl:ObjectProperty ;
-    rdfs:label \"affects\" ;
+    rdfs:label "affects" ;
     rdfs:domain cco:LossOfFunction ;
     rdfs:range cco:Cuboidal,
         cco:Lenght,
@@ -45,83 +45,83 @@ cco:affects a owl:ObjectProperty ;
         cco:Width .
 
 cco:bearer_of a owl:ObjectProperty ;
-    rdfs:label \"bearer_of\" .
+    rdfs:label "bearer_of" .
 
 cco:designated_by a owl:ObjectProperty ;
-    rdfs:label \"designated_by\" ;
+    rdfs:label "designated_by" ;
     rdfs:range cco:NonNameIdentifier .
 
 cco:has_accessory a owl:ObjectProperty ;
-    rdfs:label \"has_accessory\" ;
+    rdfs:label "has_accessory" ;
     rdfs:domain cco:ActOfMeasuring .
 
 cco:has_agent a owl:ObjectProperty ;
-    rdfs:label \"has_agent\" ;
+    rdfs:label "has_agent" ;
     rdfs:domain mseo:Experiment .
 
 cco:has_function a owl:ObjectProperty ;
-    rdfs:label \"has_function\" ;
+    rdfs:label "has_function" ;
     rdfs:domain mseo:MeasurementDevice ;
     rdfs:range cco:ArtifactFunction,
         cco:DistanceMeasurementArtifactFunction,
         mseo:ForceMeasurementArtifactFunction .
 
 cco:has_input a owl:ObjectProperty ;
-    rdfs:label \"has_input\" .
+    rdfs:label "has_input" .
 
 cco:has_output a owl:ObjectProperty ;
-    rdfs:label \"has_output\" ;
+    rdfs:label "has_output" ;
     rdfs:domain mseo:Experiment ;
     rdfs:range cco:DistanceMeasurementInformationContentEntity .
 
 cco:has_process_part a owl:ObjectProperty ;
-    rdfs:label \"has_process_part\" .
+    rdfs:label "has_process_part" .
 
 cco:is_a_ordinal_measurement_of a owl:ObjectProperty ;
-    rdfs:label \"is_a_ordinal_measurement_of\" .
+    rdfs:label "is_a_ordinal_measurement_of" .
 
 cco:is_cause_of a owl:ObjectProperty ;
-    rdfs:label \"is_cause_of\" ;
+    rdfs:label "is_cause_of" ;
     rdfs:range cco:DecreaseOfQuality,
         cco:IncreaseOfQuality,
         cco:LossOfFunction,
         cco:LossOfQuality .
 
 cco:is_ending_instant_of a owl:ObjectProperty ;
-    rdfs:label \"is_ending_instant_of\" ;
+    rdfs:label "is_ending_instant_of" ;
     rdfs:range mseo:TimeOfBreak .
 
 cco:is_input_of a owl:ObjectProperty ;
-    rdfs:label \"is_input_of\" ;
+    rdfs:label "is_input_of" ;
     rdfs:domain mseo:Specimen .
 
 cco:is_measured_by a owl:ObjectProperty ;
-    rdfs:label \"is_measured_by\" ;
+    rdfs:label "is_measured_by" ;
     rdfs:domain cco:Lenght,
         cco:NominalMeasurementInformationContentEntity,
         cco:Thickness,
         cco:Width .
 
 cco:occures_on a owl:ObjectProperty ;
-    rdfs:label \"occures_on\" ;
+    rdfs:label "occures_on" ;
     rdfs:domain cco:ActOfArtifactModification,
         mseo:Experiment .
 
 cco:prescribed_by a owl:ObjectProperty ;
-    rdfs:label \"prescribed_by\" ;
+    rdfs:label "prescribed_by" ;
     rdfs:domain mseo:Experiment .
 
 cco:prescribes a owl:ObjectProperty ;
-    rdfs:label \"prescribes\" .
+    rdfs:label "prescribes" .
 
 cco:process_preceeds a owl:ObjectProperty ;
-    rdfs:label \"process_preceeds\" ;
+    rdfs:label "process_preceeds" ;
     rdfs:range cco:ActOfArtifactAssembly .
 
-data: csvw:dialect [ csvw:delimiter \"	\" ;
-            csvw:encoding \"ISO-8859-1\" ;
-            csvw:headerRowCount \"2\"^^xsd:nonNegativeInteger ;
-            csvw:skipRows \"16\"^^xsd:nonNegativeInteger ] ;
+data: csvw:dialect [ csvw:delimiter "	" ;
+            csvw:encoding "ISO-8859-1" ;
+            csvw:headerRowCount "2"^^xsd:nonNegativeInteger ;
+            csvw:skipRows "16"^^xsd:nonNegativeInteger ] ;
     csvw:note data:AktuelleProbe0,
         data:Bruchkraft13,
         data:Datum15,
@@ -139,16 +139,16 @@ data: csvw:dialect [ csvw:delimiter \"	\" ;
         data:Vorkraft6,
         data:WegNachBruch7 ;
     csvw:tableSchema [ csvw:column ( data:Pruefzeit data:Standardweg data:Standardkraft data:Dehnung data:TraverseAbs ) ] ;
-    csvw:url \"example.csv\"^^xsd:anyURI .
+    csvw:url "example.csv"^^xsd:anyURI .
 
 mseo: a owl:Ontology ;
-    dc:creator \"Thomas Hanke\" ;
-    dc:description \"Ontology code created by Chowlk\" ;
-    dc:title \"DIN EN ISO 527-3 Graph\" ;
-    owl:versionInfo \"0.0.1\" .
+    dc:creator "Thomas Hanke" ;
+    dc:description "Ontology code created by Chowlk" ;
+    dc:title "DIN EN ISO 527-3 Graph" ;
+    owl:versionInfo "0.0.1" .
 
 mseo:in_accordance_with a owl:ObjectProperty ;
-    rdfs:label \"in_accordance_with\" ;
+    rdfs:label "in_accordance_with" ;
     rdfs:domain mseo:Experiment .
 
 base:DecreaseOfThickness a cco:DecreaseOfQuality,
@@ -176,7 +176,7 @@ base:Operator a cco:Agent,
 
 base:RawDataFile a owl:NamedIndividual,
         mseo:File ;
-    cco:has_URI_value \"raw_data_location\"^^xsd:anyURI .
+    cco:has_URI_value "raw_data_location"^^xsd:anyURI .
 
 base:Specimen a owl:NamedIndividual,
         mseo:Specimen ;
@@ -223,141 +223,141 @@ base:TimeOfBreak a owl:NamedIndividual,
         mseo:TimeOfBreak .
 
 obo:BFO_0000148 a owl:Class ;
-    rdfs:label \"B F O_0000148\" .
+    rdfs:label "B F O_0000148" .
 
 qunit:MilliM-PER-MIN a qudt:Unit .
 
 qunit:SEC a qudt:Unit .
 
 cco:ActOfPositionChange a owl:Class ;
-    rdfs:label \"Act Of Position Change\" .
+    rdfs:label "Act Of Position Change" .
 
 cco:Agent a owl:Class ;
-    rdfs:label \"Agent\" .
+    rdfs:label "Agent" .
 
 cco:CalendarDateIdentifier a owl:Class ;
-    rdfs:label \"Calendar Date Identifier\" .
+    rdfs:label "Calendar Date Identifier" .
 
 cco:Day a owl:Class ;
-    rdfs:label \"Day\" .
+    rdfs:label "Day" .
 
 cco:DesignativeName a owl:Class ;
-    rdfs:label \"Designative Name\" .
+    rdfs:label "Designative Name" .
 
 cco:Document a owl:Class ;
-    rdfs:label \"Document\" .
+    rdfs:label "Document" .
 
 cco:EstimateMeasurementInformationContentEntity a owl:Class ;
-    rdfs:label \"Estimate Measurement Information Content Entity\" .
+    rdfs:label "Estimate Measurement Information Content Entity" .
 
 cco:MeasurementInformationContentEntity a owl:Class ;
-    rdfs:label \"Measurement Information Content Entity\" .
+    rdfs:label "Measurement Information Content Entity" .
 
 cco:MinimumOrdinalMeasurementInformationContentEntity a owl:Class ;
-    rdfs:label \"Minimum Ordinal Measurement Information Content Entity\" .
+    rdfs:label "Minimum Ordinal Measurement Information Content Entity" .
 
 cco:PlanSpecification a owl:Class ;
-    rdfs:label \"Plan Specification\" .
+    rdfs:label "Plan Specification" .
 
 cco:PortionOfMaterial a owl:Class ;
-    rdfs:label \"Portion Of Material\" .
+    rdfs:label "Portion Of Material" .
 
 cco:RatioInformationContentEntity a owl:Class ;
-    rdfs:label \"Ratio Information Content Entity\" .
+    rdfs:label "Ratio Information Content Entity" .
 
 data:AktuelleProbe0 a oa:Annotation ;
-    rdfs:label \"aktuelle Probe\" ;
+    rdfs:label "aktuelle Probe" ;
     obo:RO_0010002 base:SpecimenName ;
     csvw:rownum 0 ;
     oa:hasBody [ a qudt:Quantity ;
             qudt:value 17 ] .
 
 data:Bruchkraft13 a oa:Annotation ;
-    rdfs:label \"Bruchkraft\" ;
+    rdfs:label "Bruchkraft" ;
     csvw:rownum 13 ;
     oa:hasBody [ a qudt:Quantity ;
-            qudt:value \"nicht bekannt\"^^xsd:string ] .
+            qudt:value "nicht bekannt"^^xsd:string ] .
 
 data:Datum15 a oa:Annotation ;
-    rdfs:label \"Datum\" ;
+    rdfs:label "Datum" ;
     csvw:rownum 15 ;
     oa:hasBody [ a qudt:Quantity ;
-            qudt:value \"2008-02-20 00:00:00\"^^xsd:dateTime ] .
+            qudt:value "2008-02-20 00:00:00"^^xsd:dateTime ] .
 
 data:Dehnung a csvw:Column ;
     obo:RO_0010002 base:StrainMeasurementInformation ;
     qudt:unit qunit:PERCENT ;
-    csvw:title \"Dehnung\" .
+    csvw:title "Dehnung" .
 
 data:DehnungBeiBruch10 a oa:Annotation ;
-    rdfs:label \"Dehnung bei Bruch\" ;
+    rdfs:label "Dehnung bei Bruch" ;
     csvw:rownum 10 ;
     oa:hasBody [ a qudt:Quantity ;
             qudt:unit qunit:PERCENT ;
             qudt:value 309.236 ] .
 
 data:DehnungBeiFmax9 a oa:Annotation ;
-    rdfs:label \"Dehnung bei Fmax\" ;
+    rdfs:label "Dehnung bei Fmax" ;
     csvw:rownum 9 ;
     oa:hasBody [ a qudt:Quantity ;
             qudt:unit qunit:PERCENT ;
             qudt:value 306.402 ] .
 
 data:EModul8 a oa:Annotation ;
-    rdfs:label \"E-Modul\" ;
+    rdfs:label "E-Modul" ;
     csvw:rownum 8 ;
     oa:hasBody [ a qudt:Quantity ;
             qudt:unit qunit:N-M-PER-M2 ;
             qudt:value 1127.12 ] .
 
 data:Einspannlaenge1 a oa:Annotation ;
-    rdfs:label \"Einspannlänge\" ;
+    rdfs:label "Einspannlänge" ;
     csvw:rownum 1 ;
     oa:hasBody [ a qudt:Quantity ;
             qudt:unit qunit:MilliM ;
             qudt:value 832.756 ] .
 
 data:GeschwindigkeitEModul14 a oa:Annotation ;
-    rdfs:label \"Geschwindigkeit E-Modul\" ;
+    rdfs:label "Geschwindigkeit E-Modul" ;
     csvw:rownum 14 ;
     oa:hasBody [ a qudt:Quantity ;
-            qudt:value \"%L0/min\"^^xsd:string ] .
+            qudt:value "%L0/min"^^xsd:string ] .
 
 data:Kraftmaximum12 a oa:Annotation ;
-    rdfs:label \"Kraftmaximum\" ;
+    rdfs:label "Kraftmaximum" ;
     csvw:rownum 12 ;
     oa:hasBody [ a qudt:Quantity ;
             qudt:unit qunit:N-M-PER-M2 ;
             qudt:value 37.9483 ] .
 
 data:Messlaenge2 a oa:Annotation ;
-    rdfs:label \"Messlänge\" ;
+    rdfs:label "Messlänge" ;
     csvw:rownum 2 ;
     oa:hasBody [ a qudt:Quantity ;
-            qudt:value \"nicht bekannt\"^^xsd:string ] .
+            qudt:value "nicht bekannt"^^xsd:string ] .
 
 data:ObereStreckgrenze11 a oa:Annotation ;
-    rdfs:label \"obere Streckgrenze\" ;
+    rdfs:label "obere Streckgrenze" ;
     csvw:rownum 11 ;
     oa:hasBody [ a qudt:Quantity ;
-            qudt:value \"nicht bekannt\"^^xsd:string ] .
+            qudt:value "nicht bekannt"^^xsd:string ] .
 
 data:ProbenbreiteB03 a oa:Annotation ;
-    rdfs:label \"Probenbreite b0\" ;
+    rdfs:label "Probenbreite b0" ;
     csvw:rownum 3 ;
     oa:hasBody [ a qudt:Quantity ;
             qudt:unit qunit:MilliM ;
             qudt:value 11.4 ] .
 
 data:ProbendickeA04 a oa:Annotation ;
-    rdfs:label \"Probendicke a0\" ;
+    rdfs:label "Probendicke a0" ;
     csvw:rownum 4 ;
     oa:hasBody [ a qudt:Quantity ;
             qudt:unit qunit:MilliM ;
             qudt:value 0.2 ] .
 
 data:Pruefgeschwindigkeit5 a oa:Annotation ;
-    rdfs:label \"Prüfgeschwindigkeit\" ;
+    rdfs:label "Prüfgeschwindigkeit" ;
     csvw:rownum 5 ;
     oa:hasBody [ a qudt:Quantity ;
             qudt:unit qunit:MilliM-PER-MIN ;
@@ -365,60 +365,60 @@ data:Pruefgeschwindigkeit5 a oa:Annotation ;
 
 data:Pruefzeit a csvw:Column ;
     qudt:unit qunit:SEC ;
-    csvw:title \"Prüfzeit\" .
+    csvw:title "Prüfzeit" .
 
 data:Standardkraft a csvw:Column ;
     qudt:unit qunit:N ;
-    csvw:title \"Standardkraft\" .
+    csvw:title "Standardkraft" .
 
 data:Standardweg a csvw:Column ;
     qudt:unit qunit:MilliM ;
-    csvw:title \"Standardweg\" .
+    csvw:title "Standardweg" .
 
 data:TraverseAbs a csvw:Column ;
     qudt:unit qunit:MilliM ;
-    csvw:title \"Traverse abs.\" .
+    csvw:title "Traverse abs." .
 
 data:Vorkraft6 a oa:Annotation ;
-    rdfs:label \"Vorkraft\" ;
+    rdfs:label "Vorkraft" ;
     csvw:rownum 6 ;
     oa:hasBody [ a qudt:Quantity ;
             qudt:unit qunit:N ;
             qudt:value 0.2 ] .
 
 data:WegNachBruch7 a oa:Annotation ;
-    rdfs:label \"Weg nach Bruch\" ;
+    rdfs:label "Weg nach Bruch" ;
     csvw:rownum 7 ;
     oa:hasBody [ a qudt:Quantity ;
             qudt:unit qunit:MilliM ;
             qudt:value 5 ] .
 
 mseo:ActOfAnalysing a owl:Class ;
-    rdfs:label \"Act Of Analysing\" .
+    rdfs:label "Act Of Analysing" .
 
 mseo:CrossSection a owl:Class ;
-    rdfs:label \"Cross Section\" .
+    rdfs:label "Cross Section" .
 
 mseo:ElasticModulus a owl:Class ;
-    rdfs:label \"Elastic Modulus\" .
+    rdfs:label "Elastic Modulus" .
 
 mseo:ExperimentTime a owl:Class ;
-    rdfs:label \"Experiment Time\" .
+    rdfs:label "Experiment Time" .
 
 mseo:File a owl:Class ;
-    rdfs:label \"File\" .
+    rdfs:label "File" .
 
 mseo:ForceMeasurementArtifactFunction a owl:Class ;
-    rdfs:label \"Force Measurement Artifact Function\" .
+    rdfs:label "Force Measurement Artifact Function" .
 
 mseo:Regulation a owl:Class ;
-    rdfs:label \"Regulation\" .
+    rdfs:label "Regulation" .
 
 mseo:UltimateTensileStrength a owl:Class ;
-    rdfs:label \"Ultimate Tensile Strength\" .
+    rdfs:label "Ultimate Tensile Strength" .
 
 mseo:UniversalTestingMachine a owl:Class ;
-    rdfs:label \"Universal Testing Machine\" .
+    rdfs:label "Universal Testing Machine" .
 
 base:AlignSpecimen a cco:ActOfPositionChange,
         owl:NamedIndividual ;
@@ -446,7 +446,7 @@ base:CrossSectionArea a cco:EstimateMeasurementInformationContentEntity,
 
 base:DIN_EN_ISO_527-3 a cco:Document,
         owl:NamedIndividual ;
-    cco:has_URI_value \"https://www.beuth.de/de/norm/din-en-iso-527-3/298745448|\"^^xsd:anyURI .
+    cco:has_URI_value "https://www.beuth.de/de/norm/din-en-iso-527-3/298745448|"^^xsd:anyURI .
 
 base:ElasticModulus a owl:NamedIndividual,
         mseo:ElasticModulus ;
@@ -527,7 +527,7 @@ base:SpecimenWidth a cco:Width,
 
 base:StandardCode a cco:InformationLine,
         owl:NamedIndividual ;
-    cco:has_text_value \"DIN EN ISO 527-3:2019-02\"^^xsd:string .
+    cco:has_text_value "DIN EN ISO 527-3:2019-02"^^xsd:string .
 
 base:StandardIdentifier a cco:NonNameIdentifier,
         owl:NamedIndividual ;
@@ -564,49 +564,49 @@ qunit:N a qudt:DerivedUnit .
 qunit:N-M-PER-M2 a qudt:Unit .
 
 cco:ActOfArtifactAssembly a owl:Class ;
-    rdfs:label \"Act Of Artifact Assembly\" .
+    rdfs:label "Act Of Artifact Assembly" .
 
 cco:ActOfArtifactModification a owl:Class ;
-    rdfs:label \"Act Of Artifact Modification\" .
+    rdfs:label "Act Of Artifact Modification" .
 
 cco:ArtifactFunction a owl:Class ;
-    rdfs:label \"Artifact Function\" .
+    rdfs:label "Artifact Function" .
 
 cco:Cuboidal a owl:Class ;
-    rdfs:label \"Cuboidal\" .
+    rdfs:label "Cuboidal" .
 
 cco:DistanceMeasurementArtifactFunction a owl:Class ;
-    rdfs:label \"Distance Measurement Artifact Function\" .
+    rdfs:label "Distance Measurement Artifact Function" .
 
 cco:IncreaseOfQuality a owl:Class ;
-    rdfs:label \"Increase Of Quality\" .
+    rdfs:label "Increase Of Quality" .
 
 cco:InformationLine a owl:Class ;
-    rdfs:label \"Information Line\" .
+    rdfs:label "Information Line" .
 
 cco:LossOfQuality a owl:Class ;
-    rdfs:label \"Loss Of Quality\" .
+    rdfs:label "Loss Of Quality" .
 
 cco:MaximumOrdinalMeasurementInformationContentEntity a owl:Class ;
-    rdfs:label \"Maximum Ordinal Measurement Information Content Entity\" .
+    rdfs:label "Maximum Ordinal Measurement Information Content Entity" .
 
 cco:MeanPointEstimateMeasurementInformationContentEntity a owl:Class ;
-    rdfs:label \"Mean Point Estimate Measurement Information Content Entity\" .
+    rdfs:label "Mean Point Estimate Measurement Information Content Entity" .
 
 cco:ProcessProfilSpecification a owl:Class ;
-    rdfs:label \"Process Profil Specification\" .
+    rdfs:label "Process Profil Specification" .
 
 mseo:EngineeringStrain a owl:Class ;
-    rdfs:label \"Engineering Strain\" .
+    rdfs:label "Engineering Strain" .
 
 mseo:MeasurementRegion a owl:Class ;
-    rdfs:label \"Measurement Region\" .
+    rdfs:label "Measurement Region" .
 
 mseo:Specimen a owl:Class ;
-    rdfs:label \"Specimen\" .
+    rdfs:label "Specimen" .
 
 mseo:TimeOfBreak a owl:Class ;
-    rdfs:label \"Time Of Break\" .
+    rdfs:label "Time Of Break" .
 
 base:ActOfElongation a cco:ActOfMeasuring,
         owl:NamedIndividual ;
@@ -662,29 +662,29 @@ base:TimeOfMaxStress a obo:BFO_0000148,
 qunit:PERCENT a qudt:Unit .
 
 cco:DecreaseOfQuality a owl:Class ;
-    rdfs:label \"Decrease Of Quality\" .
+    rdfs:label "Decrease Of Quality" .
 
 cco:DistanceMeasurementInformationContentEntity a owl:Class ;
-    rdfs:label \"Distance Measurement Information Content Entity\" .
+    rdfs:label "Distance Measurement Information Content Entity" .
 
 cco:Lenght a owl:Class ;
-    rdfs:label \"Lenght\" .
+    rdfs:label "Lenght" .
 
 cco:LossOfFunction a owl:Class ;
-    rdfs:label \"Loss Of Function\" .
+    rdfs:label "Loss Of Function" .
 
 cco:Thickness a owl:Class ;
-    rdfs:label \"Thickness\" .
+    rdfs:label "Thickness" .
 
 cco:Width a owl:Class ;
-    rdfs:label \"Width\" .
+    rdfs:label "Width" .
 
 base:StressMeasurementInformation a cco:NominalMeasurementInformationContentEntity,
         owl:NamedIndividual ;
     cco:is_measured_by base:ForceMeasurementInformation .
 
 cco:ActOfMeasuring a owl:Class ;
-    rdfs:label \"Act Of Measuring\" .
+    rdfs:label "Act Of Measuring" .
 
 base:LenghtMeasurementInformation a cco:NominalMeasurementInformationContentEntity,
         owl:NamedIndividual .
@@ -695,20 +695,20 @@ base:StrainMeasurementInformation a cco:NominalMeasurementInformationContentEnti
         base:StartLenghtMeasurementInformation .
 
 cco:NominalMeasurementInformationContentEntity a owl:Class ;
-    rdfs:label \"Nominal Measurement Information Content Entity\" .
+    rdfs:label "Nominal Measurement Information Content Entity" .
 
 qunit:MilliM a qudt:DerivedUnit .
 
 cco:NonNameIdentifier a owl:Class,
         owl:DatatypeProperty ;
-    rdfs:label \"Non Name Identifier\",
-        \"non name identifier\" ;
+    rdfs:label "Non Name Identifier",
+        "non name identifier" ;
     rdfs:domain cco:DistanceMeasurementArtifactFunction .
 
 mseo:Experiment a owl:Class ;
-    rdfs:label \"Experiment\" .
+    rdfs:label "Experiment" .
 
 mseo:MeasurementDevice a owl:Class ;
-    rdfs:label \"Measurement Device\" .
+    rdfs:label "Measurement Device" .
 
 
