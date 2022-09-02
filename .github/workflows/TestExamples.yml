@@ -37,7 +37,7 @@ jobs:
           #remove quots
           echo -e "${DATA:1:-1}" > example.rdf
           #unescape quots
-          sed -i 's/\\"/'\''/g' example.rdf
+          sed -i 's/\\"/'\"'/g' example.rdf
       - name: Commit files # commit the output folder
         uses: EndBug/add-and-commit@v9
         with:
