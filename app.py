@@ -43,6 +43,10 @@ from urllib.request import urlopen
 from urllib.parse import urlparse, unquote
 
 OBO = Namespace('http://purl.obolibrary.org/obo/')
+MSEO_URL = 'https://raw.githubusercontent.com/Mat-O-Lab/MSEO/main/MSEO_mid.owl'
+CCO_URL = 'https://github.com/CommonCoreOntology/CommonCoreOntologies/raw/master/cco-merged/MergedAllCoreOntology-v1.3-2021-03-01.ttl'
+MSEO = Namespace(MSEO_URL)
+CCO = Namespace('http://www.ontologyrepository.com/CommonCoreOntologies/')
 CSVW = Namespace('http://www.w3.org/ns/csvw#')
 OA = Namespace('http://www.w3.org/ns/oa#')
 QUDT = Namespace('http://qudt.org/schema/qudt/')
@@ -184,7 +188,8 @@ def create_rdf():
     joined_graph.namespace_manager.bind('oa', OA)
     joined_graph.namespace_manager.bind('qudt', QUDT)
     joined_graph.namespace_manager.bind('qunit', QUNIT)
-    
+    joined_graph.parse(CCO, format='turtle')
+    joined_graph.parse(str(MSEO), format='xml')
     #app.logger.info(f'POST /api/createrdf: {data_url}')
     #load and copy method graph and give it a new base namespace
     templatedata, methodname=open_file(method_url)
