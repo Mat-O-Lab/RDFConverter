@@ -21,8 +21,8 @@ services:
   rdfconverter:
     container_name: rdfconverter
     image: ghcr.io/mat-o-lab/rdfconverter:latest
-    #volumes:
-    #  - .:/app
+    volumes:
+      - .:/app
     ports:
       - 5003:5000
     restart: always
