@@ -21,6 +21,8 @@ from config import config
 from rmlmapper import find_data_source, replace_data_source, find_method_graph, count_rules_str
 
 config_name = os.environ.get("APP_MODE") or "development"
+parser_port= os.environ.get('PARSER_PORT')
+mapper_port= os.environ.get('MAPPER_PORT')
 
 app = Flask(__name__)
 app.config.from_object(config[config_name])
@@ -74,7 +76,9 @@ class StartForm(FlaskForm):
     mapping_url = URLField(
         'URL Field Mapping',
         #validators=[Optional()],
-        description='Paste URL to a field mapping'
+        description='Paste URL to a field mapping',
+        render_kw={"placeholder": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"}
+        
     )
     opt_data_csvw_url = URLField(
         'Optional: URL CSVW Json-LD',
@@ -101,14 +105,15 @@ def index():
     conforms = None
         
     if request.method == 'POST' and start_form.validate():
-        mapping_url = request.values.get('mapping_url')
+        #mapping_url = request.values.get('mapping_url')
         opt_data_csvw_url = request.values.get('opt_data_csvw_url')
         # shacl_url = request.values.get('shacl_url')
         opt_shacl_shape_url = request.values.get('opt_shacl_shape_url')
-        if not mapping_url:
-            flash('Must give a YARRRML file to convert!')
-        
-        request_body = {'mapping_url': mapping_url}
+        if not start_form.mapping_url.data:
+            start_form.mapping_url.data=start_form.mapping_url.render_kw['placeholder']
+            flash('Mapping url field empty: using placeholder value for demonstration')
+
+        request_body = {'mapping_url': start_form.mapping_url.data}
         if opt_data_csvw_url:
             request_body['data_url'] = opt_data_csvw_url
 
@@ -132,7 +137,7 @@ def translate():
     content = request.get_json()
     app.logger.info(f"POST /api/yarrrmltorml {content['url']}")
     filedata, filename = open_file(content['url'])
-    rules = requests.post('http://yarrrml-parser:3000', data={'yarrrml': filedata}).text
+    rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': filedata}).text
     return rules
 
 @app.route('/api/createrdf', methods=['POST'])
@@ -140,7 +145,7 @@ def create_rdf():
     content = request.get_json()
     app.logger.info(f"POST /api/yarrrmltorml {content['mapping_url']}")
     mapping_data, mapping_filename = open_file(content['mapping_url'])
-    rml_rules = requests.post('http://yarrrml-parser:3000', data={'yarrrml': mapping_data}).text
+    rml_rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': mapping_data}).text
     mapping_dict = yaml.safe_load(mapping_data)
     method_url=mapping_dict['prefixes']['method']
     data_url=mapping_dict['prefixes']['data']
@@ -166,7 +171,7 @@ def create_rdf():
     data_content, data_filename=open_file(data_url)
     # call rmlmapper webapi
     d = {'rml': rml_rules_new, 'sources': {'source.json': data_content}, 'serialization': 'turtle'}
-    r = requests.post('http://rmlmapper:4000/execute', json=d)
+    r = requests.post('http://rmlmapper'+':'+mapper_port+'/execute', json=d)
 
     if r.status_code != 200:
         app.logger.error(r.text)

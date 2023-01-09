@@ -1,5 +1,5 @@
 FROM node:lts-alpine
-RUN apk update && apk add curl python3 openjdk17-jre git
+RUN apk update && apk add curl python3 openjdk17-jre git jq
 RUN rm -rf /var/cache/apk/*
 
 RUN git clone https://github.com/RMLio/rmlmapper-webapi-js
@@ -10,4 +10,8 @@ RUN npm install --omit=dev
 RUN wget https://github.com/RMLio/rmlmapper-java/releases/download/v6.1.2/rmlmapper-6.1.2-r366-all.jar -O /rmlmapper.jar
 COPY config.json ./
 
-ENTRYPOINT ["./bin/cli.js"]
+COPY entrypoint.sh ./
+RUN ["chmod", "+x", "./entrypoint.sh"]
+ENTRYPOINT ["./entrypoint.sh"]
+#ENTRYPOINT ["/bin/sh"]
+#ENTRYPOINT ["./bin/cli.js"]
