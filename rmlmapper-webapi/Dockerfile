@@ -1,18 +1,13 @@
-FROM ubuntu:latest
-
-RUN apt-get update
-RUN apt-get install -y curl
-RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
-RUN apt-get install -y nodejs
-RUN apt-get install -y build-essential
-RUN apt-get install -y python3
-RUN apt-get install -y default-jre
-RUN apt-get install -y git-core
+FROM node:lts-alpine
+RUN apk update && apk add curl python3 openjdk17-jre git
+RUN rm -rf /var/cache/apk/*
 
 RUN git clone https://github.com/RMLio/rmlmapper-webapi-js
 
-WORKDIR rmlmapper-webapi-js
-RUN npm install
+WORKDIR /rmlmapper-webapi-js
+#RUN npm install
+RUN npm install --omit=dev
+RUN wget https://github.com/RMLio/rmlmapper-java/releases/download/v6.1.2/rmlmapper-6.1.2-r366-all.jar -O /rmlmapper.jar
+COPY config.json ./
 
-#after boot
 ENTRYPOINT ["./bin/cli.js"]

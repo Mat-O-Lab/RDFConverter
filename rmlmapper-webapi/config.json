@@ -1,0 +1,6 @@
+{
+    "behindReverseProxy": true,
+    "rmlmapper": {
+      "path": "/rmlmapper.jar"
+    }
+}  
