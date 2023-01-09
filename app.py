@@ -7,7 +7,7 @@ from rdflib.util import guess_format
 import requests
 import yaml
 
-from flask import Flask, flash, request, render_template
+from flask import Flask, flash, request, render_template, url_for
 from flask_swagger_ui import get_swaggerui_blueprint
 from flask_wtf import FlaskForm
 from flask_bootstrap import Bootstrap
@@ -117,10 +117,10 @@ def index():
         if opt_data_csvw_url:
             request_body['data_url'] = opt_data_csvw_url
 
-        result = requests.post('http://localhost:5000/api/createrdf', json=request_body).json()['graph']
+        result = requests.post(url_for('create_rdf',_external=True), json=request_body).json()['graph']
 
         if opt_shacl_shape_url:
-            conforms = requests.post('http://localhost:5000/api/rdfvalidator', json={'shapes_url': opt_shacl_shape_url, 'rdf_data': result}).json()['valid']
+            conforms = requests.post(url_for('validate_rdf',_external=True), json={'shapes_url': opt_shacl_shape_url, 'rdf_data': result}).json()['valid']
 
 
     return render_template(

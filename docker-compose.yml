@@ -37,13 +37,14 @@ services:
       - PARSER_PORT=${PARSER_PORT}
       - MAPPER_PORT=${MAPPER_PORT}
       - APP_MODE=development
+      - PORT=${CONVERTER_PORT}
     container_name: rdfconverter
     image: ghcr.io/mat-o-lab/rdfconverter:latest
     ##not needed in production
     volumes:
       - .:/app
     ports:
-      - ${APP_PORT}:5000
+      - ${APP_PORT}:${CONVERTER_PORT}
     restart: always
     networks:
       - rdfconverter_net
