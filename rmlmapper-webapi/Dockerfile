@@ -13,5 +13,3 @@ COPY config.json ./
 COPY entrypoint.sh ./
 RUN ["chmod", "+x", "./entrypoint.sh"]
 ENTRYPOINT ["./entrypoint.sh"]
-#ENTRYPOINT ["/bin/sh"]
-#ENTRYPOINT ["./bin/cli.js"]
