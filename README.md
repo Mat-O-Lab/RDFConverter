@@ -1,5 +1,4 @@
-# RDFConverter [![Publish Docker image](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml/badge.svg?branch=main&event=workflow_dispatch)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml)
-
+# RDFConverter [![Publish Docker image](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml/badge.svg?branch=main&event=workflow_dispatch)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml) [![TestExamples](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/TestExamples.yml/badge.svg?branch=main)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/TestExamples.yml)
 Available online here: http://rdfconverter.matolab.org/
 
 It is a service for converting and validating YARRRML and Chowlk files to RDF, which is applied to Material Sciences Engineering (MSE) Methods, for example, on Cement MSE experiments.
@@ -22,11 +21,19 @@ The RDF content is validated according to the constraints defined on the SHACL S
 The validation will not occur on the RDF content from CHOWLk, because it does not contain instances to be validated.
 
 Example of how to use the API/service on the web:
+# create a .env file with
+```bash
+PARSER_PORT=3001
+APP_PORT=5003
+MAPPER_PORT=4000
+CONVERTER_PORT=6000
+```
 
 # Run flask app
-
 ```bash
 docker-compose up
 ```
 
-Go to http://localhost:5000/api/docs
+Go to http://localhost:5003/api/docs for a Simple UI
+
+Try the api at http://localhost:5003/api/docs
