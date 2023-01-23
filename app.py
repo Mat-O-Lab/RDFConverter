@@ -2,12 +2,13 @@ from crypt import methods
 from dataclasses import replace
 from fileinput import filename
 import os
+from wsgiref.validate import validator
 from rdflib import Graph, Namespace
 from rdflib.util import guess_format
 import requests
 import yaml
 
-from flask import Flask, flash, request, render_template, url_for
+from flask import Flask, flash, request, render_template
 from flask_swagger_ui import get_swaggerui_blueprint
 from flask_wtf import FlaskForm
 from flask_bootstrap import Bootstrap
@@ -18,7 +19,7 @@ from pyshacl import validate
 
 from config import config
 
-from rmlmapper import find_data_source, replace_data_source, find_method_graph, count_rules_str
+from rmlmapper import replace_data_source, count_rules_str
 
 config_name = os.environ.get("APP_MODE") or "development"
 parser_port= os.environ.get('PARSER_PORT')
@@ -97,7 +98,7 @@ class StartForm(FlaskForm):
     )
 
 @app.route('/', methods=['GET', 'POST'])
-def index():
+def index():    
     logo = './static/resources/MatOLab-Logo.svg'
     start_form = StartForm()
     message = ''
@@ -106,22 +107,25 @@ def index():
         
     if request.method == 'POST' and start_form.validate():
         #mapping_url = request.values.get('mapping_url')
-        opt_data_csvw_url = request.values.get('opt_data_csvw_url')
+        #opt_data_csvw_url = request.values.get('opt_data_csvw_url')
         # shacl_url = request.values.get('shacl_url')
+        opt_data_csvw_url=start_form.opt_data_csvw_url.data
+  
         opt_shacl_shape_url = request.values.get('opt_shacl_shape_url')
         if not start_form.mapping_url.data:
             start_form.mapping_url.data=start_form.mapping_url.render_kw['placeholder']
             flash('Mapping url field empty: using placeholder value for demonstration')
+        mapping_url=start_form.mapping_url.data
 
-        request_body = {'mapping_url': start_form.mapping_url.data}
-        if opt_data_csvw_url:
-            request_body['data_url'] = opt_data_csvw_url
+        
 
-        result = requests.post(url_for('create_rdf',_external=True), json=request_body).json()['graph']
+        out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url)
+        app.logger.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
+        api_result = {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
+        result=api_result['graph']
 
-        if opt_shacl_shape_url:
-            conforms = requests.post(url_for('validate_rdf',_external=True), json={'shapes_url': opt_shacl_shape_url, 'rdf_data': result}).json()['valid']
-
+        if start_form.opt_shacl_shape_url.data:
+            conforms, graph = shacl_validate(opt_shacl_shape_url,out)
 
     return render_template(
         "index.html",
@@ -140,21 +144,15 @@ def translate():
     rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': filedata}).text
     return rules
 
-@app.route('/api/createrdf', methods=['POST'])
-def create_rdf():
-    content = request.get_json()
-    app.logger.info(f"POST /api/yarrrmltorml {content['mapping_url']}")
-    mapping_data, mapping_filename = open_file(content['mapping_url'])
+def apply_mapping(mapping_url,opt_data_url=None):
+    mapping_data, mapping_filename = open_file(mapping_url)
     rml_rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': mapping_data}).text
     mapping_dict = yaml.safe_load(mapping_data)
-    method_url=mapping_dict['prefixes']['method']
-    data_url=mapping_dict['prefixes']['data']
-    
     rml_graph = Graph()
     rml_graph.parse(data=rml_rules, format='ttl')
 
-    rml_data_url = find_data_source(rml_graph)
-    #method_url = find_method_graph(rml_graph)
+    rml_data_url = mapping_dict['prefixes']['data']
+    method_url = mapping_dict['prefixes']['method']
 
     # replace rml source from mappingfile with local file 
     # because rmlmapper webapi does not work with remote sources
@@ -163,11 +161,13 @@ def create_rdf():
     rml_rules_new = rml_graph.serialize(format='ttl')
 
     # replace data_url with specified override
-    if 'data_url' in content.keys() and content['data_url']:
-        rml_rules_new = rml_rules_new.replace(rml_data_url, content['data_url'])
-        data_url =content['data_url']
+
+    if opt_data_url:
+        rml_rules_new = rml_rules_new.replace(rml_data_url, opt_data_url)
+        data_url =opt_data_url
+    else:
+        data_url=rml_data_url
     
-    #data_url_content=requests.get(data_url).text
     data_content, data_filename=open_file(data_url)
     # call rmlmapper webapi
     d = {'rml': rml_rules_new, 'sources': {'source.json': data_content}, 'serialization': 'turtle'}
@@ -201,6 +201,8 @@ def create_rdf():
     
     #app.logger.info(f'POST /api/createrdf: {data_url}')
     #load and copy method graph and give it a new base namespace
+    app.logger.info(method_url)
+    
     templatedata, methodname=open_file(method_url)
     # replace base url with place holder, should reference the now storage position of the resulting file
     rdf_filename='example.rdf'
@@ -222,36 +224,34 @@ def create_rdf():
 
     joined_graph += data_graph
     out=joined_graph.serialize(format="turtle")
+    return out, num_mappings_possible, num_mappings_applied
 
-    #if not ('minimal' in content.keys() and content['minimal']):
-        #mapping_graph += data_graph
-
-    app.logger.info(f'POST /api/createrdf: {num_mappings_possible=}, {num_mappings_applied=}')
-    return {'graph': out, 'num_mappings_applied': num_mappings_applied, 'num_mappings_skipped': num_mappings_possible-num_mappings_applied}
-
-@app.route('/api/rdfvalidator', methods=['POST'])
-def validate_rdf():
-
+@app.route('/api/createrdf', methods=['POST'])
+def create_rdf():
     content = request.get_json()
-    try:
-        if 'shapes_url' in content:
-            shapes_data, filename = open_file(content['shapes_url'])
-        else:
-            shapes_data = content['shapes_data']
+    app.logger.info(f"POST /api/yarrrmltorml {content['mapping_url']}")
+    out, count_rules, count_rules_applied=apply_mapping(content['mapping_url'])
+    app.logger.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
+    return {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
 
-        if 'rdf_url' in content:
-            rdf_data, filename = open_file(content['rdf_url'])
-        else:
-            rdf_data = content['rdf_data']
-        
+def shacl_validate(shapes_url,rdf_url):
+    if not len(urlparse(shapes_url))==6: #not a regular url might be data string
+        shapes_data=shapes_url
+    else:
+        shapes_data, filename = open_file(shapes_url)
+    if not len(urlparse(rdf_url))==6: #not a regular url might be data string
+        rdf_data=rdf_url
+    else:
+        rdf_data, filename = open_file(rdf_url)
+    #readin graphs
+    try:
         shapes_graph = Graph()
-        shapes_graph.parse(data=shapes_data, format=guess_format(content['shapes_url']) if 'shapes_url' in content else 'ttl')
+        shapes_graph.parse(data=shapes_data, format=guess_format(shapes_data))
         rdf_graph = Graph()
-        rdf_graph.parse(data=rdf_data, format=guess_format(content['rdf_url']) if 'rdf_url' in content else 'ttl')
+        rdf_graph.parse(data=rdf_data, format=guess_format(rdf_data))
     except Exception as e:
         app.logger.error(e)
-        return "Could not read graph!", 400
-
+        return "Could not read rdf data!", 400
     try:
         conforms, g, _ = validate(
             rdf_graph,
@@ -265,13 +265,20 @@ def validate_rdf():
             advanced=False,
             js=False,
             debug=False)
+        return conforms, g
 
     except Exception as e:
         app.logger.error(e)
         return str(e), 400
 
+
+@app.route('/api/rdfvalidator', methods=['POST'])
+def validate_rdf():
+
+    content = request.get_json()
+    conforms, graph = shacl_validate(content['shapes_url'],content['rdf_url'])
     app.logger.info(f'POST /api/rdfvalidator: {conforms=}')
-    return {'valid': conforms, 'graph': g.serialize(format='ttl')}
+    return {'valid': conforms, 'graph': graph.serialize(format='ttl')}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

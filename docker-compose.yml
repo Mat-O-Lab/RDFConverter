@@ -30,9 +30,9 @@ services:
       - rdfconverter_net
 
   rdfconverter:
-    #build:
-    #  context: ./
-    #  dockerfile: ./Dockerfile
+    build:
+     context: ./
+     dockerfile: ./Dockerfile
     environment:
       - PARSER_PORT=${PARSER_PORT}
       - MAPPER_PORT=${MAPPER_PORT}
@@ -41,8 +41,8 @@ services:
     container_name: rdfconverter
     image: ghcr.io/mat-o-lab/rdfconverter:latest
     ##not needed in production
-    #volumes:
-    #  - .:/app
+    volumes:
+      - .:/app
     ports:
       - ${APP_PORT}:${CONVERTER_PORT}
     restart: always
