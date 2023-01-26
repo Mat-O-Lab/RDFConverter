@@ -59,18 +59,17 @@ def open_file(uri=''):
     try:
         uri_parsed = urlparse(uri)
     except:
-        print('not an uri - if local file add file:// as prefix')
-        return None
+        flash(uri+ ' is not an uri - if local file add file:// as prefix',"error")
+        return None, None
     else:
         filename = unquote(uri_parsed.path).split('/')[-1]
         if uri_parsed.scheme in ['https', 'http']:
             filedata = requests.get(uri).text
-
         elif uri_parsed.scheme == 'file':
             filedata = open(unquote(uri_parsed.path), 'rb').read()
         else:
-            print('unknown scheme {}'.format(uri_parsed.scheme))
-            return None
+            flash('unknown scheme {}'.format(uri_parsed.scheme),"error")
+            return None, None
         return filedata, filename
 
 class StartForm(FlaskForm):
@@ -114,18 +113,20 @@ def index():
         opt_shacl_shape_url = request.values.get('opt_shacl_shape_url')
         if not start_form.mapping_url.data:
             start_form.mapping_url.data=start_form.mapping_url.render_kw['placeholder']
-            flash('Mapping url field empty: using placeholder value for demonstration')
+            flash('Mapping url field empty: using placeholder value for demonstration','info')
         mapping_url=start_form.mapping_url.data
 
-        
-
         out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url)
-        app.logger.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
-        api_result = {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
-        result=api_result['graph']
+        if out:
+            app.logger.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
+            api_result = {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
+            result=api_result['graph']
 
-        if start_form.opt_shacl_shape_url.data:
-            conforms, graph = shacl_validate(opt_shacl_shape_url,out)
+            if start_form.opt_shacl_shape_url.data:
+                conforms, graph = shacl_validate(opt_shacl_shape_url,out)
+        else:
+            result=None
+
 
     return render_template(
         "index.html",
@@ -146,11 +147,23 @@ def translate():
 
 def apply_mapping(mapping_url,opt_data_url=None):
     mapping_data, mapping_filename = open_file(mapping_url)
-    rml_rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': mapping_data}).text
-    mapping_dict = yaml.safe_load(mapping_data)
-    rml_graph = Graph()
-    rml_graph.parse(data=rml_rules, format='ttl')
+    if not mapping_data:
+            flash('could not read mapping file - cant download file from url','error')
+            return None, None, None
 
+    try:
+        mapping_dict = yaml.safe_load(mapping_data)
+    except:
+        flash('could not read mapping file - cant readin yaml','error')
+        return None, None, None
+    try:
+        rml_rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': mapping_data}).text
+        rml_graph = Graph()
+        rml_graph.parse(data=rml_rules, format='ttl')
+    except:
+        flash('could not process rml','error')
+        return None, None, None
+    
     rml_data_url = mapping_dict['prefixes']['data']
     method_url = mapping_dict['prefixes']['method']
 
@@ -169,17 +182,29 @@ def apply_mapping(mapping_url,opt_data_url=None):
         data_url=rml_data_url
     
     data_content, data_filename=open_file(data_url)
-    # call rmlmapper webapi
-    d = {'rml': rml_rules_new, 'sources': {'source.json': data_content}, 'serialization': 'turtle'}
-    r = requests.post('http://rmlmapper'+':'+mapper_port+'/execute', json=d)
+    if not data_content:
+            flash('could not read data meta file - cant download file from url','error')
+            return None, None, None
 
-    if r.status_code != 200:
-        app.logger.error(r.text)
-        return r.text, 400
-    res = r.json()['output']
-    
-    mapping_graph = Graph()
-    mapping_graph.parse(data=res, format='ttl')
+    try:
+        # call rmlmapper webapi
+        d = {'rml': rml_rules_new, 'sources': {'source.json': data_content}, 'serialization': 'turtle'}
+        r = requests.post('http://rmlmapper'+':'+mapper_port+'/execute', json=d)
+
+        if r.status_code != 200:
+            app.logger.error(r.text)
+            return r.text, 400
+        res = r.json()['output']
+    except:
+        flash('could not execute mapping with rmlmapper','error')
+        return None, None, None
+
+    try:
+        mapping_graph = Graph()
+        mapping_graph.parse(data=res, format='ttl')
+    except:
+        flash('could not pass mapping results to result graph','error')
+        return None, None, None
     
     num_mappings_applied = len(mapping_graph)
     num_mappings_possible = count_rules_str(rml_rules)
@@ -201,28 +226,43 @@ def apply_mapping(mapping_url,opt_data_url=None):
     
     #app.logger.info(f'POST /api/createrdf: {data_url}')
     #load and copy method graph and give it a new base namespace
-    app.logger.info(method_url)
-    
+    #app.logger.info(method_url)
     templatedata, methodname=open_file(method_url)
+    if not templatedata:
+            flash('could not read method graph - cant download file from url','error')
+            return None, None, None
     # replace base url with place holder, should reference the now storage position of the resulting file
     rdf_filename='example.rdf'
     new_base_url="https://your_filestorage_location/"+rdf_filename+'#'
     templatedata=templatedata.replace(method_url,new_base_url)
     res=res.replace(method_url,new_base_url)
 
-    joined_graph.parse(data=templatedata, format='ttl')
-    joined_graph.parse(data=res, format='ttl')
-
+    try:
+        joined_graph.parse(data=templatedata, format='ttl')
+    except:
+        flash('could not parse method graph to result graph','error')
+        return None, None, None
+    try:
+        joined_graph.parse(data=res, format='ttl')
+    except:
+        flash('could not join mapping results to result graph','error')
+        return None, None, None
+    
     #copy data entieties into joined graph
     data_graph=Graph()
     data_graph.namespace_manager.bind('data', Namespace('file:///app/'))
-    data_graph.parse(data=data_content, format='json-ld')
-    temp=data_graph.serialize(format="turtle")
-    temp=temp.replace('file:///app/',data_url)
-    data_graph=Graph()
-    data_graph.parse(data=temp, format='turtle')
-
-    joined_graph += data_graph
+    
+    try:
+        data_graph.parse(data=data_content, format='json-ld')
+        temp=data_graph.serialize(format="turtle")
+        temp=temp.replace('file:///app/',data_url)
+        data_graph=Graph()
+        data_graph.parse(data=temp, format='turtle')
+        joined_graph += data_graph
+    except:
+        flash('could not join data entities to result graph','error')
+        return None, None, None
+    
     out=joined_graph.serialize(format="turtle")
     return out, num_mappings_possible, num_mappings_applied
 

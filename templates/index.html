@@ -87,25 +87,20 @@
           </div>
         <button class="form-group btn btn-primary btn-lg" type="submit">Start Conversion</button>
       </form>
-
     </div>
-    {% with messages = get_flashed_messages() %}
-    <div class="container-fluid collapse {% if messages %} show {% endif %}" id="mappingForm">
+    {% with messages = get_flashed_messages(with_categories=True) %}
+    <div class="container-fluid collapse p-0 pb-3 {% if messages %} show {% endif %}" id="messages">
       <div class="card card-body">
-        <h5 class="card-title">Errors</h5>
+        <h5 class="card-title">Messages</h5>
         {% if messages %}
-        <div class="alert alert-primary" role="alert">
-            <ul class=flashes>
-            {% for message in messages %}
-              <li>{{ message }}</li>
-            {% endfor %}
-            </ul>
-        </div>
+          {% for category, message in messages %}
+          <div class="alert alert-{{'danger' if category=='error' else category}}" role="alert">{{ message }}</div>
+          {% endfor %}
         {% endif %}
       </div>
     </div>
 
-    <div class="container-fluid collapse {% if result %} show {% endif %}" id="results">
+    <div class="container-fluid collapse p-0 pb-3 {% if result %} show {% endif %}" id="results">
       <div class="card card-body">
         <h5 class="card-title">Result</h5>
         {% if conforms == True %}
@@ -122,6 +117,7 @@
       <a class="form-group btn btn-primary btn-lg my-3" download="{{ filename }}" href="data:text/json;base64,{{ payload }}" role="button">Download</a>
     </div>
     {% endwith %}
+    
 </main>
 <footer class="pt-3 my-4 text-center text-muted border-top">
   <span class="site-footer-owner"><a href="https://github.com/Mat-O-Lab/RDFConverter">RDFConverter</a> is maintained by <a href="https://matolab.org"><img src="{{ logo }}" width="5%" alt="mat-o-lab-logo"/></a>.</span>
