@@ -8,7 +8,7 @@ from rdflib.util import guess_format
 import requests
 import yaml
 
-from flask import Flask, flash, request, render_template
+from flask import Flask, flash, request, render_template, jsonify, make_response
 from flask_swagger_ui import get_swaggerui_blueprint
 from flask_wtf import FlaskForm
 from flask_bootstrap import Bootstrap
@@ -116,16 +116,18 @@ def index():
             flash('Mapping url field empty: using placeholder value for demonstration','info')
         mapping_url=start_form.mapping_url.data
 
-        out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url)
-        if out:
+        try:
+            out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url)
+        except Exception as err:
+            flash(err,'error')
+            result=None
+        else:
             app.logger.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
             api_result = {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
             result=api_result['graph']
 
             if start_form.opt_shacl_shape_url.data:
                 conforms, graph = shacl_validate(opt_shacl_shape_url,out)
-        else:
-            result=None
 
 
     return render_template(
@@ -148,21 +150,18 @@ def translate():
 def apply_mapping(mapping_url,opt_data_url=None):
     mapping_data, mapping_filename = open_file(mapping_url)
     if not mapping_data:
-            flash('could not read mapping file - cant download file from url','error')
-            return None, None, None
-
+            raise Exception('could not read mapping file - cant download file from url')
+ 
     try:
         mapping_dict = yaml.safe_load(mapping_data)
     except:
-        flash('could not read mapping file - cant readin yaml','error')
-        return None, None, None
+        raise Exception('could not read mapping file - cant readin yaml')
     try:
         rml_rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': mapping_data}).text
         rml_graph = Graph()
         rml_graph.parse(data=rml_rules, format='ttl')
     except:
-        flash('could not process rml','error')
-        return None, None, None
+        raise Exception('could not process rml')
     
     rml_data_url = mapping_dict['prefixes']['data']
     method_url = mapping_dict['prefixes']['method']
@@ -183,8 +182,7 @@ def apply_mapping(mapping_url,opt_data_url=None):
     
     data_content, data_filename=open_file(data_url)
     if not data_content:
-            flash('could not read data meta file - cant download file from url','error')
-            return None, None, None
+            raise Exception('could not read data meta file - cant download file from url')
 
     try:
         # call rmlmapper webapi
@@ -196,15 +194,13 @@ def apply_mapping(mapping_url,opt_data_url=None):
             return r.text, 400
         res = r.json()['output']
     except:
-        flash('could not execute mapping with rmlmapper','error')
-        return None, None, None
+        raise Exception('could not execute mapping with rmlmapper')
 
     try:
         mapping_graph = Graph()
         mapping_graph.parse(data=res, format='ttl')
     except:
-        flash('could not pass mapping results to result graph','error')
-        return None, None, None
+        raise Exception('could not pass mapping results to result graph')
     
     num_mappings_applied = len(mapping_graph)
     num_mappings_possible = count_rules_str(rml_rules)
@@ -229,8 +225,7 @@ def apply_mapping(mapping_url,opt_data_url=None):
     #app.logger.info(method_url)
     templatedata, methodname=open_file(method_url)
     if not templatedata:
-            flash('could not read method graph - cant download file from url','error')
-            return None, None, None
+            raise Exception('could not read method graph - cant download file from url')
     # replace base url with place holder, should reference the now storage position of the resulting file
     rdf_filename='example.rdf'
     new_base_url="https://your_filestorage_location/"+rdf_filename+'#'
@@ -240,13 +235,11 @@ def apply_mapping(mapping_url,opt_data_url=None):
     try:
         joined_graph.parse(data=templatedata, format='ttl')
     except:
-        flash('could not parse method graph to result graph','error')
-        return None, None, None
+        raise Exception('could not parse method graph to result graph')
     try:
         joined_graph.parse(data=res, format='ttl')
     except:
-        flash('could not join mapping results to result graph','error')
-        return None, None, None
+        raise Exception('could not join mapping results to result graph')
     
     #copy data entieties into joined graph
     data_graph=Graph()
@@ -260,8 +253,7 @@ def apply_mapping(mapping_url,opt_data_url=None):
         data_graph.parse(data=temp, format='turtle')
         joined_graph += data_graph
     except:
-        flash('could not join data entities to result graph','error')
-        return None, None, None
+        raise Exception('could not join data entities to result graph')
     
     out=joined_graph.serialize(format="turtle")
     return out, num_mappings_possible, num_mappings_applied
@@ -270,7 +262,10 @@ def apply_mapping(mapping_url,opt_data_url=None):
 def create_rdf():
     content = request.get_json()
     app.logger.info(f"POST /api/yarrrmltorml {content['mapping_url']}")
-    out, count_rules, count_rules_applied=apply_mapping(content['mapping_url'])
+    try:
+        out, count_rules, count_rules_applied=apply_mapping(content['mapping_url'])
+    except Exception as err:
+        return make_response(jsonify(str(err)), 400)
     app.logger.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
     return {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
 
