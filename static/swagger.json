@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "description": "RDFConverter",
+    "description": "Conversion and validation of YARRRML and Chowlk files to RDF, source at [https://github.com/Mat-O-Lab/RDFConverter](https://github.com/Mat-O-Lab/RDFConverter).",
     "version": "1.0.0",
     "title": "RDFConverter",
     "contact": {
@@ -15,7 +15,7 @@
   },
   "servers": [
     {
-      "url": "/"
+      "url": "https://rdfconverter.matolab.org"
     }
   ],
   "schemes": [
@@ -136,6 +136,9 @@
                       }
                     }
                   }
+                },
+                "400": {
+                  "description": "RDF creation has produced an error."
                 },
                 "404": {
                     "description": "File not found."
