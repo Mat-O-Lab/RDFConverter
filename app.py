@@ -1,7 +1,7 @@
 from crypt import methods
 from dataclasses import replace
 from fileinput import filename
-import os
+import os, re
 from wsgiref.validate import validator
 from rdflib import Graph, Namespace
 from rdflib.util import guess_format
@@ -55,6 +55,12 @@ OA = Namespace('http://www.w3.org/ns/oa#')
 QUDT = Namespace('http://qudt.org/schema/qudt/')
 QUNIT = Namespace('http://qudt.org/vocab/unit/')
 
+def replace_between(text: str, begin: str='', end: str='', alternative: str='') -> str:
+    if not (begin and end):
+        raise ValueError
+    return re.sub(r'{}.*?{}'.format(re.escape(begin),re.escape(end)),alternative,text)
+    
+    return text.replace(middle, alternative)
 def open_file(uri=''):
     try:
         uri_parsed = urlparse(uri)
@@ -195,7 +201,8 @@ def apply_mapping(mapping_url,opt_data_url=None):
         res = r.json()['output']
     except:
         raise Exception('could not execute mapping with rmlmapper')
-
+    
+    
     try:
         mapping_graph = Graph()
         mapping_graph.parse(data=res, format='ttl')
@@ -216,6 +223,10 @@ def apply_mapping(mapping_url,opt_data_url=None):
     joined_graph.namespace_manager.bind('qunit', QUNIT)
     joined_graph.namespace_manager.bind('mseo', MSEO)
     joined_graph.namespace_manager.bind('cco', CCO)
+    # replace base url with place holder, should reference the now storage position of the resulting file
+    rdf_filename='example.rdf'
+    new_base_url="https://your_filestorage_location/"+rdf_filename+'#'
+    #joined_graph.namespace_manager.bind('base', new_base_url)
     ##add ontology entieties for reasoning
     #joined_graph.parse(CCO_URL, format='turtle')
     #joined_graph.parse(str(MSEO), format='xml')
@@ -226,12 +237,10 @@ def apply_mapping(mapping_url,opt_data_url=None):
     templatedata, methodname=open_file(method_url)
     if not templatedata:
             raise Exception('could not read method graph - cant download file from url')
-    # replace base url with place holder, should reference the now storage position of the resulting file
-    rdf_filename='example.rdf'
-    new_base_url="https://your_filestorage_location/"+rdf_filename+'#'
     templatedata=templatedata.replace(method_url,new_base_url)
+    print('replacing {} with {}'.format(method_url,new_base_url))
+    #res=replace_between(res,begin=method_url,end='#',alternative=new_base_url)
     res=res.replace(method_url,new_base_url)
-
     try:
         joined_graph.parse(data=templatedata, format='ttl')
     except:
