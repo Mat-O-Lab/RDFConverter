@@ -7,6 +7,7 @@ from rdflib import Graph, Namespace
 from rdflib.util import guess_format
 import requests
 import yaml
+import base64
 
 from flask import Flask, flash, request, render_template, jsonify, make_response
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -108,6 +109,7 @@ def index():
     start_form = StartForm()
     message = ''
     result = ''
+    payload= ''    
     conforms = None
         
     if request.method == 'POST' and start_form.validate():
@@ -131,10 +133,12 @@ def index():
             app.logger.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
             api_result = {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
             result=api_result['graph']
-
+            
             if start_form.opt_shacl_shape_url.data:
                 conforms, graph = shacl_validate(opt_shacl_shape_url,out)
-
+            b64 = base64.b64encode(result.encode())
+            payload = b64.decode()
+    
 
     return render_template(
         "index.html",
@@ -142,6 +146,7 @@ def index():
         start_form=start_form,
         message=message,
         result=result,
+        payload=payload,
         conforms=conforms
         )
 

@@ -30,9 +30,9 @@ services:
       - rdfconverter_net
 
   rdfconverter:
-    # build:
-    #   context: ./
-    #   dockerfile: ./Dockerfile
+    #build:
+    # context: ./
+    # dockerfile: ./Dockerfile
     environment:
       - PARSER_PORT=${PARSER_PORT}
       - MAPPER_PORT=${MAPPER_PORT}
