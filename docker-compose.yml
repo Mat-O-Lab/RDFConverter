@@ -4,9 +4,6 @@ services:
   yarrrml-parser:
     environment:
       - PORT=${PARSER_PORT}
-    #build:
-    #  context: ./yarrrml-parser
-    #  dockerfile: ./Dockerfile
     image: ghcr.io/mat-o-lab/yarrrml-parser:latest
     expose:
       - ${PARSER_PORT}
@@ -18,9 +15,6 @@ services:
     # changing port doesnt work - issue on rmlmapper side
     environment:
       - PORT=${MAPPER_PORT}
-    #build:
-    #  context: ./rmlmapper-webapi
-    #  dockerfile: ./Dockerfile
     container_name: rmlmapper-webapi
     image: ghcr.io/mat-o-lab/rmlmapper-webapi:latest
     expose:
@@ -30,9 +24,6 @@ services:
       - rdfconverter_net
 
   rdfconverter:
-    #build:
-    # context: ./
-    # dockerfile: ./Dockerfile
     environment:
       - PARSER_PORT=${PARSER_PORT}
       - MAPPER_PORT=${MAPPER_PORT}
@@ -40,9 +31,6 @@ services:
       - PORT=${CONVERTER_PORT}
     container_name: rdfconverter
     image: ghcr.io/mat-o-lab/rdfconverter:latest
-    ##not needed in production
-    # volumes:
-    #  - .:/app
     ports:
       - ${APP_PORT}:${CONVERTER_PORT}
     restart: always

@@ -15,7 +15,12 @@
   },
   "servers": [
     {
-      "url": "https://rdfconverter.matolab.org"
+      "url": "/",
+      "description": "Your local deployment."
+    },
+    {
+      "url": "https://rdfconverter.matolab.org",
+      "description": "Demo deployment of matolab."
     }
   ],
   "schemes": [
