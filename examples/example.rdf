@@ -118,7 +118,8 @@ cco:process_preceeds a owl:ObjectProperty ;
     rdfs:label "process_preceeds" ;
     rdfs:range cco:ActOfArtifactAssembly .
 
-data: csvw:dialect [ csvw:delimiter "	" ;
+data: csvw:aboutUrl "gid-{GID}"^^csvw:uriTemplate ;
+    csvw:dialect [ csvw:delimiter "	" ;
             csvw:encoding "ISO-8859-1" ;
             csvw:headerRowCount "2"^^xsd:nonNegativeInteger ;
             csvw:skipRows "16"^^xsd:nonNegativeInteger ] ;
@@ -138,7 +139,13 @@ data: csvw:dialect [ csvw:delimiter "	" ;
         data:Pruefgeschwindigkeit5,
         data:Vorkraft6,
         data:WegNachBruch7 ;
-    csvw:tableSchema [ csvw:column ( data:Pruefzeit data:Standardweg data:Standardkraft data:Dehnung data:TraverseAbs ) ] ;
+    csvw:primaryKey "GID" ;
+    csvw:tableSchema [ csvw:column ( [ csvw:datatype xsd:string ;
+                        csvw:name "GID" ;
+                        csvw:required true ;
+                        csvw:suppressOutput true ;
+                        csvw:title "GID",
+                            "Generic Identifier" ] data:Pruefzeit data:Standardweg data:Standardkraft data:Dehnung data:TraverseAbs ) ] ;
     csvw:url "example.csv"^^xsd:anyURI .
 
 mseo1: a owl:Ontology ;
@@ -275,17 +282,23 @@ data:AktuelleProbe0 a oa:Annotation ;
 data:Bruchkraft13 a oa:Annotation ;
     rdfs:label "Bruchkraft" ;
     csvw:rownum 13 ;
-    oa:hasBody "nicht bekannt"^^oa:TextualBody .
+    oa:hasBody [ a oa:TextualBody ;
+            oa:format "text/plain" ;
+            oa:purpose "oa:tagging" ;
+            oa:value "nicht bekannt" ] .
 
 data:Datum15 a oa:Annotation ;
     rdfs:label "Datum" ;
+    obo:RO_0010002 base:ExperimentDateIdentifier ;
     csvw:rownum 15 ;
     oa:hasBody [ a qudt:QuantityValue ;
             qudt:value "2008-02-20T00:00:00"^^xsd:dateTime ] .
 
 data:Dehnung a csvw:Column ;
-    obo:RO_0010002 base:StrainMeasurementInformation ;
+    obo:RO_0010002 base:StrainMeasurementInformation,
+        base:StressMeasurementInformation ;
     qudt:unit qunit:PERCENT ;
+    csvw:name "Dehnung" ;
     csvw:title "Dehnung" .
 
 data:DehnungBeiBruch10 a oa:Annotation ;
@@ -297,6 +310,7 @@ data:DehnungBeiBruch10 a oa:Annotation ;
 
 data:DehnungBeiFmax9 a oa:Annotation ;
     rdfs:label "Dehnung bei Fmax" ;
+    obo:RO_0010002 base:StrainMaxForce ;
     csvw:rownum 9 ;
     oa:hasBody [ a qudt:QuantityValue ;
             qudt:unit qunit:PERCENT ;
@@ -311,6 +325,7 @@ data:EModul8 a oa:Annotation ;
 
 data:Einspannlaenge1 a oa:Annotation ;
     rdfs:label "Einspannlänge" ;
+    obo:RO_0010002 base:StartLenghtMeasurementInformation ;
     csvw:rownum 1 ;
     oa:hasBody [ a qudt:QuantityValue ;
             qudt:unit qunit:MilliM ;
@@ -321,7 +336,10 @@ data:GeschwindigkeitEModul14 a oa:Annotation ;
     csvw:rownum 14 ;
     oa:hasBody [ a qudt:QuantityValue ;
             qudt:value 1 ],
-        "%L0/min"^^oa:TextualBody .
+        [ a oa:TextualBody ;
+            oa:format "text/plain" ;
+            oa:purpose "oa:tagging" ;
+            oa:value "%L0/min" ] .
 
 data:Kraftmaximum12 a oa:Annotation ;
     rdfs:label "Kraftmaximum" ;
@@ -333,15 +351,22 @@ data:Kraftmaximum12 a oa:Annotation ;
 data:Messlaenge2 a oa:Annotation ;
     rdfs:label "Messlänge" ;
     csvw:rownum 2 ;
-    oa:hasBody "nicht bekannt"^^oa:TextualBody .
+    oa:hasBody [ a oa:TextualBody ;
+            oa:format "text/plain" ;
+            oa:purpose "oa:tagging" ;
+            oa:value "nicht bekannt" ] .
 
 data:ObereStreckgrenze11 a oa:Annotation ;
     rdfs:label "obere Streckgrenze" ;
     csvw:rownum 11 ;
-    oa:hasBody "nicht bekannt"^^oa:TextualBody .
+    oa:hasBody [ a oa:TextualBody ;
+            oa:format "text/plain" ;
+            oa:purpose "oa:tagging" ;
+            oa:value "nicht bekannt" ] .
 
 data:ProbenbreiteB03 a oa:Annotation ;
     rdfs:label "Probenbreite b0" ;
+    obo:RO_0010002 base:WidthMeasurementInformation ;
     csvw:rownum 3 ;
     oa:hasBody [ a qudt:QuantityValue ;
             qudt:unit qunit:MilliM ;
@@ -349,6 +374,7 @@ data:ProbenbreiteB03 a oa:Annotation ;
 
 data:ProbendickeA04 a oa:Annotation ;
     rdfs:label "Probendicke a0" ;
+    obo:RO_0010002 base:ThicknessMeasurementInformation ;
     csvw:rownum 4 ;
     oa:hasBody [ a qudt:QuantityValue ;
             qudt:unit qunit:MilliM ;
@@ -363,18 +389,24 @@ data:Pruefgeschwindigkeit5 a oa:Annotation ;
 
 data:Pruefzeit a csvw:Column ;
     qudt:unit qunit:SEC ;
+    csvw:name "Pruefzeit" ;
     csvw:title "Prüfzeit" .
 
 data:Standardkraft a csvw:Column ;
+    obo:RO_0010002 base:ForceMeasurementInformation ;
     qudt:unit qunit:N ;
+    csvw:name "Standardkraft" ;
     csvw:title "Standardkraft" .
 
 data:Standardweg a csvw:Column ;
+    obo:RO_0010002 base:LenghtMeasurementInformation ;
     qudt:unit qunit:MilliM ;
+    csvw:name "Standardweg" ;
     csvw:title "Standardweg" .
 
 data:TraverseAbs a csvw:Column ;
     qudt:unit qunit:MilliM ;
+    csvw:name "TraverseAbs" ;
     csvw:title "Traverse abs." .
 
 data:Vorkraft6 a oa:Annotation ;
@@ -458,9 +490,6 @@ base:ElongationAtMaximumForce a owl:NamedIndividual,
         mseo1:EngineeringStrain ;
     cco:is_measured_by base:StrainMaxForce .
 
-base:ExperimentDateIdentifier a cco:CalendarDateIdentifier,
-        owl:NamedIndividual .
-
 base:LenghtMeasurementDevice a owl:NamedIndividual,
         mseo1:MeasurementDevice ;
     cco:designated_by base:LenghtMeasurementDeviceIdentifer .
@@ -531,14 +560,6 @@ base:StandardIdentifier a cco:NonNameIdentifier,
         owl:NamedIndividual ;
     obo:RO_0010001 base:StandardCode .
 
-base:StartLenghtMeasurementInformation a cco:MinimumOrdinalMeasurementInformationContentEntity,
-        owl:NamedIndividual ;
-    cco:is_a_ordinal_measurement_of base:LenghtMeasurementInformation .
-
-base:StrainMaxForce a cco:MeasurementInformationContentEntity,
-        owl:NamedIndividual ;
-    cco:occures_on base:TimeOfMaxStress .
-
 base:TensileForce a owl:NamedIndividual,
         mseo1:MeasurementDevice ;
     cco:is_measured_by base:LenghtMeasurementInformation .
@@ -553,9 +574,6 @@ base:TestPlanName a cco:NonNameIdentifier,
 
 base:TestTimeInterval a owl:NamedIndividual,
         mseo1:ExperimentTime .
-
-base:WidthMeasurementInformation a cco:DistanceMeasurementInformationContentEntity,
-        owl:NamedIndividual .
 
 qunit:MegaPA a qudt:Unit .
 
@@ -624,7 +642,7 @@ base:CrossHeadAcccelaration a owl:NamedIndividual,
 base:CrossHeadSpeed a owl:NamedIndividual,
         mseo1:MeasurementDevice .
 
-base:ForceMeasurementInformation a cco:NominalMeasurementInformationContentEntity,
+base:ExperimentDateIdentifier a cco:CalendarDateIdentifier,
         owl:NamedIndividual .
 
 base:GetCharacteristicValues a owl:NamedIndividual,
@@ -646,15 +664,23 @@ base:MeanWidth a cco:MeanPointEstimateMeasurementInformationContentEntity,
 base:SpecimenName a cco:NonNameIdentifier,
         owl:NamedIndividual .
 
+base:StartLenghtMeasurementInformation a cco:MinimumOrdinalMeasurementInformationContentEntity,
+        owl:NamedIndividual ;
+    cco:is_a_ordinal_measurement_of base:LenghtMeasurementInformation .
+
+base:StrainMaxForce a cco:MeasurementInformationContentEntity,
+        owl:NamedIndividual ;
+    cco:occures_on base:TimeOfMaxStress .
+
 base:TestMachine a owl:NamedIndividual,
         mseo1:UniversalTestingMachine ;
     obo:BFO_0000051 base:LenghtMeasurementDevice,
         base:LoadCell .
 
-base:ThicknessMeasurementInformation a cco:DistanceMeasurementInformationContentEntity,
+base:TimeOfMaxStress a obo:BFO_0000148,
         owl:NamedIndividual .
 
-base:TimeOfMaxStress a obo:BFO_0000148,
+base:WidthMeasurementInformation a cco:DistanceMeasurementInformationContentEntity,
         owl:NamedIndividual .
 
 qunit:PERCENT a qudt:Unit .
@@ -677,23 +703,29 @@ cco:Thickness a owl:Class ;
 cco:Width a owl:Class ;
     rdfs:label "Width" .
 
-base:StressMeasurementInformation a cco:NominalMeasurementInformationContentEntity,
-        owl:NamedIndividual ;
-    cco:is_measured_by base:ForceMeasurementInformation .
+base:ForceMeasurementInformation a cco:NominalMeasurementInformationContentEntity,
+        owl:NamedIndividual .
+
+base:ThicknessMeasurementInformation a cco:DistanceMeasurementInformationContentEntity,
+        owl:NamedIndividual .
 
 cco:ActOfMeasuring a owl:Class ;
     rdfs:label "Act Of Measuring" .
-
-base:LenghtMeasurementInformation a cco:NominalMeasurementInformationContentEntity,
-        owl:NamedIndividual .
 
 base:StrainMeasurementInformation a cco:NominalMeasurementInformationContentEntity,
         owl:NamedIndividual ;
     cco:is_measured_by base:LenghtMeasurementInformation,
         base:StartLenghtMeasurementInformation .
 
+base:StressMeasurementInformation a cco:NominalMeasurementInformationContentEntity,
+        owl:NamedIndividual ;
+    cco:is_measured_by base:ForceMeasurementInformation .
+
 cco:NominalMeasurementInformationContentEntity a owl:Class ;
     rdfs:label "Nominal Measurement Information Content Entity" .
+
+base:LenghtMeasurementInformation a cco:NominalMeasurementInformationContentEntity,
+        owl:NamedIndividual .
 
 qunit:MilliM a qudt:DerivedUnit .
 
