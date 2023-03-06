@@ -1,4 +1,5 @@
 import os, re
+from xmlrpc.client import Boolean
 from rdflib import Graph, Namespace
 from rdflib.util import guess_format
 import yaml
@@ -10,7 +11,7 @@ import requests
 import uvicorn
 from pydantic import BaseSettings, BaseModel, AnyUrl, Field
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Any, List
+from typing import Any, List, Optional, Tuple
 from fastapi import Request, FastAPI, Body, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -22,8 +23,8 @@ from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
 
 
-from wtforms import URLField
-from wtforms.validators import Optional
+from wtforms import URLField, BooleanField
+from wtforms.validators import Optional as WTFOptional
 from pyshacl import validate
 
 from rmlmapper import replace_data_source, count_rules_str
@@ -103,8 +104,7 @@ def replace_between(text: str, begin: str='', end: str='', alternative: str='') 
         raise ValueError
     return re.sub(r'{}.*?{}'.format(re.escape(begin),re.escape(end)),alternative,text)
     
-    return text.replace(middle, alternative)
-def open_file(uri=''):
+def open_file(uri: AnyUrl) -> Tuple[str,str]:
     try:
         uri_parsed = urlparse(uri)
     except:
@@ -121,7 +121,7 @@ def open_file(uri=''):
             return None, None
         return filedata, filename
 
-def apply_mapping(mapping_url,opt_data_url=None):
+def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_table: Boolean=False) -> Tuple[str,int,int]:
     mapping_data, mapping_filename = open_file(mapping_url)
     if not mapping_data:
             raise Exception('could not read mapping file - cant download file from url')
@@ -130,14 +130,7 @@ def apply_mapping(mapping_url,opt_data_url=None):
         mapping_dict = yaml.safe_load(mapping_data)
     except:
         raise Exception('could not read mapping file - cant readin yaml')
-    print(mapping_dict)
-    # try:
-    #     rml_rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': mapping_data}).text
-    #     rml_graph = Graph()
-    #     rml_graph.parse(data=rml_rules, format='ttl')
-    # except:
-    #     raise Exception('could not process rml')
-    print(mapping_data)
+    
     rml_rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': mapping_data}).text
     rml_graph = Graph()
     rml_graph.parse(data=rml_rules, format='ttl')
@@ -240,7 +233,7 @@ def apply_mapping(mapping_url,opt_data_url=None):
     out=joined_graph.serialize(format="turtle")
     return out, num_mappings_possible, num_mappings_applied
 
-def shacl_validate(shapes_url,rdf_url):
+def shacl_validate(shapes_url: AnyUrl, rdf_url: AnyUrl) -> Tuple[str, Graph]:
     if not len(urlparse(shapes_url))==6: #not a regular url might be data string
         shapes_data=shapes_url
     else:
@@ -280,7 +273,7 @@ def shacl_validate(shapes_url,rdf_url):
 class StartForm(StarletteForm):
     mapping_url = URLField(
         'URL Field Mapping',
-        #validators=[Optional()],
+        #validators=[WTFOptional()],
         description='Paste URL to a field mapping',
         render_kw={
             "class": "form-control",
@@ -289,22 +282,28 @@ class StartForm(StarletteForm):
     )
     opt_data_csvw_url = URLField(
         'Optional: URL CSVW Json-LD',
-        validators=[Optional()],
+        validators=[WTFOptional()],
         render_kw={"class":"form-control"},
         description='Paste URL to a CSVW Json-LD'
     )
     shacl_url = URLField(
         'URL SHACL Shape Repository',
-        validators=[Optional()],
+        validators=[WTFOptional()],
         render_kw={"class":"form-control"},
         description='Paste URL to a SHACL Shape Repository'
     )
     opt_shacl_shape_url = URLField(
         'Optional: URL SHACL Shape',
-        validators=[Optional()],
+        validators=[WTFOptional()],
         render_kw={"class":"form-control"},
         description='Paste URL to a SHACL Shape'
     )
+    duplicate_for_table = BooleanField(
+        'Duplicate Template for Table Data',
+        render_kw={"class":"form-check form-check-input form-control-lg", "role":"switch"},
+        description='If to duplicate the method template for each row in the table.',
+        default=''
+        )
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def index(request: Request):
@@ -330,9 +329,9 @@ async def convert(request: Request):
         
         opt_data_csvw_url=start_form.opt_data_csvw_url.data
         opt_shacl_shape_url = start_form.opt_shacl_shape_url.data
-
+        duplicate_for_table=start_form.duplicate_for_table.data
         try:
-            out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url)
+            out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url,duplicate_for_table)
         except Exception as err:
             flash(request,err,'error')
             result=None
@@ -345,7 +344,7 @@ async def convert(request: Request):
                 conforms, graph = shacl_validate(opt_shacl_shape_url,out)
             b64 = base64.b64encode(result.encode())
             payload = b64.decode()
-
+        
         
     return templates.TemplateResponse("index.html",
         {"request": request,
@@ -358,6 +357,8 @@ async def convert(request: Request):
 
 class RDFRequest(BaseModel):
     mapping_url: AnyUrl = Field('', title='Graph Url', description='Url to data metadata to use.')
+    duplicate_for_table: Optional[bool] = Field(False, title='Duplicate Template for Table Data', description='If to duplicate the method template for each row in the table.', omit_default=True)
+    
 
 class RDFResponse(BaseModel):
     graph:  str = Field( title='Graph data', description='The output gaph data in turtle format.')

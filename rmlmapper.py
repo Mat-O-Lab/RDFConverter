@@ -1,7 +1,6 @@
 from rdflib import Graph, Namespace, RDF, URIRef, Literal
 import requests
 import json
-import re
 
 RR = Namespace('http://www.w3.org/ns/r2rml#')
 RML = Namespace('http://semweb.mmlab.be/ns/rml#')
