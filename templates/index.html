@@ -1,4 +1,4 @@
-{% extends "bootstrap/base.html" %}
+{% extends "base.html" %}
 {% block title %}RDFConverter{% endblock %}
 
 {% block metas %}
@@ -25,7 +25,7 @@
 {% block content %}
 <header class="pb-3 mb-4 border-bottom">
       <a href="/" class="d-flex align-items-center text-dark text-decoration-none m-3 pb-1">
-        <img class='me-3' src="{{ logo }}" height="30" alt="mat-o-lab-logo"/>
+        <img class='me-3' src="{{ url_for('static', path='/resources/MatOLab-Logo.svg') }}" height="30" alt="mat-o-lab-logo"/>
       </a>
 </header>
 <main class="bg-light rounded-3 px-3">
@@ -34,93 +34,55 @@
       <p class="col-md-12 ps-0 fs-4">
         Conversion and validation of YARRRML and Chowlk files to RDF
       </p>
-      <form class='pb-3' method="post" action="{{ url_for('index') }}">
-        <div class="mb-3">
-          {{ start_form.csrf_token }}
-          {{ start_form.mapping_url.label }}
-          {{ start_form.mapping_url(class="form-control", **{'aria-describedby': 'mapHelp'}) }}
-          <div id="mapHelp" class="form-text">{{ start_form.mapping_url.description }}</div>
-          <div class="invalid-feedback">
-            {% if start_form.mapping_url.errors %}
-                <ul class="errors">
-                {% for error in start_form.mapping_url.errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-                </ul>
+      <form class='pb-3' method="post" action="{{ url_for('convert') }}">
+        {{ start_form.csrf_token }}
+        {% for item in start_form if item.widget.input_type != 'hidden' %}
+          <div class="mb-3">
+            {% if item.label.text=='Advanced' %} 
+            <button class="btn btn-secondary mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#{{item.id}}" aria-expanded="false" aria-controls="{{item.id}}">
+              {{item.label.text}}
+            </button>
+            {% else %}
+            {{ item.label(class="form-label")}}
             {% endif %}
+            {{ item }}
+            <div class="invalid-feedback">
+              {% if item.errors %}
+                  <ul class="errors">
+                  {% for error in item.errors %}
+                      <li>{{ error }}</li>
+                  {% endfor %}
+                  </ul>
+              {% endif %}
+            </div>
+            <div id="methodHelp" class="form-text">{{ item.description }}</div>
           </div>
-          {{ start_form.opt_data_csvw_url.label }}
-          {{ start_form.opt_data_csvw_url(class="form-control", **{'aria-describedby': 'dataHelp'}) }}
-          <div id="dataHelp" class="form-text">{{ start_form.opt_data_csvw_url.description }}</div>
-          <div class="invalid-feedback">
-            {% if start_form.opt_data_csvw_url.errors %}
-                <ul class="errors">
-                {% for error in start_form.opt_data_csvw_url.errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-                </ul>
-            {% endif %}
-          </div>
-          {{ start_form.shacl_url.label }}
-          {{ start_form.shacl_url(class="form-control", **{'aria-describedby': 'shacldirHelp'}) }}
-          <div id="shacldirHelp" class="form-text">{{ start_form.shacl_url.description }}</div>
-          <div class="invalid-feedback">
-            {% if start_form.shacl_url.errors %}
-                <ul class="errors">
-                {% for error in start_form.shacl_url.errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-                </ul>
-            {% endif %}
-          </div>
-          {{ start_form.opt_shacl_shape_url.label }}
-          {{ start_form.opt_shacl_shape_url(class="form-control", **{'aria-describedby': 'shaclHelp'}) }}
-          <div id="shaclHelp" class="form-text">{{ start_form.opt_shacl_shape_url.description }}</div>
-          <div class="invalid-feedback">
-            {% if start_form.opt_shacl_shape_url.errors %}
-                <ul class="errors">
-                {% for error in start_form.opt_shacl_shape_url.errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-                </ul>
-            {% endif %}
-          </div>
-        <button class="form-group btn btn-primary btn-lg" type="submit">Start Conversion</button>
+        {% endfor %}
+        <button class="form-group btn btn-primary btn-lg mt-3" type="submit">Start Conversion</button>
       </form>
     </div>
-    {% with messages = get_flashed_messages(with_categories=True) %}
+    {% with messages = get_flashed_messages(request) %}
     <div class="container-fluid collapse p-0 pb-3 {% if messages %} show {% endif %}" id="messages">
-      <div class="card card-body">
+      <div id="messages-body" class="card card-body">
         <h5 class="card-title">Messages</h5>
         {% if messages %}
-          {% for category, message in messages %}
-          <div class="alert alert-{{'danger' if category=='error' else category}}" role="alert">{{ message }}</div>
+          {% for message in messages %}
+          <div class="alert alert-{{'danger' if message.category=='error' else message.category}}" role="alert">{{ message.message }}</div>
           {% endfor %}
         {% endif %}
       </div>
     </div>
-
-    <div class="container-fluid collapse p-0 pb-3 {% if result %} show {% endif %}" id="results">
+    {% endwith %}
+    <div class="container-fluid collapse pb-3 {% if result %} show {% endif %}" id="results">
       <div class="card card-body">
         <h5 class="card-title">Result</h5>
-        {% if conforms == True %}
-        <div class="alert alert-success" role="alert">
-          This result conforms to the shacl shape!
-        </div>
-        {% elif conforms == False %}
-        <div class="alert alert-danger" role="alert">
-          This result does not conform to the shacl shape!
-        </div>
-        {% endif %}
-        <code class="prettyprint" style="white-space: pre-wrap;">{{ result }}</code>
+        <code class="prettyprint lang-js" style="white-space: pre-wrap;">{{ result }}</code>
       </div>
-      <a class="form-group btn btn-primary btn-lg my-3" download="dataset.ttl" href="data:text/json;base64,{{ payload }}" role="button">Download</a>
+      <a class="form-group btn btn-primary btn-lg my-3" download="{{ filename }}" href="data:text/json;base64,{{ payload }}" role="button">Download</a>
     </div>
-    {% endwith %}
-    
 </main>
 <footer class="pt-3 my-4 text-center text-muted border-top">
-  <span class="site-footer-owner"><a href="https://github.com/Mat-O-Lab/RDFConverter">RDFConverter</a> is maintained by <a href="https://matolab.org"><img src="{{ logo }}" width="5%" alt="mat-o-lab-logo"/></a>.</span>
+  <span class="site-footer-owner"><a href="https://github.com/Mat-O-Lab/RDFConverter">RDFConverter</a> is maintained by <a href="https://matolab.org"><img src="{{ url_for('static', path='/resources/MatOLab-Logo.svg') }}" width="5%" alt="mat-o-lab-logo"/></a>.</span>
 </footer>
 {% endblock %}
 
