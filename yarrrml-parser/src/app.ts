@@ -11,10 +11,12 @@ app.use(bodyParser.json());
 
 // take yarrrml as input and return triples
 app.post('/', (req, res) => {
+    console.log(req.body.yarrrml)
     const y2r = new Yarrrml();
     const yarrrml_query = req.body.yarrrml;
     if (yarrrml_query) {
         const quads = y2r.convert(yarrrml_query);
+        console.log(quads)
         const triples: string[] = [];
         quads.forEach((q: { subject: { value: string; }; predicate: { value: string; }; object: { termType: string; value: string; }; }) => {
             triples.push(`<${q.subject.value}> <${q.predicate.value}> ${q.object.termType === 'Literal' ? `"${q.object.value}"` : `<${q.object.value}>`} .`);

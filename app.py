@@ -167,13 +167,18 @@ def apply_mapping(mapping_url,opt_data_url=None):
         mapping_dict = yaml.safe_load(mapping_data)
     except:
         raise Exception('could not read mapping file - cant readin yaml')
-    try:
-        rml_rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': mapping_data}).text
-        rml_graph = Graph()
-        rml_graph.parse(data=rml_rules, format='ttl')
-    except:
-        raise Exception('could not process rml')
-    
+    print(mapping_dict)
+    # try:
+    #     rml_rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': mapping_data}).text
+    #     rml_graph = Graph()
+    #     rml_graph.parse(data=rml_rules, format='ttl')
+    # except:
+    #     raise Exception('could not process rml')
+    print(mapping_data)
+    rml_rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': mapping_data}).text
+    rml_graph = Graph()
+    rml_graph.parse(data=rml_rules, format='ttl')
+
     rml_data_url = mapping_dict['prefixes']['data']
     method_url = mapping_dict['prefixes']['method']
 
