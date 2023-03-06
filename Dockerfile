@@ -1,15 +1,18 @@
 FROM python:3.9
 
-WORKDIR /app
-
-# first only copy requirements and install to optimize caching
 COPY requirements.txt .
+RUN buildDeps='apt-utils gcc g++' \
+    && set -x \
+    && apt-get update && apt-get install -y $buildDeps --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/* \
+    && python - m pip install – upgrade pip \
+    && pip3 install -r requirements.txt \
+    && apt-get purge -y --auto-remove $buildDeps
 
-# hotfix install problems
-#RUN pip3 install --no-deps pretty_yarrrml2rml
-RUN pip3 install -r requirements.txt
+ADD . /src
+WORKDIR /src
 
-COPY . .
-
-CMD ["gunicorn", "wsgi:app", "--workers=3"]
-#CMD ["python3", "app.py"]
+ENV PYTHONDONTWRITEBYTECODE 1
+# Turns off buffering for easier container logging
+ENV PYTHONUNBUFFERED 1
+ENTRYPOINT ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "5000", "--workers", "6","--proxy-headers"]

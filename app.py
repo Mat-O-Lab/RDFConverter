@@ -1,49 +1,91 @@
-from crypt import methods
-from dataclasses import replace
-from fileinput import filename
 import os, re
-from wsgiref.validate import validator
 from rdflib import Graph, Namespace
 from rdflib.util import guess_format
-import requests
 import yaml
-import base64
 
-from flask import Flask, flash, request, render_template, jsonify, make_response
-from flask_swagger_ui import get_swaggerui_blueprint
-from flask_wtf import FlaskForm
-from flask_bootstrap import Bootstrap
+import base64
+import logging
+import requests
+
+import uvicorn
+from pydantic import BaseSettings, BaseModel, AnyUrl, Field
+from fastapi.middleware.cors import CORSMiddleware
+from typing import Any, List
+from fastapi import Request, FastAPI, Body, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+
+
+from starlette_wtf import StarletteForm
+from starlette.middleware import Middleware
+from starlette.middleware.sessions import SessionMiddleware
+
 
 from wtforms import URLField
 from wtforms.validators import Optional
 from pyshacl import validate
 
-from config import config
-
 from rmlmapper import replace_data_source, count_rules_str
 
-config_name = os.environ.get("APP_MODE") or "development"
 parser_port= os.environ.get('PARSER_PORT')
 mapper_port= os.environ.get('MAPPER_PORT')
 
-app = Flask(__name__)
-app.config.from_object(config[config_name])
 
-bootstrap = Bootstrap(app)
+class Settings(BaseSettings):
+    app_name: str = "RDFConverter"
+    admin_email: str = os.environ.get("ADMIN_MAIL") or "rdfconverter@matolab.org"
+    items_per_user: int = 50
+    version: str = "v1.0.2"
+    config_name: str = os.environ.get("APP_MODE") or "development"
+    openapi_url: str ="/api/openapi.json"
+    docs_url: str = "/api/docs"
+settings = Settings()
 
-SWAGGER_URL = "/api/docs"
-API_URL = "/static/swagger.json"
-swaggerui_blueprint = get_swaggerui_blueprint(
-    SWAGGER_URL,
-    API_URL,
-    config={
-        "app_name": "RDFConverter"
-    }
+config_name = os.environ.get("APP_MODE") or "development"
+
+middleware = [Middleware(SessionMiddleware, secret_key=os.getenv("APP_SECRET", "your-secret"))]
+app = FastAPI(
+    title=settings.app_name,
+    description="It is a service for converting and validating YARRRML and Chowlk files to RDF, which is applied to Material Sciences Engineering (MSE) Methods, for example, on Cement MSE experiments.",
+    version=settings.version,
+    contact={"name": "Thomas Hanke, Mat-O-Lab", "url": "https://github.com/Mat-O-Lab", "email": settings.admin_email},
+    license_info={
+        "name": "Apache 2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+    },
+    openapi_url=settings.openapi_url,
+    docs_url=settings.docs_url,
+    redoc_url=None,    
+    #to disable highlighting for large output
+    #swagger_ui_parameters= {'syntaxHighlight': False},
+    middleware=middleware
 )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"], # Allows all methods
+    allow_headers=["*"], # Allows all headers
+)
+app.add_middleware(uvicorn.middleware.proxy_headers.ProxyHeadersMiddleware, trusted_hosts="*")
 
-app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
+app.mount("/static/", StaticFiles(directory='static', html=True), name="static")
+templates= Jinja2Templates(directory="templates")
 
-from urllib.request import urlopen
+
+#flash integration flike flask flash
+def flash(request: Request, message: Any, category: str = "info") -> None:
+    if "_messages" not in request.session:
+        request.session["_messages"] = []
+    request.session["_messages"].append({"message": message, "category": category})
+
+def get_flashed_messages(request: Request):
+    return request.session.pop("_messages") if "_messages" in request.session else []
+
+templates.env.globals['get_flashed_messages'] = get_flashed_messages
+
+
 from urllib.parse import urlparse, unquote
 
 OBO = Namespace('http://purl.obolibrary.org/obo/')
@@ -79,85 +121,6 @@ def open_file(uri=''):
             return None, None
         return filedata, filename
 
-class StartForm(FlaskForm):
-    mapping_url = URLField(
-        'URL Field Mapping',
-        #validators=[Optional()],
-        description='Paste URL to a field mapping',
-        render_kw={"placeholder": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"}
-        
-    )
-    opt_data_csvw_url = URLField(
-        'Optional: URL CSVW Json-LD',
-        validators=[Optional()],
-        description='Paste URL to a CSVW Json-LD'
-    )
-    shacl_url = URLField(
-        'URL SHACL Shape Repository',
-        validators=[Optional()],
-        description='Paste URL to a SHACL Shape Repository'
-    )
-    opt_shacl_shape_url = URLField(
-        'Optional: URL SHACL Shape',
-        validators=[Optional()],
-        description='Paste URL to a SHACL Shape'
-    )
-
-@app.route('/', methods=['GET', 'POST'])
-def index():    
-    logo = './static/resources/MatOLab-Logo.svg'
-    start_form = StartForm()
-    message = ''
-    result = ''
-    payload= ''    
-    conforms = None
-        
-    if request.method == 'POST' and start_form.validate():
-        #mapping_url = request.values.get('mapping_url')
-        #opt_data_csvw_url = request.values.get('opt_data_csvw_url')
-        # shacl_url = request.values.get('shacl_url')
-        opt_data_csvw_url=start_form.opt_data_csvw_url.data
-  
-        opt_shacl_shape_url = request.values.get('opt_shacl_shape_url')
-        if not start_form.mapping_url.data:
-            start_form.mapping_url.data=start_form.mapping_url.render_kw['placeholder']
-            flash('Mapping url field empty: using placeholder value for demonstration','info')
-        mapping_url=start_form.mapping_url.data
-
-        try:
-            out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url)
-        except Exception as err:
-            flash(err,'error')
-            result=None
-        else:
-            app.logger.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
-            api_result = {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
-            result=api_result['graph']
-            
-            if start_form.opt_shacl_shape_url.data:
-                conforms, graph = shacl_validate(opt_shacl_shape_url,out)
-            b64 = base64.b64encode(result.encode())
-            payload = b64.decode()
-    
-
-    return render_template(
-        "index.html",
-        logo=logo,
-        start_form=start_form,
-        message=message,
-        result=result,
-        payload=payload,
-        conforms=conforms
-        )
-
-@app.route('/api/yarrrmltorml', methods=['POST'])
-def translate():
-    content = request.get_json()
-    app.logger.info(f"POST /api/yarrrmltorml {content['url']}")
-    filedata, filename = open_file(content['url'])
-    rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': filedata}).text
-    return rules
-
 def apply_mapping(mapping_url,opt_data_url=None):
     mapping_data, mapping_filename = open_file(mapping_url)
     if not mapping_data:
@@ -167,13 +130,18 @@ def apply_mapping(mapping_url,opt_data_url=None):
         mapping_dict = yaml.safe_load(mapping_data)
     except:
         raise Exception('could not read mapping file - cant readin yaml')
-    try:
-        rml_rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': mapping_data}).text
-        rml_graph = Graph()
-        rml_graph.parse(data=rml_rules, format='ttl')
-    except:
-        raise Exception('could not process rml')
-    
+    print(mapping_dict)
+    # try:
+    #     rml_rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': mapping_data}).text
+    #     rml_graph = Graph()
+    #     rml_graph.parse(data=rml_rules, format='ttl')
+    # except:
+    #     raise Exception('could not process rml')
+    print(mapping_data)
+    rml_rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': mapping_data}).text
+    rml_graph = Graph()
+    rml_graph.parse(data=rml_rules, format='ttl')
+
     rml_data_url = mapping_dict['prefixes']['data']
     method_url = mapping_dict['prefixes']['method']
 
@@ -272,17 +240,6 @@ def apply_mapping(mapping_url,opt_data_url=None):
     out=joined_graph.serialize(format="turtle")
     return out, num_mappings_possible, num_mappings_applied
 
-@app.route('/api/createrdf', methods=['POST'])
-def create_rdf():
-    content = request.get_json()
-    app.logger.info(f"POST /api/yarrrmltorml {content['mapping_url']}")
-    try:
-        out, count_rules, count_rules_applied=apply_mapping(content['mapping_url'])
-    except Exception as err:
-        return make_response(jsonify(str(err)), 400)
-    app.logger.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
-    return {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
-
 def shacl_validate(shapes_url,rdf_url):
     if not len(urlparse(shapes_url))==6: #not a regular url might be data string
         shapes_data=shapes_url
@@ -320,15 +277,166 @@ def shacl_validate(shapes_url,rdf_url):
         app.logger.error(e)
         return str(e), 400
 
+class StartForm(StarletteForm):
+    mapping_url = URLField(
+        'URL Field Mapping',
+        #validators=[Optional()],
+        description='Paste URL to a field mapping',
+        render_kw={
+            "class": "form-control",
+            "placeholder": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"
+            }
+    )
+    opt_data_csvw_url = URLField(
+        'Optional: URL CSVW Json-LD',
+        validators=[Optional()],
+        render_kw={"class":"form-control"},
+        description='Paste URL to a CSVW Json-LD'
+    )
+    shacl_url = URLField(
+        'URL SHACL Shape Repository',
+        validators=[Optional()],
+        render_kw={"class":"form-control"},
+        description='Paste URL to a SHACL Shape Repository'
+    )
+    opt_shacl_shape_url = URLField(
+        'Optional: URL SHACL Shape',
+        validators=[Optional()],
+        render_kw={"class":"form-control"},
+        description='Paste URL to a SHACL Shape'
+    )
 
-@app.route('/api/rdfvalidator', methods=['POST'])
-def validate_rdf():
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def index(request: Request):
+    start_form = await StartForm.from_formdata(request)
+    return templates.TemplateResponse("index.html",
+        {"request": request,
+        "start_form": start_form,
+        "mapping_form": '',
+        "result": ''
+        }
+    )
 
-    content = request.get_json()
-    conforms, graph = shacl_validate(content['shapes_url'],content['rdf_url'])
-    app.logger.info(f'POST /api/rdfvalidator: {conforms=}')
+@app.post("/convert", response_class=HTMLResponse, include_in_schema=False)
+async def convert(request: Request):
+    start_form = await StartForm.from_formdata(request)
+    logging.info('start conversion')
+    if await start_form.validate_on_submit():
+        if not start_form.mapping_url.data:
+            start_form.mapping_url.data=start_form.mapping_url.render_kw['placeholder']
+            flash(request,'URL Mapping File empty: using placeholder value for demonstration', 'info')
+        mapping_url = start_form.mapping_url.data
+        request.session['mapping_url']=mapping_url
+        
+        opt_data_csvw_url=start_form.opt_data_csvw_url.data
+        opt_shacl_shape_url = start_form.opt_shacl_shape_url.data
+
+        try:
+            out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url)
+        except Exception as err:
+            flash(request,err,'error')
+            result=None
+        else:
+            logging.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
+            api_result = {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
+            result=api_result['graph']
+            
+            if start_form.opt_shacl_shape_url.data:
+                conforms, graph = shacl_validate(opt_shacl_shape_url,out)
+            b64 = base64.b64encode(result.encode())
+            payload = b64.decode()
+
+        
+    return templates.TemplateResponse("index.html",
+        {"request": request,
+        "start_form": start_form,
+        "filename": "dataset.ttl",
+        "payload": payload,
+        "result": result
+        }
+    )
+
+class RDFRequest(BaseModel):
+    mapping_url: AnyUrl = Field('', title='Graph Url', description='Url to data metadata to use.')
+
+class RDFResponse(BaseModel):
+    graph:  str = Field( title='Graph data', description='The output gaph data in turtle format.')
+    num_mappings_applied: int = Field( title='Number Rules Applied', description='The total number of rules that were applied from the mapping.')
+    num_mappings_skipped: int = Field( title='Number Rules Skipped', description='The total number of rules not applied once.')
+
+class ValidateRequest(BaseModel):
+    shapes_url: AnyUrl = Field('', title='Shacle Shapes Url', description='Url to shacle shapes data to use.')
+    rdf_url: AnyUrl = Field('', title='RDF Url', description='Url to graph data to validate.')
+
+class ValidateResponse(BaseModel):
+    valid: str = Field( title='Shacle Report', description='Report resulting of shacle testing')
+    graph:  str = Field( title='Graph data', description='The output gaph data in turtle format.')
+    
+
+
+@app.post('/api/yarrrmltorml')
+def yarrrmltorml(request: RDFRequest = Body(
+        examples={
+            "normal": {
+                "summary": "A simple yarrrmltorml example",
+                "description": "Creates rml rules from yarrrml yaml.",
+                "value": {
+                    "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"
+                    },
+            },
+        }
+    )) -> str:
+    logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
+    filedata, filename = open_file(request.mapping_url)
+    rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': filedata}).text
+  
+    return rules
+
+
+@app.post('/api/createrdf', response_model=RDFResponse)
+def create_rdf(request: RDFRequest = Body(
+        examples={
+            "normal": {
+                "summary": "A simple yarrrmltorml example",
+                "description": "Creates rml rules from yarrrml yaml.",
+                "value": {
+                    "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"
+                    },
+            },
+        }
+    )):
+    logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
+    try:
+        out, count_rules, count_rules_applied=apply_mapping(request.mapping_url)
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=str(err))
+    logging.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
+    return {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
+
+
+@app.post('/api/rdfvalidator', response_model=ValidateResponse)
+def validate_rdf(request: ValidateRequest):
+    conforms, graph = shacl_validate(request.shapes_url,request.rdf_url)
+    logging.info(f'POST /api/rdfvalidator: {conforms=}')
     return {'valid': conforms, 'graph': graph.serialize(format='ttl')}
+
+@app.get("/info", response_model=Settings)
+async def info() -> dict:
+    return settings
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=app.config["DEBUG"])
+    app_mode=os.environ.get("APP_MODE") or 'production'
+    with open('log_config.yml') as f:
+        config = yaml.load(f,Loader=yaml.Loader)
+        logging.config.dictConfig(config)
+    if app_mode=='development':
+        reload=True
+        access_log=True
+        config['root']['level']='DEBUG'
+    else:
+        reload=False
+        access_log=False
+        config['root']['level']='ERROR'
+    print('Log Level Set To {}'.format(config['root']['level']))
+    uvicorn.run("app:app",host="0.0.0.0",port=port, reload=reload, access_log=access_log,log_config=config)
