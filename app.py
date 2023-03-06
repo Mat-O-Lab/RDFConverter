@@ -199,7 +199,6 @@ def apply_mapping(mapping_url,opt_data_url=None):
     # replace base url with place holder, should reference the now storage position of the resulting file
     rdf_filename='example.rdf'
     new_base_url="https://your_filestorage_location/"+rdf_filename+'#'
-    #joined_graph.namespace_manager.bind('base', new_base_url)
     ##add ontology entieties for reasoning
     #joined_graph.parse(CCO_URL, format='turtle')
     #joined_graph.parse(str(MSEO), format='xml')
@@ -212,6 +211,7 @@ def apply_mapping(mapping_url,opt_data_url=None):
             raise Exception('could not read method graph - cant download file from url')
     templatedata=templatedata.replace(method_url,new_base_url)
     print('replacing {} with {}'.format(method_url,new_base_url))
+    
     #res=replace_between(res,begin=method_url,end='#',alternative=new_base_url)
     res=res.replace(method_url,new_base_url)
     try:
@@ -222,15 +222,15 @@ def apply_mapping(mapping_url,opt_data_url=None):
         joined_graph.parse(data=res, format='ttl')
     except:
         raise Exception('could not join mapping results to result graph')
-    
+    joined_graph.namespace_manager.bind('base', Namespace(new_base_url), override=True, replace=True)
     #copy data entieties into joined graph
     data_graph=Graph()
-    data_graph.namespace_manager.bind('data', Namespace('file:///app/'))
+    data_graph.namespace_manager.bind('data', Namespace('file:///src/'))
     
     try:
         data_graph.parse(data=data_content, format='json-ld')
         temp=data_graph.serialize(format="turtle")
-        temp=temp.replace('file:///app/',data_url)
+        temp=temp.replace('file:///src/',data_url)
         data_graph=Graph()
         data_graph.parse(data=temp, format='turtle')
         joined_graph += data_graph
