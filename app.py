@@ -346,24 +346,7 @@ async def convert(request: Request):
             b64 = base64.b64encode(result.encode())
             payload = b64.decode()
 
-        # try:
-        #     with maptomethod.Mapper(
-        #         data_url=data_url,
-        #         method_url=method_url,
-        #         mapping_predicate_uri = URIRef(mapping_predicate_uri),
-        #         data_subject_super_class_uris = [ URIRef(uri) for uri in mapping_subject_class_uris],
-        #         method_object_super_class_uris = [ URIRef(uri) for uri in mapping_object_class_uris]
-        #         ) as mapper:
-        #         info_choices = [(id, value['text']) for
-        #                     id, value in mapper.subjects.items()]
-        #         info_choices.insert(0, (None, 'None'))
-        #         select_forms = forms.get_select_entries(
-        #             mapper.objects.keys(),
-        #             info_choices
-        #         )
-        #     flash(request,str(mapper), 'info')
-        # except Exception as err:
-        #     flash(request,str(err),'error')
+        
     return templates.TemplateResponse("index.html",
         {"request": request,
         "start_form": start_form,
@@ -373,118 +356,68 @@ async def convert(request: Request):
         }
     )
 
-# @app.route('/', methods=['GET', 'POST'])
-# def index():    
-#     logo = './static/resources/MatOLab-Logo.svg'
-#     start_form = StartForm()
-#     message = ''
-#     result = ''
-#     payload= ''    
-#     conforms = None
-        
-    # if request.method == 'POST' and start_form.validate():
-    #     #mapping_url = request.values.get('mapping_url')
-    #     #opt_data_csvw_url = request.values.get('opt_data_csvw_url')
-    #     # shacl_url = request.values.get('shacl_url')
-    #     opt_data_csvw_url=start_form.opt_data_csvw_url.data
-  
-    #     opt_shacl_shape_url = request.values.get('opt_shacl_shape_url')
-    #     if not start_form.mapping_url.data:
-    #         start_form.mapping_url.data=start_form.mapping_url.render_kw['placeholder']
-    #         flash('Mapping url field empty: using placeholder value for demonstration','info')
-    #     mapping_url=start_form.mapping_url.data
+class RDFRequest(BaseModel):
+    mapping_url: AnyUrl = Field('', title='Graph Url', description='Url to data metadata to use.')
 
-    #     try:
-    #         out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url)
-    #     except Exception as err:
-    #         flash(err,'error')
-    #         result=None
-    #     else:
-    #         app.logger.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
-    #         api_result = {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
-    #         result=api_result['graph']
-            
-    #         if start_form.opt_shacl_shape_url.data:
-    #             conforms, graph = shacl_validate(opt_shacl_shape_url,out)
-    #         b64 = base64.b64encode(result.encode())
-    #         payload = b64.decode()
+class RDFResponse(BaseModel):
+    graph:  str = Field( title='Graph data', description='The output gaph data in turtle format.')
+    num_mappings_applied: int = Field( title='Number Rules Applied', description='The total number of rules that were applied from the mapping.')
+    num_mappings_skipped: int = Field( title='Number Rules Skipped', description='The total number of rules not applied once.')
+
+class ValidateRequest(BaseModel):
+    shapes_url: AnyUrl = Field('', title='Shacle Shapes Url', description='Url to shacle shapes data to use.')
+    rdf_url: AnyUrl = Field('', title='RDF Url', description='Url to graph data to validate.')
+
+class ValidateResponse(BaseModel):
+    valid: str = Field( title='Shacle Report', description='Report resulting of shacle testing')
+    graph:  str = Field( title='Graph data', description='The output gaph data in turtle format.')
     
 
-#     return render_template(
-#         "index.html",
-#         logo=logo,
-#         start_form=start_form,
-#         message=message,
-#         result=result,
-#         payload=payload,
-#         conforms=conforms
-#         )
 
-# @app.route('/api/yarrrmltorml', methods=['POST'])
-# def translate():
-#     content = request.get_json()
-#     app.logger.info(f"POST /api/yarrrmltorml {content['url']}")
-#     filedata, filename = open_file(content['url'])
-#     rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': filedata}).text
-#     return rules
-
-
-# @app.route('/api/createrdf', methods=['POST'])
-# def create_rdf():
-#     content = request.get_json()
-#     app.logger.info(f"POST /api/yarrrmltorml {content['mapping_url']}")
-#     try:
-#         out, count_rules, count_rules_applied=apply_mapping(content['mapping_url'])
-#     except Exception as err:
-#         return make_response(jsonify(str(err)), 400)
-#     app.logger.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
-#     return {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
-
-# def shacl_validate(shapes_url,rdf_url):
-#     if not len(urlparse(shapes_url))==6: #not a regular url might be data string
-#         shapes_data=shapes_url
-#     else:
-#         shapes_data, filename = open_file(shapes_url)
-#     if not len(urlparse(rdf_url))==6: #not a regular url might be data string
-#         rdf_data=rdf_url
-#     else:
-#         rdf_data, filename = open_file(rdf_url)
-#     #readin graphs
-#     try:
-#         shapes_graph = Graph()
-#         shapes_graph.parse(data=shapes_data, format=guess_format(shapes_data))
-#         rdf_graph = Graph()
-#         rdf_graph.parse(data=rdf_data, format=guess_format(rdf_data))
-#     except Exception as e:
-#         app.logger.error(e)
-#         return "Could not read rdf data!", 400
-#     try:
-#         conforms, g, _ = validate(
-#             rdf_graph,
-#             shacl_graph=shapes_graph,
-#             ont_graph=None,  # can use a Web URL for a graph containing extra ontological information
-#             inference='none',
-#             abort_on_first=False,
-#             allow_infos=False,
-#             allow_warnings=False,
-#             meta_shacl=False,
-#             advanced=False,
-#             js=False,
-#             debug=False)
-#         return conforms, g
-
-#     except Exception as e:
-#         app.logger.error(e)
-#         return str(e), 400
+@app.post('/api/yarrrmltorml')
+def yarrrmltorml(request: RDFRequest = Body(
+        examples={
+            "normal": {
+                "summary": "A simple yarrrmltorml example",
+                "description": "Creates rml rules from yarrrml yaml.",
+                "value": {
+                    "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"
+                    },
+            },
+        }
+    )) -> str:
+    logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
+    filedata, filename = open_file(request.mapping_url)
+    rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': filedata}).text
+    return rules
 
 
-# @app.route('/api/rdfvalidator', methods=['POST'])
-# def validate_rdf():
+@app.post('/api/createrdf', response_model=RDFResponse)
+def create_rdf(request: RDFRequest = Body(
+        examples={
+            "normal": {
+                "summary": "A simple yarrrmltorml example",
+                "description": "Creates rml rules from yarrrml yaml.",
+                "value": {
+                    "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"
+                    },
+            },
+        }
+    )):
+    logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
+    try:
+        out, count_rules, count_rules_applied=apply_mapping(request.mapping_url)
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=str(err))
+    logging.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
+    return {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
 
-#     content = request.get_json()
-#     conforms, graph = shacl_validate(content['shapes_url'],content['rdf_url'])
-#     app.logger.info(f'POST /api/rdfvalidator: {conforms=}')
-#     return {'valid': conforms, 'graph': graph.serialize(format='ttl')}
+
+@app.post('/api/rdfvalidator', response_model=ValidateResponse)
+def validate_rdf(request: ValidateRequest):
+    conforms, graph = shacl_validate(request.shapes_url,request.rdf_url)
+    logging.info(f'POST /api/rdfvalidator: {conforms=}')
+    return {'valid': conforms, 'graph': graph.serialize(format='ttl')}
 
 @app.get("/info", response_model=Settings)
 async def info() -> dict:
