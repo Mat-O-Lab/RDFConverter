@@ -389,6 +389,7 @@ def yarrrmltorml(request: RDFRequest = Body(
     logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
     filedata, filename = open_file(request.mapping_url)
     rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': filedata}).text
+  
     return rules
 
 
