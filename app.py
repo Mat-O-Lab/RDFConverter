@@ -218,17 +218,21 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
     joined_graph.namespace_manager.bind('base', Namespace(new_base_url), override=True, replace=True)
     #copy data entieties into joined graph
     data_graph=Graph()
-    data_graph.namespace_manager.bind('data', Namespace('file:///src/'))
+    data_graph.parse(data=data_content, format=guess_format(data_url))
+    joined_graph += data_graph
     
-    try:
-        data_graph.parse(data=data_content, format='json-ld')
-        temp=data_graph.serialize(format="turtle")
-        temp=temp.replace('file:///src/',data_url)
-        data_graph=Graph()
-        data_graph.parse(data=temp, format='turtle')
-        joined_graph += data_graph
-    except:
-        raise Exception('could not join data entities to result graph')
+    # data_graph=Graph()
+    # data_graph.namespace_manager.bind('data', Namespace('file:///src/'))
+    
+    # try:
+    #     data_graph.parse(data=data_content, format='json-ld')
+    #     temp=data_graph.serialize(format="turtle")
+    #     temp=temp.replace('file:///src/',data_url)
+    #     data_graph=Graph()
+    #     data_graph.parse(data=temp, format='turtle')
+    #     joined_graph += data_graph
+    # except:
+    #     raise Exception('could not join data entities to result graph')
     
     out=joined_graph.serialize(format="turtle")
     return out, num_mappings_possible, num_mappings_applied
@@ -335,6 +339,7 @@ async def convert(request: Request):
         except Exception as err:
             flash(request,err,'error')
             result=None
+            payload=None
         else:
             logging.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
             api_result = {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
@@ -407,6 +412,7 @@ def create_rdf(request: RDFRequest = Body(
         }
     )):
     logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
+    #out, count_rules, count_rules_applied=apply_mapping(request.mapping_url)
     try:
         out, count_rules, count_rules_applied=apply_mapping(request.mapping_url)
     except Exception as err:
