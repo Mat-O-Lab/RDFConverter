@@ -31,12 +31,12 @@ jobs:
         working-directory: ${{env.WORKING_DIR}}
         run: |
           docker logs rdfconverter
-          curl -X POST "http://localhost:${{env.APP_PORT}}/api/yarrrmltorml" -H  "accept: */*" -H  "Content-Type: application/json" -d "{\"url\":\"${{env.MAPPING_URL}}\"}" > example.rml
+          curl -X POST "http://localhost:5003/api/yarrrmltorml" -H  "accept: */*" -H  "Content-Type: application/json" -d "{\"url\":\"${{env.MAPPING_URL}}\"}" > example.rml
           docker logs rdfconverter
       - name: join the method and the data meta graph
         working-directory: ${{env.WORKING_DIR}}
         run: |
-          RESULT="$(curl -X POST "http://localhost:${{env.APP_PORT}}/api/createrdf" -H  "accept: */*" -H  "Content-Type: application/json" -d "{\"mapping_url\":\"${{env.MAPPING_URL}}\"}")"
+          RESULT="$(curl -X POST "http://localhost:5003/api/createrdf" -H  "accept: */*" -H  "Content-Type: application/json" -d "{\"mapping_url\":\"${{env.MAPPING_URL}}\"}")"
           DATA="$(jq .graph <<< "$RESULT")"
           #remove quots
           echo -e "${DATA:1:-1}" > example.rdf
