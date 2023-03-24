@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     app_name: str = "RDFConverter"
     admin_email: str = os.environ.get("ADMIN_MAIL") or "rdfconverter@matolab.org"
     items_per_user: int = 50
-    version: str = "v1.0.3"
+    version: str = "v1.0.2"
     config_name: str = os.environ.get("APP_MODE") or "development"
     openapi_url: str ="/api/openapi.json"
     docs_url: str = "/api/docs"
@@ -139,8 +139,8 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
     rml_graph = Graph()
     rml_graph.parse(data=rml_rules, format='ttl')
 
-    rml_data_url = mapping_dict['prefixes']['data']
-    method_url = mapping_dict['prefixes']['method']
+    rml_data_url = mapping_dict['prefixes']['data'].strip('/')
+    method_url = mapping_dict['prefixes']['method'].strip('/')
 
     # replace rml source from mappingfile with local file 
     # because rmlmapper webapi does not work with remote sources
@@ -151,17 +151,16 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
     # replace data_url with specified override
 
     if opt_data_url:
+        print('opt_data_url: replacing {} with {}'.format(rml_data_url,opt_data_url))
         rml_rules_new = rml_rules_new.replace(rml_data_url, opt_data_url)
         data_url =opt_data_url
     else:
         data_url=rml_data_url
 
-    print(data_url)
-    data_content, data_filename=open_file(data_url[:-1])
+    data_content, data_filename=open_file(data_url)
     if not data_content:
             raise Exception('could not read data meta file - cant download file from url')
     d = {'rml': rml_rules_new, 'sources': {'source.json':  data_content}, 'serialization': 'turtle'}
-    print(data_content)
     try:
         # call rmlmapper webapi
         r = requests.post('http://rmlmapper'+':'+mapper_port+'/execute', json=d)
@@ -172,7 +171,7 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
         res = r.json()['output']
     except:
         raise Exception('could not execute mapping with rmlmapper')
-    
+
     try:
         mapping_graph = Graph()
         mapping_graph.parse(data=res, format='ttl')
@@ -185,8 +184,8 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
 
     joined_graph = Graph()
     # set prefixes
-    joined_graph.namespace_manager.bind('data', Namespace(data_url), override=True, replace=True)
-    joined_graph.namespace_manager.bind('method', Namespace(method_url), override=True, replace=True)
+    joined_graph.namespace_manager.bind('data', Namespace(data_url+'/'), override=True, replace=True)
+    joined_graph.namespace_manager.bind('method', Namespace(method_url+'/'), override=True, replace=True)
     joined_graph.namespace_manager.bind('obo', OBO, override=True, replace=True)
     joined_graph.namespace_manager.bind('csvw', CSVW)
     joined_graph.namespace_manager.bind('oa', OA)
@@ -227,7 +226,7 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
     
     #replacing The file:///src/ iri part with data_url
     temp=data_graph.serialize(format="turtle")
-    temp=temp.replace('file:///src/',data_url)
+    temp=temp.replace('file:///src',data_url)
     data_graph=Graph()
     data_graph.parse(data=temp, format='turtle')
 
@@ -314,9 +313,10 @@ class StartForm(StarletteForm):
         render_kw={"class":"form-control"},
         description='Paste URL to a SHACL Shape'
     )
+    #disabled uing d-none bootrap class
     duplicate_for_table = BooleanField(
         'Duplicate Template for Table Data',
-        render_kw={"class":"form-check form-check-input form-control-lg", "role":"switch"},
+        render_kw={"class":"form-check form-check-input form-control-lg d-none", "role":"switch"},
         description='If to duplicate the method template for each row in the table.',
         default=''
         )
@@ -374,6 +374,7 @@ async def convert(request: Request):
 
 class RDFRequest(BaseModel):
     mapping_url: AnyUrl = Field('', title='Graph Url', description='Url to data metadata to use.')
+    data_url: Optional[AnyUrl] = Field('', title='Url Data Target', description='If given replaces the data target (csvw json-ld) url of the provided mapping.', omit_default=True)
     duplicate_for_table: Optional[bool] = Field(False, title='Duplicate Template for Table Data', description='If to duplicate the method template for each row in the table.', omit_default=True)
     
 
@@ -421,10 +422,18 @@ def create_rdf(request: RDFRequest = Body(
                     "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"
                     },
             },
+            "replace": {
+                "summary": "A replace data_url example",
+                "description": "Will replace the data target in the mapping with the given data_url.",
+                "value": {
+                    "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml",
+                    "data_url": "https://github.com/Mat-O-Lab/resources/raw/main/mechanics/data/polymer_tensile/example-metadata.json"
+                    },
+            },
         }
     )):
     logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
-    out, count_rules, count_rules_applied=apply_mapping(request.mapping_url)
+    out, count_rules, count_rules_applied=apply_mapping(request.mapping_url,request.data_url)
     # try:
     #     out, count_rules, count_rules_applied=apply_mapping(request.mapping_url)
     # except Exception as err:
