@@ -30,11 +30,11 @@ jobs:
       - name: parse mapping to YARRRML parser
         working-directory: ${{env.WORKING_DIR}}
         run: |
-          curl -X POST "http://localhost:${{env.APP_PORT}}/api/yarrrmltorml" -H  "accept: application/json" -H  "accept: application/json" -H  "Content-Type: application/json" -d "{\"mapping_url\":\"https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml\"}" > example.rml
+          curl -X POST "http://localhost:${{env.APP_PORT}}/api/yarrrmltorml" -H  "accept: application/json" -H  "accept: application/json" -H  "Content-Type: application/json" -d "{\"mapping_url\":\"${{env.MAPPING_URL}}\"}" > example.rml
       - name: join the method and the data meta graph
         working-directory: ${{env.WORKING_DIR}}
         run: |
-          RESULT="$(curl -X POST "http://localhost:5003/api/createrdf" -H  "accept: application/json" -H  "Content-Type: application/json" -d "{\"mapping_url\":\"${{env.MAPPING_URL}}\"}")"
+          RESULT="$(curl -X POST "http://localhost:${{env.APP_PORT}}/api/createrdf" -H  "accept: application/json" -H  "Content-Type: application/json" -d "{\"mapping_url\":\"${{env.MAPPING_URL}}\"}")"
           DATA="$(jq .graph <<< "$RESULT")"
           #remove quots
           echo -e "${DATA:1:-1}" > example.rdf
