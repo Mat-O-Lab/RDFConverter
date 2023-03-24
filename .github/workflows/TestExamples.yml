@@ -31,7 +31,7 @@ jobs:
         working-directory: ${{env.WORKING_DIR}}
         run: |
           docker logs rdfconverter
-          curl -X 'POST' 'http://docker-dev.iwm.fraunhofer.de:5003/api/yarrrmltorml'   -H 'accept: application/json'   -H 'Content-Type: application/json'   -d '{"mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"}' > example.rml
+          curl -X 'POST' 'http://localhost:5003/api/yarrrmltorml'   -H 'accept: application/json'   -H 'Content-Type: application/json'   -d '{"mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"}' > example.rml
           docker logs rdfconverter
       - name: join the method and the data meta graph
         working-directory: ${{env.WORKING_DIR}}
