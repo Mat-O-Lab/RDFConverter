@@ -1,4 +1,5 @@
 import os, re
+from xmlrpc.client import Boolean
 from rdflib import Graph, Namespace
 from rdflib.util import guess_format
 import yaml
@@ -7,10 +8,13 @@ import base64
 import logging
 import requests
 
+from urllib.request import urlopen
+from urllib.parse import urlparse, unquote
+
 import uvicorn
 from pydantic import BaseSettings, BaseModel, AnyUrl, Field
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Any, List
+from typing import Any, List, Optional, Tuple
 from fastapi import Request, FastAPI, Body, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -22,8 +26,8 @@ from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
 
 
-from wtforms import URLField
-from wtforms.validators import Optional
+from wtforms import URLField, BooleanField
+from wtforms.validators import Optional as WTFOptional
 from pyshacl import validate
 
 from rmlmapper import replace_data_source, count_rules_str
@@ -86,8 +90,6 @@ def get_flashed_messages(request: Request):
 templates.env.globals['get_flashed_messages'] = get_flashed_messages
 
 
-from urllib.parse import urlparse, unquote
-
 OBO = Namespace('http://purl.obolibrary.org/obo/')
 MSEO_URL = 'https://raw.githubusercontent.com/Mat-O-Lab/MSEO/main/MSEO_mid.owl'
 CCO_URL = 'https://github.com/CommonCoreOntology/CommonCoreOntologies/raw/master/cco-merged/MergedAllCoreOntology-v1.3-2021-03-01.ttl'
@@ -103,17 +105,20 @@ def replace_between(text: str, begin: str='', end: str='', alternative: str='') 
         raise ValueError
     return re.sub(r'{}.*?{}'.format(re.escape(begin),re.escape(end)),alternative,text)
     
-    return text.replace(middle, alternative)
-def open_file(uri=''):
+def open_file(uri: AnyUrl) -> Tuple[str,str]:
     try:
         uri_parsed = urlparse(uri)
     except:
         flash(uri+ ' is not an uri - if local file add file:// as prefix',"error")
         return None, None
     else:
-        filename = unquote(uri_parsed.path).split('/')[-1]
+        filename = unquote(uri_parsed.path).rsplit('/download/upload')[0].split('/')[-1]
         if uri_parsed.scheme in ['https', 'http']:
-            filedata = requests.get(uri).text
+            r = urlopen(uri)
+            charset=r.info().get_content_charset()
+            if not charset:
+                charset='utf-8'
+            filedata = r.read().decode(charset)
         elif uri_parsed.scheme == 'file':
             filedata = open(unquote(uri_parsed.path), 'rb').read()
         else:
@@ -121,29 +126,21 @@ def open_file(uri=''):
             return None, None
         return filedata, filename
 
-def apply_mapping(mapping_url,opt_data_url=None):
+def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_table: Boolean=False) -> Tuple[str,int,int]:
     mapping_data, mapping_filename = open_file(mapping_url)
     if not mapping_data:
             raise Exception('could not read mapping file - cant download file from url')
- 
     try:
         mapping_dict = yaml.safe_load(mapping_data)
     except:
         raise Exception('could not read mapping file - cant readin yaml')
-    print(mapping_dict)
-    # try:
-    #     rml_rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': mapping_data}).text
-    #     rml_graph = Graph()
-    #     rml_graph.parse(data=rml_rules, format='ttl')
-    # except:
-    #     raise Exception('could not process rml')
-    print(mapping_data)
+    
     rml_rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': mapping_data}).text
     rml_graph = Graph()
     rml_graph.parse(data=rml_rules, format='ttl')
 
-    rml_data_url = mapping_dict['prefixes']['data']
-    method_url = mapping_dict['prefixes']['method']
+    rml_data_url = mapping_dict['prefixes']['data'].strip('/')
+    method_url = mapping_dict['prefixes']['method'].strip('/')
 
     # replace rml source from mappingfile with local file 
     # because rmlmapper webapi does not work with remote sources
@@ -154,18 +151,18 @@ def apply_mapping(mapping_url,opt_data_url=None):
     # replace data_url with specified override
 
     if opt_data_url:
+        print('opt_data_url: replacing {} with {}'.format(rml_data_url,opt_data_url))
         rml_rules_new = rml_rules_new.replace(rml_data_url, opt_data_url)
         data_url =opt_data_url
     else:
         data_url=rml_data_url
-    
+
     data_content, data_filename=open_file(data_url)
     if not data_content:
             raise Exception('could not read data meta file - cant download file from url')
-
+    d = {'rml': rml_rules_new, 'sources': {'source.json':  data_content}, 'serialization': 'turtle'}
     try:
         # call rmlmapper webapi
-        d = {'rml': rml_rules_new, 'sources': {'source.json': data_content}, 'serialization': 'turtle'}
         r = requests.post('http://rmlmapper'+':'+mapper_port+'/execute', json=d)
 
         if r.status_code != 200:
@@ -174,21 +171,21 @@ def apply_mapping(mapping_url,opt_data_url=None):
         res = r.json()['output']
     except:
         raise Exception('could not execute mapping with rmlmapper')
-    
-    
+
     try:
         mapping_graph = Graph()
         mapping_graph.parse(data=res, format='ttl')
     except:
         raise Exception('could not pass mapping results to result graph')
     
+    
     num_mappings_applied = len(mapping_graph)
     num_mappings_possible = count_rules_str(rml_rules)
 
     joined_graph = Graph()
     # set prefixes
-    joined_graph.namespace_manager.bind('data', Namespace(data_url), override=True, replace=True)
-    joined_graph.namespace_manager.bind('method', Namespace(method_url), override=True, replace=True)
+    joined_graph.namespace_manager.bind('data', Namespace(data_url+'/'), override=True, replace=True)
+    joined_graph.namespace_manager.bind('method', Namespace(method_url+'/'), override=True, replace=True)
     joined_graph.namespace_manager.bind('obo', OBO, override=True, replace=True)
     joined_graph.namespace_manager.bind('csvw', CSVW)
     joined_graph.namespace_manager.bind('oa', OA)
@@ -225,22 +222,33 @@ def apply_mapping(mapping_url,opt_data_url=None):
     joined_graph.namespace_manager.bind('base', Namespace(new_base_url), override=True, replace=True)
     #copy data entieties into joined graph
     data_graph=Graph()
-    data_graph.namespace_manager.bind('data', Namespace('file:///src/'))
+    data_graph.parse(data=data_content, format='json-ld')
     
-    try:
-        data_graph.parse(data=data_content, format='json-ld')
-        temp=data_graph.serialize(format="turtle")
-        temp=temp.replace('file:///src/',data_url)
-        data_graph=Graph()
-        data_graph.parse(data=temp, format='turtle')
-        joined_graph += data_graph
-    except:
-        raise Exception('could not join data entities to result graph')
+    #replacing The file:///src/ iri part with data_url
+    temp=data_graph.serialize(format="turtle")
+    temp=temp.replace('file:///src',data_url)
+    data_graph=Graph()
+    data_graph.parse(data=temp, format='turtle')
+
+    joined_graph += data_graph
+    
+    
+    # data_graph=Graph()
+    
+    # try:
+    #     data_graph.parse(data=data_content, format='json-ld')
+    #     temp=data_graph.serialize(format="turtle")
+    #     temp=temp.replace('file:///src/',data_url)
+    #     data_graph=Graph()
+    #     data_graph.parse(data=temp, format='turtle')
+    #     joined_graph += data_graph
+    # except:
+    #     raise Exception('could not join data entities to result graph')
     
     out=joined_graph.serialize(format="turtle")
     return out, num_mappings_possible, num_mappings_applied
 
-def shacl_validate(shapes_url,rdf_url):
+def shacl_validate(shapes_url: AnyUrl, rdf_url: AnyUrl) -> Tuple[str, Graph]:
     if not len(urlparse(shapes_url))==6: #not a regular url might be data string
         shapes_data=shapes_url
     else:
@@ -280,7 +288,7 @@ def shacl_validate(shapes_url,rdf_url):
 class StartForm(StarletteForm):
     mapping_url = URLField(
         'URL Field Mapping',
-        #validators=[Optional()],
+        #validators=[WTFOptional()],
         description='Paste URL to a field mapping',
         render_kw={
             "class": "form-control",
@@ -289,22 +297,29 @@ class StartForm(StarletteForm):
     )
     opt_data_csvw_url = URLField(
         'Optional: URL CSVW Json-LD',
-        validators=[Optional()],
+        validators=[WTFOptional()],
         render_kw={"class":"form-control"},
         description='Paste URL to a CSVW Json-LD'
     )
     shacl_url = URLField(
         'URL SHACL Shape Repository',
-        validators=[Optional()],
+        validators=[WTFOptional()],
         render_kw={"class":"form-control"},
         description='Paste URL to a SHACL Shape Repository'
     )
     opt_shacl_shape_url = URLField(
         'Optional: URL SHACL Shape',
-        validators=[Optional()],
+        validators=[WTFOptional()],
         render_kw={"class":"form-control"},
         description='Paste URL to a SHACL Shape'
     )
+    #disabled uing d-none bootrap class
+    duplicate_for_table = BooleanField(
+        'Duplicate Template for Table Data',
+        render_kw={"class":"form-check form-check-input form-control-lg d-none", "role":"switch"},
+        description='If to duplicate the method template for each row in the table.',
+        default=''
+        )
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def index(request: Request):
@@ -330,12 +345,13 @@ async def convert(request: Request):
         
         opt_data_csvw_url=start_form.opt_data_csvw_url.data
         opt_shacl_shape_url = start_form.opt_shacl_shape_url.data
-
+        duplicate_for_table=start_form.duplicate_for_table.data
         try:
-            out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url)
+            out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url,duplicate_for_table)
         except Exception as err:
             flash(request,err,'error')
             result=None
+            payload=None
         else:
             logging.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
             api_result = {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
@@ -345,7 +361,7 @@ async def convert(request: Request):
                 conforms, graph = shacl_validate(opt_shacl_shape_url,out)
             b64 = base64.b64encode(result.encode())
             payload = b64.decode()
-
+        
         
     return templates.TemplateResponse("index.html",
         {"request": request,
@@ -358,6 +374,9 @@ async def convert(request: Request):
 
 class RDFRequest(BaseModel):
     mapping_url: AnyUrl = Field('', title='Graph Url', description='Url to data metadata to use.')
+    data_url: Optional[AnyUrl] = Field('', title='Url Data Target', description='If given replaces the data target (csvw json-ld) url of the provided mapping.', omit_default=True)
+    duplicate_for_table: Optional[bool] = Field(False, title='Duplicate Template for Table Data', description='If to duplicate the method template for each row in the table.', omit_default=True)
+    
 
 class RDFResponse(BaseModel):
     graph:  str = Field( title='Graph data', description='The output gaph data in turtle format.')
@@ -403,13 +422,22 @@ def create_rdf(request: RDFRequest = Body(
                     "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"
                     },
             },
+            "replace": {
+                "summary": "A replace data_url example",
+                "description": "Will replace the data target in the mapping with the given data_url.",
+                "value": {
+                    "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml",
+                    "data_url": "https://github.com/Mat-O-Lab/resources/raw/main/mechanics/data/polymer_tensile/example-metadata.json"
+                    },
+            },
         }
     )):
     logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
-    try:
-        out, count_rules, count_rules_applied=apply_mapping(request.mapping_url)
-    except Exception as err:
-        raise HTTPException(status_code=500, detail=str(err))
+    out, count_rules, count_rules_applied=apply_mapping(request.mapping_url,request.data_url)
+    # try:
+    #     out, count_rules, count_rules_applied=apply_mapping(request.mapping_url)
+    # except Exception as err:
+    #     raise HTTPException(status_code=500, detail=str(err))
     logging.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
     return {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
 
