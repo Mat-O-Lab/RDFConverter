@@ -91,7 +91,7 @@ templates.env.globals['get_flashed_messages'] = get_flashed_messages
 
 
 OBO = Namespace('http://purl.obolibrary.org/obo/')
-MSEO_URL = 'https://raw.githubusercontent.com/Mat-O-Lab/MSEO/main/MSEO_mid.owl'
+MSEO_URL = 'http://purl.matolab.org/mseo/mid/'
 CCO_URL = 'https://github.com/CommonCoreOntology/CommonCoreOntologies/raw/master/cco-merged/MergedAllCoreOntology-v1.3-2021-03-01.ttl'
 MSEO = Namespace(MSEO_URL)
 CCO = Namespace('http://www.ontologyrepository.com/CommonCoreOntologies/')
@@ -99,6 +99,8 @@ CSVW = Namespace('http://www.w3.org/ns/csvw#')
 OA = Namespace('http://www.w3.org/ns/oa#')
 QUDT = Namespace('http://qudt.org/schema/qudt/')
 QUNIT = Namespace('http://qudt.org/vocab/unit/')
+IOF = Namespace('https://spec.industrialontologies.org/ontology/core/Core/')
+
 
 def replace_between(text: str, begin: str='', end: str='', alternative: str='') -> str:
     if not (begin and end):
@@ -108,6 +110,8 @@ def replace_between(text: str, begin: str='', end: str='', alternative: str='') 
 def open_file(uri: AnyUrl) -> Tuple[str,str]:
     try:
         uri_parsed = urlparse(uri)
+        print(uri_parsed)
+    
     except:
         flash(uri+ ' is not an uri - if local file add file:// as prefix',"error")
         return None, None
@@ -156,7 +160,7 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
         data_url =opt_data_url
     else:
         data_url=rml_data_url
-
+    print('data url: '+data_url)
     data_content, data_filename=open_file(data_url)
     if not data_content:
             raise Exception('could not read data meta file - cant download file from url')
@@ -184,18 +188,17 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
 
     joined_graph = Graph()
     # set prefixes
-    joined_graph.namespace_manager.bind('data', Namespace(data_url+'/'), override=True, replace=True)
-    joined_graph.namespace_manager.bind('method', Namespace(method_url+'/'), override=True, replace=True)
     joined_graph.namespace_manager.bind('obo', OBO, override=True, replace=True)
     joined_graph.namespace_manager.bind('csvw', CSVW)
     joined_graph.namespace_manager.bind('oa', OA)
     joined_graph.namespace_manager.bind('qudt', QUDT)
     joined_graph.namespace_manager.bind('qunit', QUNIT)
-    joined_graph.namespace_manager.bind('mseo', MSEO)
-    joined_graph.namespace_manager.bind('cco', CCO)
+    joined_graph.namespace_manager.bind('iof', IOF)
+    
     # replace base url with place holder, should reference the now storage position of the resulting file
     rdf_filename='example.rdf'
-    new_base_url="https://your_filestorage_location/"+rdf_filename+'#'
+    new_base_url=''
+
     ##add ontology entieties for reasoning
     #joined_graph.parse(CCO_URL, format='turtle')
     #joined_graph.parse(str(MSEO), format='xml')
@@ -203,14 +206,10 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
     #app.logger.info(f'POST /api/createrdf: {data_url}')
     #load and copy method graph and give it a new base namespace
     #app.logger.info(method_url)
+    print('mapping url: '+mapping_url)
     templatedata, methodname=open_file(method_url)
     if not templatedata:
             raise Exception('could not read method graph - cant download file from url')
-    templatedata=templatedata.replace(method_url,new_base_url)
-    print('replacing {} with {}'.format(method_url,new_base_url))
-    
-    #res=replace_between(res,begin=method_url,end='#',alternative=new_base_url)
-    res=res.replace(method_url,new_base_url)
     try:
         joined_graph.parse(data=templatedata, format='ttl')
     except:
@@ -223,29 +222,11 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
     #copy data entieties into joined graph
     data_graph=Graph()
     data_graph.parse(data=data_content, format='json-ld')
-    
-    #replacing The file:///src/ iri part with data_url
-    temp=data_graph.serialize(format="turtle")
-    temp=temp.replace('file:///src',data_url)
-    data_graph=Graph()
-    data_graph.parse(data=temp, format='turtle')
-
     joined_graph += data_graph
-    
-    
-    # data_graph=Graph()
-    
-    # try:
-    #     data_graph.parse(data=data_content, format='json-ld')
-    #     temp=data_graph.serialize(format="turtle")
-    #     temp=temp.replace('file:///src/',data_url)
-    #     data_graph=Graph()
-    #     data_graph.parse(data=temp, format='turtle')
-    #     joined_graph += data_graph
-    # except:
-    #     raise Exception('could not join data entities to result graph')
-    
+
     out=joined_graph.serialize(format="turtle")
+    out=out.replace('file:///src',data_url)
+    out=out.replace(method_url,'')
     return out, num_mappings_possible, num_mappings_applied
 
 def shacl_validate(shapes_url: AnyUrl, rdf_url: AnyUrl) -> Tuple[str, Graph]:
