@@ -1,11 +1,24 @@
 from rdflib import Graph, Namespace, RDF, URIRef, Literal
 import requests
 import json
+from re import split as re_split
+
 
 RR = Namespace('http://www.w3.org/ns/r2rml#')
 RML = Namespace('http://semweb.mmlab.be/ns/rml#')
 RDFS = Namespace('http://www.w3.org/2000/01/rdf-schema#')
 FNML = Namespace('http://semweb.mmlab.be/ns/fnml#')
+
+def strip_namespace(term: URIRef) -> str:
+    """Strip the namespace from full URI
+
+    Args:
+        term (URIRef): A RDFlib Term
+
+    Returns:
+        str: short IRI
+    """
+    return re_split(r'/|#|:', term[::-1],maxsplit=1)[0][::-1]
 
 def map_graph(g: Graph, data_source: str) -> Graph:
 	join_graph = Graph()
@@ -25,10 +38,11 @@ def find_data_source(rules: Graph):
 
 def replace_data_source(rules: Graph, new_source: str):
 	data_source_origin = find_data_source(rules)
-	sources = list(rules.subjects(RML.source, Literal(data_source_origin)))
-	for source in sources:
-		rules.set((source, RML.source, Literal(new_source)))
-	
+	if data_source_origin:
+		sources = list(rules.subjects(RML.source, Literal(data_source_origin)))
+		for source in sources:
+			print('setting source {} with {}'.format(source, new_source))
+			rules.set((source, RML.source, Literal(new_source)))
 
 
 def find_method_graph(rules: Graph):
@@ -99,3 +113,18 @@ def get_mapping(graph: Graph, data_source: str, triples_node):
 	object_node = find_object(graph, triples_node)
 	
 	return (subject_node, predicate_node, object_node)
+
+def replace_iris(old: URIRef, new: URIRef, graph: Graph):
+    # replaces all iri of all triple in a graph with the value of relation
+    old_triples = list(graph[old: None: None])
+    for triple in old_triples:
+        graph.remove((old, triple[0], triple[1]))
+        graph.add((new, triple[0], triple[1]))
+    old_triples = list(graph[None: None: old])
+    for triple in old_triples:
+        graph.remove((triple[0], triple[1], old))
+        graph.add((triple[0], triple[1], new))
+    old_triples = list(graph[None: old: None])
+    for triple in old_triples:
+        graph.remove((triple[0], old, triple[1]))
+        graph.add((triple[0], new, triple[1]))

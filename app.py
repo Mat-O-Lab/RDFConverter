@@ -1,12 +1,14 @@
 import os, re
 from xmlrpc.client import Boolean
-from rdflib import Graph, Namespace
+from rdflib import Graph, Namespace, URIRef
+from rdflib.namespace import CSVW, RDF, RDFS
 from rdflib.util import guess_format
 import yaml
 
 import base64
 import logging
 import requests
+from io import BytesIO
 
 from urllib.request import urlopen
 from urllib.parse import urlparse, unquote
@@ -18,7 +20,7 @@ from typing import Any, List, Optional, Tuple
 from fastapi import Request, FastAPI, Body, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 
 
 from starlette_wtf import StarletteForm
@@ -30,49 +32,44 @@ from wtforms import URLField, BooleanField
 from wtforms.validators import Optional as WTFOptional
 from pyshacl import validate
 
-from rmlmapper import replace_data_source, count_rules_str
+from rmlmapper import replace_data_source, count_rules_str, replace_iris, strip_namespace
 
 parser_port= os.environ.get('PARSER_PORT')
 mapper_port= os.environ.get('MAPPER_PORT')
 
 
-class Settings(BaseSettings):
-    app_name: str = "RDFConverter"
-    admin_email: str = os.environ.get("ADMIN_MAIL") or "rdfconverter@matolab.org"
-    items_per_user: int = 50
-    version: str = "v1.0.2"
-    config_name: str = os.environ.get("APP_MODE") or "development"
-    openapi_url: str ="/api/openapi.json"
-    docs_url: str = "/api/docs"
-settings = Settings()
+import settings
+setting = settings.Setting()
 
-config_name = os.environ.get("APP_MODE") or "development"
+config_name = os.environ.get("APP_MODE", "production")
 
-middleware = [Middleware(SessionMiddleware, secret_key=os.getenv("APP_SECRET", "your-secret"))]
+middleware = [
+    Middleware(SessionMiddleware, secret_key=os.environ.get('APP_SECRET','changemeNOW')),
+    # Middleware(CSRFProtectMiddleware, csrf_secret=os.environ.get('APP_SECRET','changemeNOW')),
+    Middleware(CORSMiddleware, 
+            allow_origins=["*"], # Allows all origins
+            allow_methods=["*"], # Allows all methods
+            allow_headers=["*"] # Allows all headers
+            ),
+    Middleware(uvicorn.middleware.proxy_headers.ProxyHeadersMiddleware, trusted_hosts="*")
+    ]
+
 app = FastAPI(
-    title=settings.app_name,
+    title=setting.app_name,
     description="It is a service for converting and validating YARRRML and Chowlk files to RDF, which is applied to Material Sciences Engineering (MSE) Methods, for example, on Cement MSE experiments.",
-    version=settings.version,
-    contact={"name": "Thomas Hanke, Mat-O-Lab", "url": "https://github.com/Mat-O-Lab", "email": settings.admin_email},
+    version=setting.version,
+    contact={"name": "Thomas Hanke, Mat-O-Lab", "url": "https://github.com/Mat-O-Lab", "email": setting.admin_email},
     license_info={
         "name": "Apache 2.0",
         "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
     },
-    openapi_url=settings.openapi_url,
-    docs_url=settings.docs_url,
+    openapi_url=setting.openapi_url,
+    docs_url=setting.docs_url,
     redoc_url=None,    
     #to disable highlighting for large output
     #swagger_ui_parameters= {'syntaxHighlight': False},
     middleware=middleware
 )
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], # Allows all origins
-    allow_credentials=True,
-    allow_methods=["*"], # Allows all methods
-    allow_headers=["*"], # Allows all headers
-)
-app.add_middleware(uvicorn.middleware.proxy_headers.ProxyHeadersMiddleware, trusted_hosts="*")
 
 app.mount("/static/", StaticFiles(directory='static', html=True), name="static")
 templates= Jinja2Templates(directory="templates")
@@ -110,7 +107,7 @@ def replace_between(text: str, begin: str='', end: str='', alternative: str='') 
 def open_file(uri: AnyUrl) -> Tuple[str,str]:
     try:
         uri_parsed = urlparse(uri)
-        print(uri_parsed)
+        #print(uri_parsed)
     
     except:
         flash(uri+ ' is not an uri - if local file add file:// as prefix',"error")
@@ -139,32 +136,54 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
     except:
         raise Exception('could not read mapping file - cant readin yaml')
     
-    rml_rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': mapping_data}).text
+    rml_rules=requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': mapping_data}).text
     rml_graph = Graph()
     rml_graph.parse(data=rml_rules, format='ttl')
+    #rml_graph.serialize('rml.ttl')
 
-    rml_data_url = mapping_dict['prefixes']['data'].strip('/')
+    mapping_dict = yaml.safe_load(mapping_data)
+    rml_data_url = mapping_dict['sources']['data_entities']['access'].strip('/')
     method_url = mapping_dict['prefixes']['method'].strip('/')
 
     # replace rml source from mappingfile with local file 
     # because rmlmapper webapi does not work with remote sources
+    logging.debug('replace data_source {} with {}'.format(rml_graph,'source.json'))
     replace_data_source(rml_graph, 'source.json')
-
     rml_rules_new = rml_graph.serialize(format='ttl')
 
     # replace data_url with specified override
-
     if opt_data_url:
-        print('opt_data_url: replacing {} with {}'.format(rml_data_url,opt_data_url))
-        rml_rules_new = rml_rules_new.replace(rml_data_url, opt_data_url)
         data_url =opt_data_url
     else:
         data_url=rml_data_url
-    print('data url: '+data_url)
     data_content, data_filename=open_file(data_url)
+    data_graph=Graph()
+    logging.debug('loading {} as data graph in {} format'.format(data_url,guess_format(data_url)))
+    #normalizing data to rdflib json-ld wih maon vocab csvw
+    #data_graph.parse(data=data_content,format=guess_format(data_url))
+    data_graph.parse(data_url,format=guess_format(data_url))
+    context={"@vocab": str(CSVW),
+             "rdf": str(RDF),
+             "qudt": str(QUDT),
+             "qunit": str(QUNIT),
+             #"data1": data_url+'/',
+             #"data2": rml_data_url+'/'
+             }
+    #data_graph.serialize('data.ttl')
+    #data_graph.serialize('data.json',format='json-ld', context=context)
+    data_content=data_graph.serialize(format='json-ld', context=context)
+    # need to replace iris because they are changed to the document id 
+
     if not data_content:
             raise Exception('could not read data meta file - cant download file from url')
+    
+    # if opt_data_url:
+        # logging.debug('opt_data_url: replacing {} with {}'.format(rml_data_url,opt_data_url))
+        # rml_rules_new = rml_rules_new.replace(rml_data_url, opt_data_url)
+    
     d = {'rml': rml_rules_new, 'sources': {'source.json':  data_content}, 'serialization': 'turtle'}
+    #r = requests.post('http://rmlmapper'+':'+mapper_port+'/execute', json=d)
+    #print(r.json())
     try:
         # call rmlmapper webapi
         r = requests.post('http://rmlmapper'+':'+mapper_port+'/execute', json=d)
@@ -175,17 +194,17 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
         res = r.json()['output']
     except:
         raise Exception('could not execute mapping with rmlmapper')
-
+    
     try:
         mapping_graph = Graph()
         mapping_graph.parse(data=res, format='ttl')
     except:
         raise Exception('could not pass mapping results to result graph')
-    
+    mapping_graph.serialize('mapping_result.ttl')
     
     num_mappings_applied = len(mapping_graph)
     num_mappings_possible = count_rules_str(rml_rules)
-
+    logging.info("number of rules: {}, applied: {}".format(num_mappings_possible,num_mappings_applied))
     joined_graph = Graph()
     # set prefixes
     joined_graph.namespace_manager.bind('obo', OBO, override=True, replace=True)
@@ -194,6 +213,7 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
     joined_graph.namespace_manager.bind('qudt', QUDT)
     joined_graph.namespace_manager.bind('qunit', QUNIT)
     joined_graph.namespace_manager.bind('iof', IOF)
+    joined_graph.namespace_manager.bind('data', data_url+'/')
     
     # replace base url with place holder, should reference the now storage position of the resulting file
     rdf_filename='example.rdf'
@@ -208,25 +228,77 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
     #app.logger.info(method_url)
     print('mapping url: '+mapping_url)
     templatedata, methodname=open_file(method_url)
+    template_graph=Graph()
+    #template_graph.bind('data',data_url+'/')
+    #template_graph.bind('method',method_url+'/')
+    
+    #parse template and add mapping results
     if not templatedata:
             raise Exception('could not read method graph - cant download file from url')
     try:
-        joined_graph.parse(data=templatedata, format='ttl')
+        template_graph.parse(data=templatedata, format='ttl')
     except:
         raise Exception('could not parse method graph to result graph')
-    try:
-        joined_graph.parse(data=res, format='ttl')
-    except:
-        raise Exception('could not join mapping results to result graph')
+    
+
+    
+    # remove the base iri if any 
+    print(list(template_graph.namespaces()))
+    template_namespace='http://template_base/'
+    for ns_prefix, namespace in template_graph.namespaces():
+        if ns_prefix=='base':
+            logging.debug('found base namespace: {} in template, will remove it.'.format(namespace))
+            template_content=template_graph.serialize().replace(namespace,template_namespace)
+            template_graph=Graph()
+            template_graph.parse(data=template_content)
+            template_graph.bind('data', data_url+'/')
+    # for subject in template_graph.subjects():
+    #     # replace the subject URI with your new template URI
+    #     new_iri=URIRef(str(subject).rsplit("/", 1)[-1].rsplit("#", 1)[-1])
+    #     replace_iris(subject,new_iri,template_graph)
+    #template_graph.serialize('template.ttl')
+    
+    # duplicate template if needed
+    rows=list(data_graph[:RDF.type:CSVW.Row])
+    
+    #join and prepare for output
     joined_graph.namespace_manager.bind('base', Namespace(new_base_url), override=True, replace=True)
     #copy data entieties into joined graph
-    data_graph=Graph()
-    data_graph.parse(data=data_content, format='json-ld')
     joined_graph += data_graph
-
+    joined_graph += mapping_graph
+    
+    
+    #use template to create new idivituals for every
+    if duplicate_for_table and rows:
+        #map_content=mapping_graph.serialize()
+        tablegroup=next(data_graph[:RDF.type:CSVW.TableGroup])
+        maps={column: {'po': list(mapping_graph.predicate_objects(column)), 'propertyUrl': tablegroup+'/'+data_graph.value(column,CSVW.name)} for column in data_graph[:RDF.type:CSVW.Column]}
+        to_set=list()
+        for column, data in maps.items():
+            property=data['propertyUrl']
+            for predicate, object in data['po']:
+                to_set.append((property,predicate,strip_namespace(str(object))))
+        #print(to_set)
+        logging.info('dublicating template graph for {} rows'.format(len(rows)))
+        for row in rows:
+            data_node=data_graph.value(row,CSVW.describes)
+            joined_graph.parse(data=template_content.replace(template_namespace,data_node+'/'))
+            row_ns=Namespace(data_node+'/')
+            joined_graph.bind('row'+str(data_node).rsplit('-',1)[-1], row_ns)
+            #set mapping realtions on each individual row 
+            for property,predicate,object in to_set:
+                subject=next(joined_graph.objects(data_node,property))
+                joined_graph.add((subject,predicate,row_ns[object]))
+        
+            
+    else:
+        joined_graph += template_graph
+        joined_graph += mapping_graph
+    
+    #joined_graph.serialize('joined.ttl')
+    
     out=joined_graph.serialize(format="turtle")
     out=out.replace('file:///src',data_url)
-    out=out.replace(method_url,'')
     return out, num_mappings_possible, num_mappings_applied
 
 def shacl_validate(shapes_url: AnyUrl, rdf_url: AnyUrl) -> Tuple[str, Graph]:
@@ -327,6 +399,7 @@ async def convert(request: Request):
         opt_data_csvw_url=start_form.opt_data_csvw_url.data
         opt_shacl_shape_url = start_form.opt_shacl_shape_url.data
         duplicate_for_table=start_form.duplicate_for_table.data
+        #out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url,duplicate_for_table)
         try:
             out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url,duplicate_for_table)
         except Exception as err:
@@ -353,16 +426,38 @@ async def convert(request: Request):
         }
     )
 
+class RMLRequest(BaseModel):
+    mapping_url: AnyUrl = Field('', title='Graph Url', description='Url to data metadata to use.')
+    class Config:
+        schema_extra = {
+            "example": {
+                "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"
+            }
+        }
+
 class RDFRequest(BaseModel):
     mapping_url: AnyUrl = Field('', title='Graph Url', description='Url to data metadata to use.')
     data_url: Optional[AnyUrl] = Field('', title='Url Data Target', description='If given replaces the data target (csvw json-ld) url of the provided mapping.', omit_default=True)
     duplicate_for_table: Optional[bool] = Field(False, title='Duplicate Template for Table Data', description='If to duplicate the method template for each row in the table.', omit_default=True)
-    
+    class Config:
+        schema_extra = {
+            "example": {
+                "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"
+            }
+        }
 
 class RDFResponse(BaseModel):
     graph:  str = Field( title='Graph data', description='The output gaph data in turtle format.')
     num_mappings_applied: int = Field( title='Number Rules Applied', description='The total number of rules that were applied from the mapping.')
     num_mappings_skipped: int = Field( title='Number Rules Skipped', description='The total number of rules not applied once.')
+    class Config:
+        schema_extra = {
+            "example": {
+                "graph": "graph data in turtle format as string",
+                "num_mappings_applied": 6,
+                "num_mappings_skipped": 0,
+            }
+        }
 
 class ValidateRequest(BaseModel):
     shapes_url: AnyUrl = Field('', title='Shacle Shapes Url', description='Url to shacle shapes data to use.')
@@ -372,49 +467,27 @@ class ValidateResponse(BaseModel):
     valid: str = Field( title='Shacle Report', description='Report resulting of shacle testing')
     graph:  str = Field( title='Graph data', description='The output gaph data in turtle format.')
     
+class TurtleResponse(StreamingResponse):
+    media_type='text/turtle'
 
-
-@app.post('/api/yarrrmltorml')
-def yarrrmltorml(request: RDFRequest = Body(
-        examples={
-            "normal": {
-                "summary": "A simple yarrrmltorml example",
-                "description": "Creates rml rules from yarrrml yaml.",
-                "value": {
-                    "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"
-                    },
-            },
-        }
-    )) -> str:
+@app.post('/api/yarrrmltorml', response_class=TurtleResponse)
+async def yarrrmltorml(request: RMLRequest) -> TurtleResponse:
     logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
     filedata, filename = open_file(request.mapping_url)
     rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': filedata}).text
-  
-    return rules
+    data_bytes=BytesIO(rules.encode())
+    filename=filename.rsplit('.yaml',1)[0]+'-rml.ttl'
+    headers = {
+        'Content-Disposition': 'attachment; filename={}'.format(filename),
+        'Access-Control-Expose-Headers': 'Content-Disposition'
+    }
+    return TurtleResponse(content=data_bytes, headers=headers)
 
 
 @app.post('/api/createrdf', response_model=RDFResponse)
-def create_rdf(request: RDFRequest = Body(
-        examples={
-            "normal": {
-                "summary": "A simple yarrrmltorml example",
-                "description": "Creates rml rules from yarrrml yaml.",
-                "value": {
-                    "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"
-                    },
-            },
-            "replace": {
-                "summary": "A replace data_url example",
-                "description": "Will replace the data target in the mapping with the given data_url.",
-                "value": {
-                    "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml",
-                    "data_url": "https://github.com/Mat-O-Lab/resources/raw/main/mechanics/data/polymer_tensile/example-metadata.json"
-                    },
-            },
-        }
-    )):
+def create_rdf(request: RDFRequest):
     logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
-    out, count_rules, count_rules_applied=apply_mapping(request.mapping_url,request.data_url)
+    out, count_rules, count_rules_applied=apply_mapping(request.mapping_url,request.data_url,request.duplicate_for_table)
     # try:
     #     out, count_rules, count_rules_applied=apply_mapping(request.mapping_url)
     # except Exception as err:
@@ -429,9 +502,9 @@ def validate_rdf(request: ValidateRequest):
     logging.info(f'POST /api/rdfvalidator: {conforms=}')
     return {'valid': conforms, 'graph': graph.serialize(format='ttl')}
 
-@app.get("/info", response_model=Settings)
+@app.get("/info", response_model=settings.Setting)
 async def info() -> dict:
-    return settings
+    return setting
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
@@ -447,5 +520,5 @@ if __name__ == "__main__":
         reload=False
         access_log=False
         config['root']['level']='ERROR'
-    print('Log Level Set To {}'.format(config['root']['level']))
+    logging.info('Log Level Set To {}'.format(config['root']['level']))
     uvicorn.run("app:app",host="0.0.0.0",port=port, reload=reload, access_log=access_log,log_config=config)
