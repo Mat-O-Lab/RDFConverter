@@ -157,6 +157,7 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
     else:
         data_url=rml_data_url
     data_content, data_filename=open_file(data_url)
+    filename=data_filename.rsplit('.',1)[0].rsplit('-',1)[0]+'-joined.ttl'
     data_graph=Graph()
     logging.debug('loading {} as data graph in {} format'.format(data_url,guess_format(data_url)))
     #normalizing data to rdflib json-ld wih maon vocab csvw
@@ -200,7 +201,7 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
         mapping_graph.parse(data=res, format='ttl')
     except:
         raise Exception('could not pass mapping results to result graph')
-    mapping_graph.serialize('mapping_result.ttl')
+    #mapping_graph.serialize('mapping_result.ttl')
     
     num_mappings_applied = len(mapping_graph)
     num_mappings_possible = count_rules_str(rml_rules)
@@ -225,8 +226,8 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
     
     #app.logger.info(f'POST /api/createrdf: {data_url}')
     #load and copy method graph and give it a new base namespace
-    #app.logger.info(method_url)
-    print('mapping url: '+mapping_url)
+    logging.debug('loading method knowledge at {}'.format(method_url))
+    #print('mapping url: '+mapping_url)
     templatedata, methodname=open_file(method_url)
     template_graph=Graph()
     #template_graph.bind('data',data_url+'/')
@@ -278,7 +279,7 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
             property=data['propertyUrl']
             for predicate, object in data['po']:
                 to_set.append((property,predicate,strip_namespace(str(object))))
-        #print(to_set)
+        print(to_set)
         logging.info('dublicating template graph for {} rows'.format(len(rows)))
         for row in rows:
             data_node=data_graph.value(row,CSVW.describes)
@@ -299,7 +300,7 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
     
     out=joined_graph.serialize(format="turtle")
     out=out.replace('file:///src',data_url)
-    return out, num_mappings_possible, num_mappings_applied
+    return filename, out, num_mappings_possible, num_mappings_applied
 
 def shacl_validate(shapes_url: AnyUrl, rdf_url: AnyUrl) -> Tuple[str, Graph]:
     if not len(urlparse(shapes_url))==6: #not a regular url might be data string
@@ -447,12 +448,14 @@ class RDFRequest(BaseModel):
         }
 
 class RDFResponse(BaseModel):
+    filename:  str = Field('data-joined.ttl', title='Resulting File Name', description='Suggested filename of the generated rdf in turtle format')
     graph:  str = Field( title='Graph data', description='The output gaph data in turtle format.')
     num_mappings_applied: int = Field( title='Number Rules Applied', description='The total number of rules that were applied from the mapping.')
     num_mappings_skipped: int = Field( title='Number Rules Skipped', description='The total number of rules not applied once.')
     class Config:
         schema_extra = {
             "example": {
+                "filename": "data-joined.ttl",
                 "graph": "graph data in turtle format as string",
                 "num_mappings_applied": 6,
                 "num_mappings_skipped": 0,
@@ -487,13 +490,14 @@ async def yarrrmltorml(request: RMLRequest) -> TurtleResponse:
 @app.post('/api/createrdf', response_model=RDFResponse)
 def create_rdf(request: RDFRequest):
     logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
-    out, count_rules, count_rules_applied=apply_mapping(request.mapping_url,request.data_url,request.duplicate_for_table)
+    filename, out, count_rules, count_rules_applied=apply_mapping(request.mapping_url,request.data_url,request.duplicate_for_table)
     # try:
     #     out, count_rules, count_rules_applied=apply_mapping(request.mapping_url)
     # except Exception as err:
     #     raise HTTPException(status_code=500, detail=str(err))
+    
     logging.info(f'POST /api/createrdf: {count_rules=}, {count_rules_applied=}')
-    return {'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
+    return {'filename': filename,'graph': out, 'num_mappings_applied': count_rules_applied, 'num_mappings_skipped': count_rules-count_rules_applied}
 
 
 @app.post('/api/rdfvalidator', response_model=ValidateResponse)
