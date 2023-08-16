@@ -4,7 +4,7 @@ services:
   yarrrml-parser:
     environment:
       - PORT=${PARSER_PORT}
-    image: ghcr.io/mat-o-lab/yarrrml-parser:latest
+    image: ghcr.io/mat-o-lab/yarrrml-parser:v.1.0.2
     expose:
       - ${PARSER_PORT}
     restart: always
