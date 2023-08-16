@@ -14,7 +14,7 @@ from urllib.request import urlopen
 from urllib.parse import urlparse, unquote
 
 import uvicorn
-from pydantic import BaseSettings, BaseModel, AnyUrl, Field
+from pydantic import BaseModel, AnyUrl, Field
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Any, List, Optional, Tuple
 from fastapi import Request, FastAPI, Body, HTTPException
@@ -232,8 +232,9 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
     template_graph=Graph()
     #template_graph.bind('data',data_url+'/')
     #template_graph.bind('method',method_url+'/')
-    
+    print(templatedata)
     #parse template and add mapping results
+    template_graph.parse(data=templatedata, format='turtle')
     if not templatedata:
             raise Exception('could not read method graph - cant download file from url')
     try:
@@ -266,7 +267,7 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
     joined_graph.namespace_manager.bind('base', Namespace(new_base_url), override=True, replace=True)
     #copy data entieties into joined graph
     joined_graph += data_graph
-    joined_graph += mapping_graph
+    #joined_graph += mapping_graph
     
     
     #use template to create new idivituals for every
@@ -275,6 +276,7 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
         tablegroup=next(data_graph[:RDF.type:CSVW.TableGroup])
         maps={column: {'po': list(mapping_graph.predicate_objects(column)), 'propertyUrl': tablegroup+'/'+data_graph.value(column,CSVW.name)} for column in data_graph[:RDF.type:CSVW.Column]}
         to_set=list()
+        #print(to_set)
         for column, data in maps.items():
             property=data['propertyUrl']
             for predicate, object in data['po']:
@@ -402,7 +404,8 @@ async def convert(request: Request):
         duplicate_for_table=start_form.duplicate_for_table.data
         #out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url,duplicate_for_table)
         try:
-            out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url,duplicate_for_table)
+            filename, out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url,duplicate_for_table)
+    
         except Exception as err:
             flash(request,err,'error')
             result=None
@@ -430,7 +433,7 @@ async def convert(request: Request):
 class RMLRequest(BaseModel):
     mapping_url: AnyUrl = Field('', title='Graph Url', description='Url to data metadata to use.')
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"
             }
@@ -441,7 +444,7 @@ class RDFRequest(BaseModel):
     data_url: Optional[AnyUrl] = Field('', title='Url Data Target', description='If given replaces the data target (csvw json-ld) url of the provided mapping.', omit_default=True)
     duplicate_for_table: Optional[bool] = Field(False, title='Duplicate Template for Table Data', description='If to duplicate the method template for each row in the table.', omit_default=True)
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"
             }
@@ -453,7 +456,7 @@ class RDFResponse(BaseModel):
     num_mappings_applied: int = Field( title='Number Rules Applied', description='The total number of rules that were applied from the mapping.')
     num_mappings_skipped: int = Field( title='Number Rules Skipped', description='The total number of rules not applied once.')
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "filename": "data-joined.ttl",
                 "graph": "graph data in turtle format as string",
@@ -476,7 +479,7 @@ class TurtleResponse(StreamingResponse):
 @app.post('/api/yarrrmltorml', response_class=TurtleResponse)
 async def yarrrmltorml(request: RMLRequest) -> TurtleResponse:
     logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
-    filedata, filename = open_file(request.mapping_url)
+    filedata, filename = open_file(str(request.mapping_url))
     rules = requests.post('http://yarrrml-parser'+':'+parser_port, data={'yarrrml': filedata}).text
     data_bytes=BytesIO(rules.encode())
     filename=filename.rsplit('.yaml',1)[0]+'-rml.ttl'
@@ -490,7 +493,7 @@ async def yarrrmltorml(request: RMLRequest) -> TurtleResponse:
 @app.post('/api/createrdf', response_model=RDFResponse)
 def create_rdf(request: RDFRequest):
     logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
-    filename, out, count_rules, count_rules_applied=apply_mapping(request.mapping_url,request.data_url,request.duplicate_for_table)
+    filename, out, count_rules, count_rules_applied=apply_mapping(str(request.mapping_url),str(request.data_url),request.duplicate_for_table)
     # try:
     #     out, count_rules, count_rules_applied=apply_mapping(request.mapping_url)
     # except Exception as err:
@@ -502,7 +505,7 @@ def create_rdf(request: RDFRequest):
 
 @app.post('/api/rdfvalidator', response_model=ValidateResponse)
 def validate_rdf(request: ValidateRequest):
-    conforms, graph = shacl_validate(request.shapes_url,request.rdf_url)
+    conforms, graph = shacl_validate(str(request.shapes_url),str(request.rdf_url))
     logging.info(f'POST /api/rdfvalidator: {conforms=}')
     return {'valid': conforms, 'graph': graph.serialize(format='ttl')}
 

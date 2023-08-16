@@ -1,5 +1,6 @@
 import os
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
+
 
 class Setting(BaseSettings):
     app_name: str = "RDFConverter"

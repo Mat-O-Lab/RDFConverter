@@ -1,7 +1,6 @@
 Jinja2==3.0.3
 rdflib>=6.2.0
 WTForms
-pydantic
 starlette
 starlette-wtf
 jinja2
@@ -10,3 +9,5 @@ uvicorn
 pyshacl
 pyyaml
 requests
+pydantic>=2.0.0
+pydantic_settings
