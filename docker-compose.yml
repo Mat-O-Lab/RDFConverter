@@ -27,7 +27,6 @@ services:
     environment:
       PARSER_PORT: ${PARSER_PORT}
       MAPPER_PORT: ${MAPPER_PORT}
-      APP_MODE: "production"
       APP_SECRET: ${APP_SECRET}
       PORT: ${CONVERTER_PORT}
     container_name: rdfconverter
