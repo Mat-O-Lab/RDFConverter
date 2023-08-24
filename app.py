@@ -97,7 +97,7 @@ OA = Namespace('http://www.w3.org/ns/oa#')
 QUDT = Namespace('http://qudt.org/schema/qudt/')
 QUNIT = Namespace('http://qudt.org/vocab/unit/')
 IOF = Namespace('https://spec.industrialontologies.org/ontology/core/Core/')
-
+#RDF = Namespace('http://www.w3.org/2000/01/rdf-schema#')
 
 def replace_between(text: str, begin: str='', end: str='', alternative: str='') -> str:
     if not (begin and end):
@@ -115,11 +115,13 @@ def open_file(uri: AnyUrl) -> Tuple[str,str]:
     else:
         filename = unquote(uri_parsed.path).rsplit('/download/upload')[0].split('/')[-1]
         if uri_parsed.scheme in ['https', 'http']:
-            r = urlopen(uri)
-            charset=r.info().get_content_charset()
-            if not charset:
-                charset='utf-8'
-            filedata = r.read().decode(charset)
+            #r = urlopen(uri)
+            r=requests.get(uri, allow_redirects=True)
+            filedata=r.content
+            # charset=r.info().get_content_charset()
+            # if not charset:
+            #     charset='utf-8'
+            #filedata = r.read().decode(charset)
         elif uri_parsed.scheme == 'file':
             filedata = open(unquote(uri_parsed.path), 'rb').read()
         else:
@@ -167,6 +169,7 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
              "rdf": str(RDF),
              "qudt": str(QUDT),
              "qunit": str(QUNIT),
+             "label": "http://www.w3.org/2000/01/rdf-schema#label",
              #"data1": data_url+'/',
              #"data2": rml_data_url+'/'
              }
@@ -227,12 +230,9 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
     #app.logger.info(f'POST /api/createrdf: {data_url}')
     #load and copy method graph and give it a new base namespace
     logging.debug('loading method knowledge at {}'.format(method_url))
-    #print('mapping url: '+mapping_url)
+    #print('method_url: '+method_url)
     templatedata, methodname=open_file(method_url)
     template_graph=Graph()
-    #template_graph.bind('data',data_url+'/')
-    #template_graph.bind('method',method_url+'/')
-    print(templatedata)
     #parse template and add mapping results
     template_graph.parse(data=templatedata, format='turtle')
     if not templatedata:
@@ -244,16 +244,23 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
     
 
     
-    # remove the base iri if any 
-    print(list(template_graph.namespaces()))
+    # remove the base iri or empty prefix if any 
     template_namespace='http://template_base/'
+    base_namespace=None
     for ns_prefix, namespace in template_graph.namespaces():
-        if ns_prefix=='base':
-            logging.debug('found base namespace: {} in template, will remove it.'.format(namespace))
-            template_content=template_graph.serialize().replace(namespace,template_namespace)
-            template_graph=Graph()
-            template_graph.parse(data=template_content)
-            template_graph.bind('data', data_url+'/')
+        #print(ns_prefix,type(ns_prefix),len(ns_prefix))
+        if ns_prefix in ['base','']:
+            base_namespace=namespace
+    if base_namespace:
+        logging.debug('found the following base or empty prefix namespace {}'.format(base_namespace))
+        template_content=template_graph.serialize().replace(base_namespace,template_namespace)
+        template_graph=Graph()
+        template_graph.parse(data=template_content)
+        template_graph.bind('data', data_url+'/')
+    else:
+        template_content=template_graph.serialize()
+
+        
     # for subject in template_graph.subjects():
     #     # replace the subject URI with your new template URI
     #     new_iri=URIRef(str(subject).rsplit("/", 1)[-1].rsplit("#", 1)[-1])
@@ -274,14 +281,21 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
     if duplicate_for_table and rows:
         #map_content=mapping_graph.serialize()
         tablegroup=next(data_graph[:RDF.type:CSVW.TableGroup])
-        maps={column: {'po': list(mapping_graph.predicate_objects(column)), 'propertyUrl': tablegroup+'/'+data_graph.value(column,CSVW.name)} for column in data_graph[:RDF.type:CSVW.Column]}
-        to_set=list()
-        #print(to_set)
-        for column, data in maps.items():
+        column_maps={column: {'po': list(mapping_graph.predicate_objects(column)), 'propertyUrl': tablegroup+'/'+data_graph.value(column,CSVW.name)} for column in data_graph[:RDF.type:CSVW.Column]}
+        non_column_subjects= [subject for subject in mapping_graph.subjects(unique=True) if subject not in column_maps.keys()]
+        note_maps={note: {'po': list(mapping_graph.predicate_objects(note))} for note in non_column_subjects}
+        for_row_to_set=list()
+        #adding tripples for columns
+        for column, data in column_maps.items():
             property=data['propertyUrl']
             for predicate, object in data['po']:
-                to_set.append((property,predicate,strip_namespace(str(object))))
-        print(to_set)
+                for_row_to_set.append((property,predicate,strip_namespace(str(object))))
+        #adding tripples for notes
+        for_copy_to_set=list()
+        for note, data in note_maps.items():
+            for predicate, object in data['po']:
+                for_copy_to_set.append((strip_namespace(note),predicate,strip_namespace(str(object))))
+        #print(to_set)
         logging.info('dublicating template graph for {} rows'.format(len(rows)))
         for row in rows:
             data_node=data_graph.value(row,CSVW.describes)
@@ -289,9 +303,14 @@ def apply_mapping(mapping_url: AnyUrl, opt_data_url: AnyUrl=None, duplicate_for_
             row_ns=Namespace(data_node+'/')
             joined_graph.bind('row'+str(data_node).rsplit('-',1)[-1], row_ns)
             #set mapping realtions on each individual row 
-            for property,predicate,object in to_set:
+            for property,predicate,object in for_row_to_set:
                 subject=next(joined_graph.objects(data_node,property))
                 joined_graph.add((subject,predicate,row_ns[object]))
+            for subject,predicate,object in for_copy_to_set:
+                joined_graph.add((row_ns[subject],predicate,row_ns[object]))
+            
+
+            
         
             
     else:
