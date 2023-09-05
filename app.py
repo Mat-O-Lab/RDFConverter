@@ -444,11 +444,11 @@ class StartForm(StarletteForm):
     duplicate_for_table = BooleanField(
         "Duplicate Template for Table Data",
         render_kw={
-            "class": "form-check form-check-input form-control-lg d-none",
+            "class": "form-check form-check-input form-control-lg",
             "role": "switch",
         },
-        description="If to duplicate the method template for each row in the table.",
-        default="",
+        description="Check to duplicate the method template for each row in the table.",
+        default=False,
     )
 
 
