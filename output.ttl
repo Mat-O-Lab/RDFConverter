@@ -1,0 +1,168 @@
+@prefix iof: <https://spec.industrialontologies.org/ontology/core/Core/> .
+@prefix meta: <https://kupferdigital.gitlab.io/process-graphs/vickers-hardness-test-fem/index.ttl/> .
+@prefix mseo: <https://purl.matolab.org/mseo/mid/> .
+@prefix mutil: <https://github.com/Mat-O-Lab/MSEO/raw/main/domain/util/readable_bfo_iris.ttl/> .
+@prefix obo: <http://purl.obolibrary.org/obo/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+meta:HVSpecimen a owl:NamedIndividual,
+        mseo:Specimen ;
+    mutil:has_continuant_part_at_some_time meta:MaterialAtSpektrumPosition0 ;
+    iof:designatedBy meta:CrossSectionID ;
+    iof:hasDisposition meta:FinalMetallographicTreatment ;
+    iof:hasFunction meta:HardnessMeasurementSpecimen ;
+    iof:isInputOf meta:VickersHardnessTest .
+
+meta:IndentArea a obo:BFO_0000001,
+        obo:PATO_0001323,
+        owl:NamedIndividual ;
+    iof:describedBy meta:IndentAreaValue .
+
+meta:IndentLength a obo:BFO_0000001,
+        obo:PATO_0000122,
+        owl:NamedIndividual ;
+    iof:describedBy meta:IndentLengthValue .
+
+meta:IndentShape a obo:PATO_0001938,
+        owl:NamedIndividual .
+
+meta:IndentWidth a obo:BFO_0000001,
+        obo:PATO_0000921,
+        owl:NamedIndividual ;
+    iof:describedBy meta:IndentWidthValue .
+
+meta:IndentionImprint a owl:DatatypeProperty ;
+    rdfs:label "indention imprint" ;
+    rdfs:domain mutil:FiatObjectPart .
+
+meta:Load a owl:NamedIndividual,
+        iof:ActionSpecification,
+        iof:DirectiveInformationContentEntity ;
+    iof:prescribes meta:VickersHardnessTest .
+
+meta:MagnificationValue a owl:NamedIndividual,
+        iof:DescriptiveInformationContentEntity,
+        iof:ValuExpression ;
+    iof:describes meta:Magnification .
+
+meta:RegionOfInterest0 a owl:NamedIndividual,
+        mseo:RegionOfInterest ;
+    mutil:has_continuant_part_at_some_time meta:IdentationSite ;
+    iof:designatedBy meta:RegionOfInterestname0 .
+
+meta:Abstand a owl:NamedIndividual,
+        iof:PhysicalLocationIdentifier .
+
+meta:CrossSectionID a owl:NamedIndividual,
+        iof:Identifier .
+
+meta:DateOfMeasurement a owl:NamedIndividual,
+        iof:Identifier .
+
+meta:DwellTime a obo:BFO_0000001,
+        owl:NamedIndividual,
+        mutil:OneDimensionalTemporalRegion ;
+    iof:describedBy meta:DwellTimeValue .
+
+meta:DwellTimeValue a owl:NamedIndividual,
+        iof:MeasurementInformationContentEntity .
+
+meta:Dwelling a owl:NamedIndividual,
+        iof:MeasurementProcess ;
+    mutil:occupies_temporal_region meta:DwellTime .
+
+meta:ExperimentDate a obo:BFO_0000001,
+        owl:NamedIndividual,
+        mutil:TemporalInterval ;
+    iof:designatedBy meta:DateOfMeasurement .
+
+meta:FinalMetallographicTreatment a obo:BFO_0000016,
+        owl:NamedIndividual,
+        mutil:Disposition .
+
+meta:HardnessMeasurementSpecimen a obo:BFO_0000034,
+        owl:NamedIndividual,
+        mutil:Function .
+
+meta:HardnessTestingMachine a owl:NamedIndividual,
+        iof:PieceOfEquipment ;
+    mutil:has_continuant_part_at_some_time meta:LensObjective,
+        meta:VickersSoftware ;
+    iof:designatedBy meta:HardnessTestingMachineName .
+
+meta:HardnessTestingMachineName a owl:NamedIndividual,
+        iof:DesignativeInformationContentEntity .
+
+meta:ID a owl:NamedIndividual,
+        iof:DesignativeInformationContentEntity .
+
+meta:IdentationSite a obo:BFO_0000029,
+        owl:NamedIndividual,
+        mutil:Site ;
+    iof:designatedBy meta:Abstand,
+        meta:ID,
+        meta:Versatz .
+
+meta:IndentAreaValue a owl:NamedIndividual,
+        iof:ValueExpression .
+
+meta:IndentLengthValue a owl:NamedIndividual,
+        iof:MeasurementInformationContentEntity .
+
+meta:IndentWidthValue a owl:NamedIndividual,
+        iof:MeasurementInformationContentEntity .
+
+meta:InternalOrdnerNumber a owl:NamedIndividual,
+        iof:Identifier .
+
+meta:LensObjective a owl:NamedIndividual,
+        mutil:FiatObjectPart,
+        iof:PieceOfEquipment ;
+    iof:hasQuality meta:Magnification .
+
+meta:MaterialAtSpektrumPosition0 a owl:NamedIndividual,
+        mutil:FiatObjectPart,
+        iof:MaterialComponent ;
+    iof:hasQuality meta:VickersHardness .
+
+meta:MeasuringSoftware a owl:NamedIndividual,
+        iof:Identifier .
+
+meta:ProjectName a owl:NamedIndividual,
+        iof:Identifier .
+
+meta:ProjectPlan a owl:NamedIndividual,
+        iof:PlannedProcess ;
+    iof:designatedBy meta:ProjectName .
+
+meta:RegionOfInterestname0 a owl:NamedIndividual,
+        iof:DesignativeInformationContentEntity .
+
+meta:SoftwareVersion a owl:NamedIndividual,
+        iof:Identifier .
+
+meta:Versatz a owl:NamedIndividual,
+        iof:PhysicalLocationIdentifier .
+
+meta:VickersHardness a obo:BFO_0000019,
+        owl:NamedIndividual,
+        mseo:IndentionHardness .
+
+meta:VickersSoftware a owl:NamedIndividual,
+        mseo:DataAcquisitionSoftware ;
+    iof:designatedBy meta:MeasuringSoftware,
+        meta:SoftwareVersion .
+
+meta:Magnification a obo:BFO_0000019,
+        owl:NamedIndividual,
+        mutil:Quality .
+
+meta:VickersHardnessTest a owl:NamedIndividual,
+        iof:MeasurementProcess ;
+    mutil:has_occurrent_part meta:Dwelling ;
+    mutil:has_participant_at_some_time meta:HardnessTestingMachine ;
+    mutil:occupies_temporal_region meta:ExperimentDate ;
+    mutil:occurrent_part_of meta:ProjectPlan ;
+    iof:designatedBy meta:InternalOrdnerNumber .
+

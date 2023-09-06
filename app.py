@@ -299,7 +299,7 @@ def apply_mapping(
     #     # replace the subject URI with your new template URI
     #     new_iri=URIRef(str(subject).rsplit("/", 1)[-1].rsplit("#", 1)[-1])
     #     replace_iris(subject,new_iri,template_graph)
-    # template_graph.serialize('template.ttl')
+    template_graph.serialize('template.ttl')
 
     # duplicate template if needed
     rows = list(data_graph[: RDF.type : CSVW.Row])
@@ -667,6 +667,14 @@ def validate_rdf(request: ValidateRequest):
 
 @app.post("/api/reason", response_class=TurtleResponse)
 async def reason(request: ReasonRequest) -> TurtleResponse:
+    """Reasones asserted data using HermitT form owlready2 
+
+    Args:
+        request (ReasonRequest): Json Request with an url property pointing to the dataset
+
+    Returns:
+        TurtleResponse: returns a TurtleResponse Object
+    """
     logging.info(f"POST /api/reason {request.url}")
     url = str(request.url)
     graph = parse_graph(url)

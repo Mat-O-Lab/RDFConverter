@@ -8,7 +8,7 @@ import requests
 from rdflib import RDF, Graph, Literal, Namespace, URIRef
 from rdflib.plugins.sparql import prepareQuery
 from rdflib.util import guess_format
-from reasonable import PyReasoner
+#from reasonable import PyReasoner
 
 RR = Namespace("http://www.w3.org/ns/r2rml#")
 RML = Namespace("http://semweb.mmlab.be/ns/rml#")
@@ -173,14 +173,26 @@ def replace_iris(old: URIRef, new: URIRef, graph: Graph):
         graph.remove((triple[0], old, triple[1]))
         graph.add((triple[0], new, triple[1]))
 
-
+#FILTER ( !(?p=rdf:type && isBlank(?o)))
 filterBlankTypesAndClasses = prepareQuery(
     """
     SELECT ?s ?p ?o WHERE 
     {
-        ?s ?p ?o. FILTER ( !(?p=rdf:type && isBlank(?o)))
+        ?s ?p ?o. FILTER ( !isBlank(?o))
     }
     """
+)
+
+deleteClassesAndProperties = prepareQuery(
+    """
+    SELECT ?s ?p ?o WHERE 
+    {
+        ?s rdf:type ?t ;
+            ?p ?o. 
+        FILTER ( ?t=owl:Class || ?t=owl:ObjectProperty)
+    }
+    """,
+    initNs = { "rdf": RDF}
 )
 
 
@@ -227,13 +239,12 @@ def getUsedNamespaces(g: Graph):
             usedNamespaces += [namespace]
     return usedNamespaces
 
-
-def reason_graph(g: Graph = Graph()):
+def import_ontologies_from_prefixes(g: Graph()):
     namespaces = getUsedNamespaces(g)
-    #print(list(namespaces))
-    subjects = list(g.subjects())
     for prefix, namespace in namespaces:
-        if str(namespace) == "http://purl.obolibrary.org/obo/":
+        if prefix=='owl' or str(namespace) == "http://www.w3.org/2002/07/owl":
+            continue
+        elif str(namespace) == "http://purl.obolibrary.org/obo/":
             g.parse(
                 "https://raw.githubusercontent.com/BFO-ontology/BFO-2020/master/21838-2/owl/bfo-2020.owl",
                 format="xml",
@@ -268,20 +279,112 @@ def reason_graph(g: Graph = Graph()):
                 logging.info("loaded ontology {} at {}".format(namespace, req.url))
             except:
                 logging.info("failed to pasing to graph {}".format(namespace, req.url))
+    return g
 
-    r = PyReasoner()
-    r.from_graph(g)
-    triples = r.reason()
+
+#using owlready2
+import owlready2
+import os
+def reason_graph(g: Graph = Graph()):
+    #print(list(namespaces))
+    namespaces = getUsedNamespaces(g)
+    #remove all additional Class and ObjectProperty definitions ade by chowl, leaving only Individuals
+    toremove=g.query(deleteClassesAndProperties)
+    [g.remove(triple) for triple in toremove]
+    g.serialize('input.ttl',format='turtle')
+    subjects = list(g.subjects())
+    len_input=len(g)
+    g=import_ontologies_from_prefixes(g)
+    g.serialize('toreason.owl',format='xml')
+    graph=owlready2.get_ontology("file:///src/toreason.owl").load()
+    #iof=owlready2.get_ontology("https://github.com/iofoundry/ontology/blob/master/core/Core.rdf").load()
+    bfo=owlready2.get_ontology("https://raw.githubusercontent.com/BFO-ontology/BFO-2020/master/21838-2/owl/bfo-2020.owl").load()
+    #mutil=owlready2.get_ontology("https://github.com/Mat-O-Lab/MSEO/raw/main/domain/util/readable_bfo_iris.ttl").load()
+    #print(graph.imported_ontologies)
+    
+    with graph:
+        owlready2.sync_reasoner(infer_property_values = True)
+        #owlready2.sync_reasoner_hermit(infer_property_values = True)
+        owlready2.close_world(graph.entity)
+    graph.save(file = 'reasoned.owl', format = "rdfxml")
+    res = Graph()
     temp = Graph()
-    [temp.add(triple) for triple in triples]
+    temp.parse('reasoned.owl',format='xml')
+    os.remove('toreason.owl')
+    os.remove('reasoned.owl')
+    # res.namespace_manager=namespace_manager
+    [res.bind(prefix, namespace) for prefix, namespace in namespaces]
     qres = list()
     [
         qres.extend(temp.query(filterBlankTypesAndClasses, initBindings={"s": subject}))
         for subject in subjects
     ]
-    # print(qres[:10])
-    res = Graph()
-    # res.namespace_manager=namespace_manager
-    [res.bind(prefix, namespace) for prefix, namespace in namespaces]
     [res.add(triple) for triple in qres]
+    len_result=len(qres)
+    logging.info('Infered {} for named Individuals of input.'.format(len_result-len_input))
+    res.serialize('output.ttl')
     return res
+
+# #not giving expected results
+# def reason_graph2(g: Graph = Graph()):
+#     namespaces = getUsedNamespaces(g)
+#     #print(list(namespaces))
+#     #remove all additional Class and ObjectProperty definitions ade by chowl, leaving only Individuals
+#     toremove=g.query(deleteClassesAndProperties)
+#     [g.remove(triple) for triple in toremove]
+#     subjects = list(g.subjects())
+#     g.serialize('input.ttl')
+#     for prefix, namespace in namespaces:
+#         if str(namespace) == "http://purl.obolibrary.org/obo/":
+#             g.parse(
+#                 "https://raw.githubusercontent.com/BFO-ontology/BFO-2020/master/21838-2/owl/bfo-2020.owl",
+#                 format="xml",
+#             )
+#             logging.info("loaded bfo-2020 {}".format(namespace))
+#         elif str(namespace) == "https://purl.matolab.org/mseo/mid/":
+#             g.parse(
+#                 "https://github.com/Mat-O-Lab/MSEO/raw/main/MSEO_mid.ttl",
+#                 format="turtle",
+#             )
+#             logging.info("loaded mseo {}".format(namespace))
+#         else:
+#             req = requests.get(namespace, allow_redirects=True)
+#             # print(req.headers['Content-Type'])
+#             return_type = req.headers["Content-Type"].split(";")[0].rsplit("/")[-1]
+#             if "xml" in return_type:
+#                 return_type = "xml"
+#             elif "plain" in return_type:
+#                 return_type = "turtle"
+#             if req.status_code != 200 or req.headers["Content-Type"].startswith(
+#                 "text/html"
+#             ):
+#                 logging.info("failed to load ontology {}".format(namespace))
+#             else:
+#                 fname = req.url.rstrip("/").rsplit("/", 1)[-1]
+#                 if "." not in fname:
+#                     format = return_type
+#                 else:
+#                     format = guess_format(fname)
+#             try:
+#                 g.parse(data=req.text, format=format)
+#                 logging.info("loaded ontology {} at {}".format(namespace, req.url))
+#             except:
+#                 logging.info("failed to pasing to graph {}".format(namespace, req.url))
+#     g.serialize("input_with_ontologies.ttl")
+#     r = PyReasoner()
+#     r.from_graph(g)
+#     triples = r.reason()
+#     temp = Graph()
+#     [temp.add(triple) for triple in triples]
+#     qres = list()
+#     [
+#         qres.extend(temp.query(filterBlankTypesAndClasses, initBindings={"s": subject}))
+#         for subject in subjects
+#     ]
+#     # print(qres[:10])
+#     res = Graph()
+#     # res.namespace_manager=namespace_manager
+#     [res.bind(prefix, namespace) for prefix, namespace in namespaces]
+#     [res.add(triple) for triple in qres]
+#     res.serialize('reasoned.ttl')
+#     return res
