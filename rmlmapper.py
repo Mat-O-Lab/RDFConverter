@@ -239,36 +239,31 @@ def getUsedNamespaces(g: Graph):
             usedNamespaces += [namespace]
     return usedNamespaces
 
-def import_ontologies_from_prefixes(g: Graph()):
+def import_ontologies_from_prefixes(g: Graph()) -> (Graph, list):
     namespaces = getUsedNamespaces(g)
+    loaded=list()
+    succeded=False
     for prefix, namespace in namespaces:
         if prefix=='owl' or str(namespace) == "http://www.w3.org/2002/07/owl":
             continue
         elif str(namespace) == "http://purl.obolibrary.org/obo/":
-            g.parse(
-                "https://raw.githubusercontent.com/BFO-ontology/BFO-2020/master/21838-2/owl/bfo-2020.owl",
-                format="xml",
-            )
-            logging.info("loaded bfo-2020 {}".format(namespace))
+            source="https://raw.githubusercontent.com/BFO-ontology/BFO-2020/master/21838-2/owl/bfo-2020.owl"
+            g.parse(source,format="xml")
+            succeded=True
         elif str(namespace) == "https://purl.matolab.org/mseo/mid/":
-            g.parse(
-                "https://github.com/Mat-O-Lab/MSEO/raw/main/MSEO_mid.ttl",
-                format="turtle",
-            )
-            logging.info("loaded mseo {}".format(namespace))
+            source="https://github.com/Mat-O-Lab/MSEO/raw/main/MSEO_mid.ttl"
+            g.parse(source,format="turtle")
+            succeded=True
         else:
             req = requests.get(namespace, allow_redirects=True)
             # print(req.headers['Content-Type'])
+            source=req.url
             return_type = req.headers["Content-Type"].split(";")[0].rsplit("/")[-1]
-            if "xml" in return_type:
-                return_type = "xml"
-            elif "plain" in return_type:
-                return_type = "turtle"
-            if req.status_code != 200 or req.headers["Content-Type"].startswith(
-                "text/html"
-            ):
-                logging.info("failed to load ontology {}".format(namespace))
-            else:
+            if req.status_code == 200 or not return_type=='html':
+                if "xml" in return_type:
+                    return_type = "xml"
+                elif "plain" in return_type:
+                    return_type = "turtle"
                 fname = req.url.rstrip("/").rsplit("/", 1)[-1]
                 if "." not in fname:
                     format = return_type
@@ -276,10 +271,11 @@ def import_ontologies_from_prefixes(g: Graph()):
                     format = guess_format(fname)
             try:
                 g.parse(data=req.text, format=format)
-                logging.info("loaded ontology {} at {}".format(namespace, req.url))
+                succeded=True
             except:
-                logging.info("failed to pasing to graph {}".format(namespace, req.url))
-    return g
+                pass
+        loaded.append((str(prefix),str(namespace),str(source),str(succeded)))
+    return g, loaded
 
 
 #using owlready2
@@ -294,7 +290,10 @@ def reason_graph(g: Graph = Graph()):
     g.serialize('input.ttl',format='turtle')
     subjects = list(g.subjects())
     len_input=len(g)
-    g=import_ontologies_from_prefixes(g)
+    g,loaded=import_ontologies_from_prefixes(g)
+    newline='\n'
+    info=[' '.join(entry) for entry in loaded]
+    logging.info('dynamical tried to load the following ontologies:\n{}'.format(newline.join(info)))
     g.serialize('toreason.owl',format='xml')
     graph=owlready2.get_ontology("file:///src/toreason.owl").load()
     #iof=owlready2.get_ontology("https://github.com/iofoundry/ontology/blob/master/core/Core.rdf").load()
@@ -323,7 +322,7 @@ def reason_graph(g: Graph = Graph()):
     len_result=len(qres)
     logging.info('Infered {} for named Individuals of input.'.format(len_result-len_input))
     res.serialize('output.ttl')
-    return res
+    return res, loaded
 
 # #not giving expected results
 # def reason_graph2(g: Graph = Graph()):

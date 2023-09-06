@@ -24,11 +24,8 @@ services:
       - rdfconverter_net
 
   rdfconverter:
-    environment:
-      PARSER_PORT: ${PARSER_PORT}
-      MAPPER_PORT: ${MAPPER_PORT}
-      APP_SECRET: ${APP_SECRET}
-      PORT: ${CONVERTER_PORT}
+    env_file:
+     - .env
     container_name: rdfconverter
     image: ghcr.io/mat-o-lab/rdfconverter:latest
     ports:

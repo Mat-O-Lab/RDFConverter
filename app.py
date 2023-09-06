@@ -17,8 +17,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import AnyUrl, BaseModel, Field
 from pyshacl import validate
-from rdflib import Graph, Namespace, URIRef
-from rdflib.namespace import CSVW, RDF, RDFS
+from rdflib import Graph, Namespace, URIRef, BNode, Literal
+from rdflib.namespace import CSVW, RDF, RDFS, PROV, XSD
 from rdflib.util import guess_format
 from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -55,26 +55,37 @@ middleware = [
     ),
 ]
 
+tags_metadata = [
+    {
+        "name": "transform",
+        "description": "transforms data to other format",
+    }
+]
+
 app = FastAPI(
-    title=setting.app_name,
-    description="It is a service for converting and validating YARRRML and Chowlk files to RDF, which is applied to Material Sciences Engineering (MSE) Methods, for example, on Cement MSE experiments.",
+    title=setting.name,
+    description=setting.desc,
     version=setting.version,
     contact={
         "name": "Thomas Hanke, Mat-O-Lab",
         "url": "https://github.com/Mat-O-Lab",
         "email": setting.admin_email,
     },
+    #contact={"name": setting.contact_name, "url": setting.org_site, "email": setting.admin_email},
     license_info={
         "name": "Apache 2.0",
         "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
     },
     openapi_url=setting.openapi_url,
+    openapi_tags=tags_metadata,
     docs_url=setting.docs_url,
     redoc_url=None,
-    # to disable highlighting for large output
-    # swagger_ui_parameters= {'syntaxHighlight': False},
-    middleware=middleware,
+    swagger_ui_parameters= {'syntaxHighlight': False},
+    #swagger_favicon_url="/static/resources/favicon.svg",
+    middleware=middleware
+
 )
+
 
 app.mount("/static/", StaticFiles(directory="static", html=True), name="static")
 templates = Jinja2Templates(directory="templates")
@@ -141,6 +152,43 @@ def open_file(uri: AnyUrl) -> Tuple[str, str]:
             flash("unknown scheme {}".format(uri_parsed.scheme), "error")
             return None, None
         return filedata, filename
+
+from datetime import datetime
+
+def add_prov(graph: Graph, api_url: str, data_url: str, used: list = []) -> Graph:
+    """ Add prov-o information to output graph
+
+    Args:
+        graph (Graph): Graph to add prov information to
+        api_url (str): the api url 
+        data_url (str): the url to the rdf file that was used
+
+    Returns:
+        Graph: Input Graph with prov metadata of the api call 
+    """
+    graph.bind('prov',PROV)
+    
+    root=BNode()
+    api_node=URIRef(api_url)
+    graph.add((root,PROV.wasGeneratedBy,api_node))
+    graph.add((api_node,RDF.type,PROV.Activity))
+    software_node=URIRef(setting.source+"/releases/tag/"+setting.version)
+    graph.add((api_node,PROV.wasAssociatedWith,software_node))
+    graph.add((software_node,RDF.type,PROV.SoftwareAgent))
+    graph.add((software_node,RDFS.label,Literal( setting.name+setting.version)))
+    graph.add((software_node,PROV.hadPrimarySource,URIRef(setting.source)))
+    graph.add((root,PROV.generatedAtTime,Literal(str(datetime.now().isoformat()),datatype=XSD.dateTime)))
+    entity=URIRef(str(data_url))
+    graph.add((entity,RDF.type,PROV.Entity))
+    derivation=BNode()
+    graph.add((derivation,RDF.type,PROV.Derivation))
+    graph.add((derivation,PROV.entity,entity))
+    graph.add((derivation,PROV.hadActivity,api_node))
+    graph.add((root,PROV.qualifiedDerivation,derivation))
+    graph.add((root,PROV.wasDerivedFrom,entity))
+    if used:
+        [graph.add((api_node,PROV.wasInformedBy,URIRef(entry))) for entry in used]
+    return graph
 
 
 def apply_mapping(
@@ -528,7 +576,7 @@ class ReasonRequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "url": "https://github.com/Mat-O-Lab/CSVToCSVW/raw/main/examples/example2-metadata.json"
+                "url": "https://kupferdigital.gitlab.io/process-graphs/vickers-hardness-test-fem/index.ttl"
             }
         }
 
@@ -666,7 +714,7 @@ def validate_rdf(request: ValidateRequest):
 
 
 @app.post("/api/reason", response_class=TurtleResponse)
-async def reason(request: ReasonRequest) -> TurtleResponse:
+async def reason(call: Request, request: ReasonRequest) -> TurtleResponse:
     """Reasones asserted data using HermitT form owlready2 
 
     Args:
@@ -678,7 +726,10 @@ async def reason(request: ReasonRequest) -> TurtleResponse:
     logging.info(f"POST /api/reason {request.url}")
     url = str(request.url)
     graph = parse_graph(url)
-    graph = reason_graph(graph)
+    graph, used = reason_graph(graph)
+    onto_uris=[entry[2]for entry in used if entry[3]=='True']
+    #add prov-o annotations
+    graph=add_prov(graph,call.url._url,request.url,used=onto_uris)
     filename = url.rsplit("/", 1)[-1].rsplit(".", 1)[0] + ".ttl"
     data = graph.serialize(format="turtle")
     data_bytes = BytesIO(data.encode())
