@@ -26,8 +26,7 @@ from starlette_wtf import StarletteForm
 from wtforms import BooleanField, URLField
 from wtforms.validators import Optional as WTFOptional
 
-from rmlmapper import (count_rules_str, parse_graph, reason_graph,
-                       replace_data_source, replace_iris, strip_namespace)
+from rmlmapper import count_rules_str, replace_data_source, strip_namespace
 
 parser_port = os.environ.get("PARSER_PORT")
 mapper_port = os.environ.get("MAPPER_PORT")
@@ -711,33 +710,6 @@ def validate_rdf(request: ValidateRequest):
     conforms, graph = shacl_validate(str(request.shapes_url), str(request.rdf_url))
     logging.info(f"POST /api/rdfvalidator: {conforms=}")
     return {"valid": conforms, "graph": graph.serialize(format="ttl")}
-
-
-@app.post("/api/reason", response_class=TurtleResponse)
-async def reason(call: Request, request: ReasonRequest) -> TurtleResponse:
-    """Reasones asserted data using HermitT form owlready2 
-
-    Args:
-        request (ReasonRequest): Json Request with an url property pointing to the dataset
-
-    Returns:
-        TurtleResponse: returns a TurtleResponse Object
-    """
-    logging.info(f"POST /api/reason {request.url}")
-    url = str(request.url)
-    graph = parse_graph(url)
-    graph, used = reason_graph(graph)
-    onto_uris=[entry[2]for entry in used if entry[3]=='True']
-    #add prov-o annotations
-    graph=add_prov(graph,call.url._url,request.url,used=onto_uris)
-    filename = url.rsplit("/", 1)[-1].rsplit(".", 1)[0] + ".ttl"
-    data = graph.serialize(format="turtle")
-    data_bytes = BytesIO(data.encode())
-    headers = {
-        "Content-Disposition": "attachment; filename={}".format(filename),
-        "Access-Control-Expose-Headers": "Content-Disposition",
-    }
-    return TurtleResponse(content=data_bytes, headers=headers)
 
 
 @app.get("/info", response_model=settings.Setting)
