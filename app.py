@@ -362,10 +362,11 @@ def apply_mapping(
     # use template to create new idivituals for every
     if duplicate_for_table and rows:
         # map_content=mapping_graph.serialize()
+        mapping_graph.serialize('map_graph.ttl')
         tablegroup = next(data_graph[: RDF.type : CSVW.TableGroup])
         column_maps = {
             column: {
-                "po": list(mapping_graph.predicate_objects(column)),
+                "po": list(mapping_graph.predicate_objects(subject=column)),
                 "propertyUrl": tablegroup + "/" + data_graph.value(column, CSVW.name),
             }
             for column in data_graph[: RDF.type : CSVW.Column]
@@ -380,20 +381,24 @@ def apply_mapping(
             for note in non_column_subjects
         }
         for_row_to_set = list()
+        
         # adding tripples for columns
         for column, data in column_maps.items():
+            print(column,data)
             property = data["propertyUrl"]
             for predicate, object in data["po"]:
                 for_row_to_set.append(
                     (property, predicate, strip_namespace(str(object)))
                 )
+        print(for_row_to_set)
+        
         # adding tripples for notes
         for_copy_to_set = list()
         for note, data in note_maps.items():
             for predicate, object in data["po"]:
                 for_copy_to_set.append((note, predicate, strip_namespace(str(object))))
 
-        print(for_copy_to_set)
+        #print(for_copy_to_set)
         logging.info("dublicating template graph for {} rows".format(len(rows)))
         for row in rows:
             data_node = data_graph.value(row, CSVW.describes)

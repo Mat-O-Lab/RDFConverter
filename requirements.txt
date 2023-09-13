@@ -11,5 +11,3 @@ pyyaml
 requests
 pydantic>=2.0.0
 pydantic_settings
-#reasonable
-owlready2
