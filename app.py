@@ -346,7 +346,7 @@ def apply_mapping(
     #     # replace the subject URI with your new template URI
     #     new_iri=URIRef(str(subject).rsplit("/", 1)[-1].rsplit("#", 1)[-1])
     #     replace_iris(subject,new_iri,template_graph)
-    template_graph.serialize('template.ttl')
+    #template_graph.serialize('template.ttl')
 
     # duplicate template if needed
     rows = list(data_graph[: RDF.type : CSVW.Row])
@@ -362,7 +362,7 @@ def apply_mapping(
     # use template to create new idivituals for every
     if duplicate_for_table and rows:
         # map_content=mapping_graph.serialize()
-        mapping_graph.serialize('map_graph.ttl')
+        #mapping_graph.serialize('map_graph.ttl')
         tablegroup = next(data_graph[: RDF.type : CSVW.TableGroup])
         column_maps = {
             column: {
@@ -514,6 +514,7 @@ async def index(request: Request):
             "start_form": start_form,
             "mapping_form": "",
             "result": "",
+            "setting": setting
         },
     )
 
@@ -570,6 +571,7 @@ async def convert(request: Request):
             "filename": "dataset.ttl",
             "payload": payload,
             "result": result,
+            "setting": setting
         },
     )
 
