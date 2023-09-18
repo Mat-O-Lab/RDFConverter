@@ -4,3 +4,18 @@ services:
     #build: .
     environment:
       APP_MODE: "deveopment"
+      PARSER_PORT: ${PARSER_PORT}
+      MAPPER_PORT: ${MAPPER_PORT}
+      CONVERTER_PORT: ${CONVERTER_PORT}
+    container_name: rdfconverter
+    image: ghcr.io/mat-o-lab/rdfconverter:latest
+    ports:
+      - ${APP_PORT}:${CONVERTER_PORT}
+    restart: always
+    networks:
+      - rdfconverter_net
+
+networks:
+  rdfconverter_net:
+    name: rdfconverter_net
+    driver: bridge
