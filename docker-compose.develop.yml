@@ -1,14 +1,8 @@
 version: "3"
 services:
   rdfconverter:
-    #build: .
-    environment:
-      APP_MODE: "deveopment"
-      PARSER_PORT: ${PARSER_PORT}
-      MAPPER_PORT: ${MAPPER_PORT}
-      CONVERTER_PORT: ${CONVERTER_PORT}
     container_name: rdfconverter
-    image: ghcr.io/mat-o-lab/rdfconverter:latest
+    build: .
     ports:
       - ${APP_PORT}:${CONVERTER_PORT}
     restart: always
