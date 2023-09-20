@@ -24,7 +24,7 @@ jobs:
           fetch-depth: 0        
       - name: run app
         run: |
-          docker-compose -f docker-compose.develop.yml up -d
+          docker-compose up -d
           sleep 20
           docker ps -a
       - name: parse mapping to YARRRML parser
