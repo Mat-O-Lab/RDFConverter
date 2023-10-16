@@ -193,7 +193,6 @@ def add_prov(graph: Graph, api_url: str, data_url: str, used: list = []) -> Grap
 def apply_mapping(
     mapping_url: AnyUrl,
     opt_data_url: AnyUrl = None,
-    duplicate_for_table: Boolean = False,
 ) -> Tuple[str, int, int]:
     mapping_data, mapping_filename = open_file(mapping_url)
     if not mapping_data:
@@ -202,7 +201,8 @@ def apply_mapping(
         mapping_dict = yaml.safe_load(mapping_data)
     except:
         raise Exception("could not read mapping file - cant readin yaml")
-
+    duplicate_for_table=mapping_dict.get('use_template_rowwise',False)
+    logging.info('use_template_rowwise: {}'.format(duplicate_for_table))
     rml_rules = requests.post(
         "http://yarrrml-parser" + ":" + parser_port, data={"yarrrml": mapping_data}
     ).text
@@ -210,7 +210,7 @@ def apply_mapping(
     rml_graph.parse(data=rml_rules, format="ttl")
     # rml_graph.serialize('rml.ttl')
 
-    mapping_dict = yaml.safe_load(mapping_data)
+    #mapping_dict = yaml.safe_load(mapping_data)
     rml_data_url = mapping_dict["sources"]["data_entities"]["access"].strip("/")
     method_url = mapping_dict["prefixes"]["method"].strip("/")
 
@@ -492,16 +492,6 @@ class StartForm(StarletteForm):
         render_kw={"class": "form-control"},
         description="Paste URL to a SHACL Shape",
     )
-    # disabled uing d-none bootrap class
-    duplicate_for_table = BooleanField(
-        "Duplicate Template for Table Data",
-        render_kw={
-            "class": "form-check form-check-input form-control-lg",
-            "role": "switch",
-        },
-        description="Check to duplicate the method template for each row in the table.",
-        default=False,
-    )
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
@@ -538,11 +528,12 @@ async def convert(request: Request):
 
         opt_data_csvw_url = start_form.opt_data_csvw_url.data
         opt_shacl_shape_url = start_form.opt_shacl_shape_url.data
-        duplicate_for_table = start_form.duplicate_for_table.data
+
+        
         # out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url,duplicate_for_table)
         try:
             filename, out, count_rules, count_rules_applied = apply_mapping(
-                mapping_url, opt_data_csvw_url, duplicate_for_table
+                mapping_url, opt_data_csvw_url
             )
 
         except Exception as err:
@@ -610,13 +601,6 @@ class RDFRequest(BaseModel):
         description="If given replaces the data target (csvw json-ld) url of the provided mapping.",
         omit_default=True,
     )
-    duplicate_for_table: Optional[bool] = Field(
-        False,
-        title="Duplicate Template for Table Data",
-        description="If to duplicate the method template for each row in the table.",
-        omit_default=True,
-    )
-
     class Config:
         json_schema_extra = {
             "example": {
@@ -696,7 +680,7 @@ async def yarrrmltorml(request: RMLRequest) -> TurtleResponse:
 def create_rdf(request: RDFRequest):
     logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
     filename, out, count_rules, count_rules_applied = apply_mapping(
-        str(request.mapping_url), str(request.data_url), request.duplicate_for_table
+        str(request.mapping_url), str(request.data_url)
     )
     # try:
     #     out, count_rules, count_rules_applied=apply_mapping(request.mapping_url)
