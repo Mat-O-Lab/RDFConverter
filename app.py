@@ -559,7 +559,7 @@ async def convert(request: Request):
         {
             "request": request,
             "start_form": start_form,
-            "filename": "dataset.ttl",
+            "filename": filename,
             "payload": payload,
             "result": result,
             "setting": setting
