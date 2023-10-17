@@ -12,5 +12,5 @@ class Setting(BaseSettings):
     openapi_url: str ="/api/openapi.json"
     docs_url: str = "/api/docs"
     source: str = str(os.environ.get("APP_SOURCE","https://example.com"))
-    desc: str = "It is a service for converting and validating YARRRML and Chowlk files to RDF, which is applied to Material Sciences Engineering (MSE) Methods, for example, on Cement MSE experiments."
+    desc: str = "A service for joining and converting meta data documents based on YARRRML mapping files to RDF, optionally a validiation can be conducted using SHACL Shapes."
     org_site: str = "https://mat-o-lab.github.io/OrgSite"
