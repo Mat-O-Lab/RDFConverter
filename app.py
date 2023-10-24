@@ -12,7 +12,8 @@ import uvicorn
 import yaml
 from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
+from fastapi.encoders import jsonable_encoder
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import AnyUrl, BaseModel, Field
@@ -530,7 +531,7 @@ async def convert(request: Request):
         opt_shacl_shape_url = start_form.opt_shacl_shape_url.data
 
         
-        # out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url,duplicate_for_table)
+        filename, out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url)
         try:
             filename, out, count_rules, count_rules_applied = apply_mapping(
                 mapping_url, opt_data_csvw_url
@@ -604,7 +605,8 @@ class RDFRequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"
+                "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml",
+                "data_url": "https://raw.githubusercontent.com/Mat-O-Lab/CSVToCSVW/main/examples/example-metadata.json"
             }
         }
 
@@ -634,6 +636,27 @@ class RDFResponse(BaseModel):
                 "graph": "graph data in turtle format as string",
                 "num_mappings_applied": 6,
                 "num_mappings_skipped": 0,
+            }
+        }
+
+class CheckResponse(BaseModel):
+    rules_applicable: int = Field(
+        title="Number Rules Applied",
+        description="The total number of rules that were applied from the mapping.",
+    )
+    rules_skipped: int = Field(
+        title="Number Rules Skipped",
+        description="The total number of rules not applied once.",
+    )
+    # data_covered: float = Field(
+    #     title="Percent Covered",
+    #     description="Percent of data covered by rules.",
+    # )
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "rules_applicable": 6,
+                "rules_skipped": 0,
             }
         }
 
@@ -695,6 +718,11 @@ def create_rdf(request: RDFRequest):
         "num_mappings_skipped": count_rules - count_rules_applied,
     }
 
+@app.post("/api/checkmapping",response_model=CheckResponse)
+async def checkmapping(request: RDFRequest):
+    logging.info(f"POST /api/checkmapping {request.mapping_url,request.data_url}")
+    return check_mapping(request.mapping_url,request.data_url)
+
 
 @app.post("/api/rdfvalidator", response_model=ValidateResponse)
 def validate_rdf(request: ValidateRequest):
@@ -731,3 +759,32 @@ if __name__ == "__main__":
         access_log=access_log,
         log_config=config,
     )
+
+def check_mapping(mapping_url,data_url):
+    map_data, map_name = open_file(str(mapping_url))
+    #map_data, map_name = open_file(str(data_url))
+    rules=yaml.safe_load(map_data)['mappings']
+    parameters=[rules[rule]['condition']['parameters'] for rule in rules]
+    lookups=[[item[0][1].strip("$()"),Literal(item[1][1])] for item in parameters]
+    for item in lookups:
+        if item[0]=='label':
+            item[0]=RDFS.label
+        elif item[0]=='name':
+            item[0]=CSVW.name
+    logging.debug(lookups)
+    format=guess_format(str(data_url))
+    if not format:
+        raise Exception("wrong format of data at {}".format(data_url))
+    data_graph=Graph()
+    data_graph.parse(str(data_url), format=format)
+    found=0
+    for item in lookups:
+        lookup=len(list(data_graph.subjects(item[0],item[1])))
+        if lookup:
+            found+=1
+    logging.info('number of rules to test: {} rules with match: {}'.format(len(lookups),found))
+    
+    return {
+        'rules_applicable': len(lookups),
+        'rules_skipped': len(lookups)-found,
+    }
