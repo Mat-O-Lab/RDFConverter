@@ -128,7 +128,7 @@ def replace_between(
     )
 
 
-def open_file(uri: AnyUrl) -> Tuple[str, str]:
+def open_file(uri: AnyUrl) -> Tuple["filedata": str, "filename": str]:
     try:
         uri_parsed = urlparse(uri)
         # print(uri_parsed)
@@ -775,8 +775,9 @@ def check_mapping(mapping_url,data_url):
     format=guess_format(str(data_url))
     if not format:
         raise Exception("wrong format of data at {}".format(data_url))
+    data_str,filename=open_file(str(data_url))
     data_graph=Graph()
-    data_graph.parse(str(data_url), format=format)
+    data_graph.parse(data=data_str, format=format)
     found=0
     for item in lookups:
         lookup=len(list(data_graph.subjects(item[0],item[1])))
