@@ -201,14 +201,11 @@ def apply_mapping(
     opt_data_url: AnyUrl = None,
     authorization= None
 ) -> Tuple[str, int, int]:
-    try:
-        mapping_data, mapping_filename = open_file(mapping_url,authorization)
-    except Exception as e:
-        raise
+    mapping_data, mapping_filename = open_file(mapping_url,authorization)
     try:
         mapping_dict = yaml.safe_load(mapping_data)
     except:
-        raise Exception("could not read mapping file - cant readin yaml")
+        raise HTTPException(status_code=422, detail="could not read mapping file - is it yaml format?")
     duplicate_for_table=mapping_dict.get('use_template_rowwise',False)
     logging.info('use_template_rowwise: {}'.format(duplicate_for_table))
     rml_rules = requests.post(
@@ -233,10 +230,7 @@ def apply_mapping(
         data_url = opt_data_url
     else:
         data_url = rml_data_url
-    try:
-        data_content, data_filename = open_file(data_url,authorization)
-    except Exception as e:
-        raise
+    data_content, data_filename = open_file(data_url,authorization)
     
     filename = data_filename.rsplit(".", 1)[0].rsplit("-", 1)[0] + "-joined.ttl"
     data_graph = Graph()
@@ -245,7 +239,10 @@ def apply_mapping(
     )
     # normalizing data to rdflib json-ld wih maon vocab csvw
     # data_graph.parse(data=data_content,format=guess_format(data_url))
-    data_graph.parse(data=data_content, format=guess_format(data_url))
+    try:
+        data_graph.parse(data=data_content, format=guess_format(data_url))
+    except:
+        raise HTTPException(status_code=422, detail="could not read data file - probably could guess format from url string")
     context = {
         "@vocab": str(CSVW),
         "rdf": str(RDF),
@@ -255,13 +252,8 @@ def apply_mapping(
         # "data1": data_url+'/',
         # "data2": rml_data_url+'/'
     }
-    # data_graph.serialize('data.ttl')
-    # data_graph.serialize('data.json',format='json-ld', context=context)
     data_content = data_graph.serialize(format="json-ld", context=context)
     # need to replace iris because they are changed to the document id
-
-    if not data_content:
-        raise Exception("could not read data meta file - cant download file from url")
 
     # if opt_data_url:
     # logging.debug('opt_data_url: replacing {} with {}'.format(rml_data_url,opt_data_url))
@@ -283,13 +275,13 @@ def apply_mapping(
             return r.text, 400
         res = r.json()["output"]
     except:
-        raise Exception("could not execute mapping with rmlmapper")
+        raise HTTPException(status_code=r.status_code, detail="could not generated mapping results with rmlmapper")
 
     try:
         mapping_graph = Graph()
         mapping_graph.parse(data=res, format="ttl")
     except:
-        raise Exception("could not pass mapping results to result graph")
+        raise HTTPException(status_code=422, detail="could not pass mapping results to result graph")
     # mapping_graph.serialize('mapping_result.ttl')
 
     num_mappings_applied = len(mapping_graph)
@@ -321,20 +313,15 @@ def apply_mapping(
     # load and copy method graph and give it a new base namespace
     logging.debug("loading method knowledge at {}".format(method_url))
     # print('method_url: '+method_url)
-    try:
-        templatedata, methodname = open_file(method_url, authorization)
-    except Exception as e:
-        raise
+    templatedata, methodname = open_file(method_url, authorization)
     
     template_graph = Graph()
     # parse template and add mapping results
     template_graph.parse(data=templatedata, format="turtle")
-    if not templatedata:
-        raise Exception("could not read method graph - cant download file from url")
     try:
         template_graph.parse(data=templatedata, format="ttl")
     except:
-        raise Exception("could not parse method graph to result graph")
+        raise HTTPException(status_code=422, detail="could not template graph file - probably could guess format from url string")
 
     # remove the base iri or empty prefix if any
     template_namespace = "http://template_base/"
@@ -445,28 +432,21 @@ def shacl_validate(shapes_url: AnyUrl, rdf_url: AnyUrl,authorization=None) -> Tu
     if not len(urlparse(shapes_url)) == 6:  # not a regular url might be data string
         shapes_data = shapes_url
     else:
-        try:
-            shapes_data, filename = open_file(shapes_url,authorization)
-        except Exception as e:
-            raise
-    
+        shapes_data, filename = open_file(shapes_url,authorization)
+        
     if not len(urlparse(rdf_url)) == 6:  # not a regular url might be data string
         rdf_data = rdf_url
     else:
-        try:
-            rdf_data, filename = open_file(rdf_url,authorization)
-        except Exception as e:
-            raise
-    
+        rdf_data, filename = open_file(rdf_url,authorization)
+        
     # readin graphs
     try:
         shapes_graph = Graph()
         shapes_graph.parse(data=shapes_data, format=guess_format(shapes_data))
         rdf_graph = Graph()
         rdf_graph.parse(data=rdf_data, format=guess_format(rdf_data))
-    except Exception as e:
-        app.logger.error(e)
-        return "Could not read rdf data!", 400
+    except:
+        raise HTTPException(status_code=422, detail="could not graph data file - probably could guess format from url string")
     try:
         conforms, g, _ = validate(
             rdf_graph,
@@ -485,7 +465,7 @@ def shacl_validate(shapes_url: AnyUrl, rdf_url: AnyUrl,authorization=None) -> Tu
 
     except Exception as e:
         app.logger.error(e)
-        return str(e), 400
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 class StartForm(StarletteForm):
@@ -554,7 +534,6 @@ async def convert(request: Request):
         opt_shacl_shape_url = start_form.opt_shacl_shape_url.data
 
         
-        filename, out, count_rules, count_rules_applied=apply_mapping(mapping_url,opt_data_csvw_url)
         try:
             filename, out, count_rules, count_rules_applied = apply_mapping(
                 mapping_url, opt_data_csvw_url
@@ -713,10 +692,7 @@ async def http_exception_handler(request, exc):
 @app.post("/api/yarrrmltorml", response_class=TurtleResponse)
 async def yarrrmltorml(request: RMLRequest) -> TurtleResponse:
     logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
-    try:
-        filedata, filename = open_file(str(request.mapping_url))
-    except Exception as e:
-        raise
+    filedata, filename = open_file(str(request.mapping_url))
     
     rules = requests.post(
         "http://yarrrml-parser" + ":" + parser_port, data={"yarrrml": filedata}
@@ -737,11 +713,6 @@ def create_rdf(request: RDFRequest, req: Request):
     filename, out, count_rules, count_rules_applied = apply_mapping(
         str(request.mapping_url), str(request.data_url), authorization
     )
-    # try:
-    #     out, count_rules, count_rules_applied=apply_mapping(request.mapping_url)
-    # except Exception as err:
-    #     raise HTTPException(status_code=500, detail=str(err))
-
     logging.info(f"POST /api/createrdf: {count_rules=}, {count_rules_applied=}")
     return {
         "filename": filename,
@@ -794,10 +765,7 @@ if __name__ == "__main__":
     )
 
 def check_mapping(mapping_url,data_url,authorization= None):
-    try:
-        map_data, map_name = open_file(str(mapping_url),authorization)
-    except Exception as e:
-        raise
+    map_data, map_name = open_file(str(mapping_url),authorization)
     
     rules=yaml.safe_load(map_data)['mappings']
     parameters=[rules[rule]['condition']['parameters'] for rule in rules]
@@ -810,11 +778,10 @@ def check_mapping(mapping_url,data_url,authorization= None):
     logging.debug(lookups)
     format=guess_format(str(data_url))
     if not format:
-        raise Exception("wrong format of data at {}".format(data_url))
-    try:
-        data_str,filename=open_file(str(data_url),authorization)
-    except Exception as e:
-        raise
+        raise HTTPException(status_code=400, detail="couldnt guess format of data from url {}".format(data_url))
+    
+    data_str,filename=open_file(str(data_url),authorization)
+    
     
     #logging.debug(data_str)
     data_graph=Graph()
