@@ -769,6 +769,9 @@ def check_mapping(mapping_url,data_url,authorization= None):
     
     rules=yaml.safe_load(map_data)['mappings']
     parameters=[rules[rule]['condition']['parameters'] for rule in rules]
+    use_template_rowwise=eval(yaml.safe_load(map_data).get('use_template_rowwise','false').capitalize())
+    if use_template_rowwise:
+        logging.debug("row wise temaplate duplicatin is set")
     lookups=[[item[0][1].strip("$()"),Literal(item[1][1])] for item in parameters]
     for item in lookups:
         if item[0]=='label':
@@ -786,6 +789,14 @@ def check_mapping(mapping_url,data_url,authorization= None):
     #logging.debug(data_str)
     data_graph=Graph()
     data_graph.parse(data=data_str, format=format)
+    if use_template_rowwise:
+        row_data_present=next(data_graph.subjects(RDF.type,CSVW.Row),None)
+        if not row_data_present:
+            #return zero rules applicable
+            return {
+                'rules_applicable': 0,
+                'rules_skipped': 0,
+            }
     found=0
     for item in lookups:
         lookup=len(list(data_graph.subjects(item[0],item[1])))
