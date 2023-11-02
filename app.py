@@ -128,19 +128,25 @@ def replace_between(
     )
 
 
-def open_file(uri: AnyUrl) -> Tuple["filedata": str, "filename": str]:
+def open_file(uri: AnyUrl,authorization= None) -> Tuple["filedata": str, "filename": str]:
     try:
         uri_parsed = urlparse(uri)
         # print(uri_parsed)
 
     except:
-        flash(uri + " is not an uri - if local file add file:// as prefix", "error")
-        return None, None
+        raise HTTPException(status_code=400, detail=uri + " is not an uri - if local file add file:// as prefix")
     else:
         filename = unquote(uri_parsed.path).rsplit("/download/upload")[0].split("/")[-1]
         if uri_parsed.scheme in ["https", "http"]:
             # r = urlopen(uri)
-            r = requests.get(uri, allow_redirects=True)
+            s= requests.Session()
+            s.headers.update({"Authorization": authorization})
+            r = s.get(uri, allow_redirects=True, stream=True)
+            
+            #r.raise_for_status()
+            if r.status_code!=200:
+                #logging.debug(r.content)
+                raise HTTPException(status_code=r.status_code, detail="cant get file at {}".format(uri))
             filedata = r.content
             # charset=r.info().get_content_charset()
             # if not charset:
@@ -149,8 +155,7 @@ def open_file(uri: AnyUrl) -> Tuple["filedata": str, "filename": str]:
         elif uri_parsed.scheme == "file":
             filedata = open(unquote(uri_parsed.path), "rb").read()
         else:
-            flash("unknown scheme {}".format(uri_parsed.scheme), "error")
-            return None, None
+            raise  HTTPException(status_code=400,detail="unknown scheme {}".format(uri_parsed.scheme))
         return filedata, filename
 
 from datetime import datetime
@@ -194,10 +199,12 @@ def add_prov(graph: Graph, api_url: str, data_url: str, used: list = []) -> Grap
 def apply_mapping(
     mapping_url: AnyUrl,
     opt_data_url: AnyUrl = None,
+    authorization= None
 ) -> Tuple[str, int, int]:
-    mapping_data, mapping_filename = open_file(mapping_url)
-    if not mapping_data:
-        raise Exception("could not read mapping file - cant download file from url")
+    try:
+        mapping_data, mapping_filename = open_file(mapping_url,authorization)
+    except Exception as e:
+        raise
     try:
         mapping_dict = yaml.safe_load(mapping_data)
     except:
@@ -226,7 +233,11 @@ def apply_mapping(
         data_url = opt_data_url
     else:
         data_url = rml_data_url
-    data_content, data_filename = open_file(data_url)
+    try:
+        data_content, data_filename = open_file(data_url,authorization)
+    except Exception as e:
+        raise
+    
     filename = data_filename.rsplit(".", 1)[0].rsplit("-", 1)[0] + "-joined.ttl"
     data_graph = Graph()
     logging.debug(
@@ -234,7 +245,7 @@ def apply_mapping(
     )
     # normalizing data to rdflib json-ld wih maon vocab csvw
     # data_graph.parse(data=data_content,format=guess_format(data_url))
-    data_graph.parse(data_url, format=guess_format(data_url))
+    data_graph.parse(data=data_content, format=guess_format(data_url))
     context = {
         "@vocab": str(CSVW),
         "rdf": str(RDF),
@@ -310,7 +321,11 @@ def apply_mapping(
     # load and copy method graph and give it a new base namespace
     logging.debug("loading method knowledge at {}".format(method_url))
     # print('method_url: '+method_url)
-    templatedata, methodname = open_file(method_url)
+    try:
+        templatedata, methodname = open_file(method_url, authorization)
+    except Exception as e:
+        raise
+    
     template_graph = Graph()
     # parse template and add mapping results
     template_graph.parse(data=templatedata, format="turtle")
@@ -426,15 +441,23 @@ def apply_mapping(
     return filename, out, num_mappings_possible, num_mappings_applied
 
 
-def shacl_validate(shapes_url: AnyUrl, rdf_url: AnyUrl) -> Tuple[str, Graph]:
+def shacl_validate(shapes_url: AnyUrl, rdf_url: AnyUrl,authorization=None) -> Tuple[str, Graph]:
     if not len(urlparse(shapes_url)) == 6:  # not a regular url might be data string
         shapes_data = shapes_url
     else:
-        shapes_data, filename = open_file(shapes_url)
+        try:
+            shapes_data, filename = open_file(shapes_url,authorization)
+        except Exception as e:
+            raise
+    
     if not len(urlparse(rdf_url)) == 6:  # not a regular url might be data string
         rdf_data = rdf_url
     else:
-        rdf_data, filename = open_file(rdf_url)
+        try:
+            rdf_data, filename = open_file(rdf_url,authorization)
+        except Exception as e:
+            raise
+    
     # readin graphs
     try:
         shapes_graph = Graph()
@@ -682,11 +705,19 @@ class ValidateResponse(BaseModel):
 class TurtleResponse(StreamingResponse):
     media_type = "text/turtle"
 
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    return JSONResponse(content={"message": exc.detail}, status_code=exc.status_code)
+
 
 @app.post("/api/yarrrmltorml", response_class=TurtleResponse)
 async def yarrrmltorml(request: RMLRequest) -> TurtleResponse:
     logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
-    filedata, filename = open_file(str(request.mapping_url))
+    try:
+        filedata, filename = open_file(str(request.mapping_url))
+    except Exception as e:
+        raise
+    
     rules = requests.post(
         "http://yarrrml-parser" + ":" + parser_port, data={"yarrrml": filedata}
     ).text
@@ -700,10 +731,11 @@ async def yarrrmltorml(request: RMLRequest) -> TurtleResponse:
 
 
 @app.post("/api/createrdf", response_model=RDFResponse)
-def create_rdf(request: RDFRequest):
+def create_rdf(request: RDFRequest, req: Request):
+    authorization=req.headers.get('Authorization',None)
     logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
     filename, out, count_rules, count_rules_applied = apply_mapping(
-        str(request.mapping_url), str(request.data_url)
+        str(request.mapping_url), str(request.data_url), authorization
     )
     # try:
     #     out, count_rules, count_rules_applied=apply_mapping(request.mapping_url)
@@ -719,9 +751,10 @@ def create_rdf(request: RDFRequest):
     }
 
 @app.post("/api/checkmapping",response_model=CheckResponse)
-async def checkmapping(request: RDFRequest):
+async def checkmapping(request: RDFRequest, req: Request):
     logging.info(f"POST /api/checkmapping {request.mapping_url,request.data_url}")
-    return check_mapping(request.mapping_url,request.data_url)
+    authorization=req.headers.get('Authorization',None)
+    return check_mapping(request.mapping_url,request.data_url,authorization)
 
 
 @app.post("/api/rdfvalidator", response_model=ValidateResponse)
@@ -760,9 +793,12 @@ if __name__ == "__main__":
         log_config=config,
     )
 
-def check_mapping(mapping_url,data_url):
-    map_data, map_name = open_file(str(mapping_url))
-    #map_data, map_name = open_file(str(data_url))
+def check_mapping(mapping_url,data_url,authorization= None):
+    try:
+        map_data, map_name = open_file(str(mapping_url),authorization)
+    except Exception as e:
+        raise
+    
     rules=yaml.safe_load(map_data)['mappings']
     parameters=[rules[rule]['condition']['parameters'] for rule in rules]
     lookups=[[item[0][1].strip("$()"),Literal(item[1][1])] for item in parameters]
@@ -775,7 +811,12 @@ def check_mapping(mapping_url,data_url):
     format=guess_format(str(data_url))
     if not format:
         raise Exception("wrong format of data at {}".format(data_url))
-    data_str,filename=open_file(str(data_url))
+    try:
+        data_str,filename=open_file(str(data_url),authorization)
+    except Exception as e:
+        raise
+    
+    #logging.debug(data_str)
     data_graph=Graph()
     data_graph.parse(data=data_str, format=format)
     found=0

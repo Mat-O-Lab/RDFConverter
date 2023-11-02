@@ -15,7 +15,7 @@ services:
     # changing port doesnt work - issue on rmlmapper side
     environment:
       - PORT=${MAPPER_PORT}
-    container_name: rmlmapper-webapi
+    container_name: rmlmapper-webapi1
     image: ghcr.io/mat-o-lab/rmlmapper-webapi:latest
     expose:
       - ${MAPPER_PORT}
