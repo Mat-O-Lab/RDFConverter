@@ -33,6 +33,8 @@ parser_port = os.environ.get("PARSER_PORT")
 mapper_port = os.environ.get("MAPPER_PORT")
 
 
+TEMPLATE_NAMESPACE="http://template_base/"
+
 import settings
 
 setting = settings.Setting()
@@ -324,7 +326,7 @@ def apply_mapping(
         raise HTTPException(status_code=422, detail="could not template graph file - probably could guess format from url string")
 
     # remove the base iri or empty prefix if any
-    template_namespace = "http://template_base/"
+    template_namespace = TEMPLATE_NAMESPACE
     base_namespace = None
     for ns_prefix, namespace in template_graph.namespaces():
         # print(ns_prefix,type(ns_prefix),len(ns_prefix))
@@ -418,7 +420,10 @@ def apply_mapping(
                 joined_graph.add((subject, predicate, row_ns[object]))
 
     else:
-        joined_graph += template_graph
+
+        joined_graph.parse(
+                data=template_content.replace(template_namespace, new_base_url)
+        )
         joined_graph += mapping_graph
 
     # joined_graph.serialize('joined.ttl')
