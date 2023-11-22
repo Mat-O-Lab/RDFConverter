@@ -29,8 +29,8 @@ from wtforms.validators import Optional as WTFOptional
 
 from rmlmapper import count_rules_str, replace_data_source, strip_namespace
 
-parser_port = os.environ.get("PARSER_PORT")
-mapper_port = os.environ.get("MAPPER_PORT")
+YARRRML_URL=os.environ.get("YARRRML_URL")
+MAPPER_URL=os.environ.get("MAPPER_URL")
 
 
 TEMPLATE_NAMESPACE="http://template_base/"
@@ -211,7 +211,7 @@ def apply_mapping(
     duplicate_for_table=mapping_dict.get('use_template_rowwise',False)
     logging.info('use_template_rowwise: {}'.format(duplicate_for_table))
     rml_rules = requests.post(
-        "http://yarrrml-parser" + ":" + parser_port, data={"yarrrml": mapping_data}
+        YARRRML_URL, data={"yarrrml": mapping_data}
     ).text
     rml_graph = Graph()
     rml_graph.parse(data=rml_rules, format="ttl")
@@ -270,7 +270,7 @@ def apply_mapping(
     # print(r.json())
     try:
         # call rmlmapper webapi
-        r = requests.post("http://rmlmapper" + ":" + mapper_port + "/execute", json=d)
+        r = requests.post(MAPPER_URL + "/execute", json=d)
 
         if r.status_code != 200:
             app.logger.error(r.text)
@@ -548,6 +548,7 @@ async def convert(request: Request):
             flash(request, err, "error")
             result = None
             payload = None
+            filename = ""
         else:
             logging.info(f"POST /api/createrdf: {count_rules=}, {count_rules_applied=}")
             api_result = {
@@ -700,7 +701,7 @@ async def yarrrmltorml(request: RMLRequest) -> TurtleResponse:
     filedata, filename = open_file(str(request.mapping_url))
     
     rules = requests.post(
-        "http://yarrrml-parser" + ":" + parser_port, data={"yarrrml": filedata}
+        YARRRML_URL, data={"yarrrml": filedata}
     ).text
     data_bytes = BytesIO(rules.encode())
     filename = filename.rsplit(".yaml", 1)[0] + "-rml.ttl"

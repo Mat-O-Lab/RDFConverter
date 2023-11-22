@@ -15,7 +15,6 @@ services:
     # changing port doesnt work - issue on rmlmapper side
     environment:
       - PORT=${MAPPER_PORT}
-    container_name: rmlmapper-webapi1
     image: ghcr.io/mat-o-lab/rmlmapper-webapi:latest
     expose:
       - ${MAPPER_PORT}
@@ -25,9 +24,9 @@ services:
 
   rdfconverter:
     environment:
-      - PARSER_PORT=${PARSER_PORT}
+      - YARRRML_URL=http://yarrrml-parser:${PARSER_PORT}
+      - MAPPER_URL=http://rmlmapper:${MAPPER_PORT}
       - APP_PORT=${APP_PORT}
-      - MAPPER_PORT=${MAPPER_PORT}
       - CONVERTER_PORT=${CONVERTER_PORT}
       - APP_SECRET=${APP_SECRET}
       - ADMIN_NAME=${ADMIN_NAME}
@@ -40,6 +39,7 @@ services:
     ports:
       - ${APP_PORT}:${CONVERTER_PORT}
     restart: always
+    entrypoint: python app.py
     networks:
       - rdfconverter_net
 
