@@ -414,8 +414,9 @@ def apply_mapping(
             joined_graph.bind("row" + str(data_node).rsplit("-", 1)[-1], row_ns)
             # set mapping realtions on each individual row
             for property, predicate, object in for_row_to_set:
-                subject = next(joined_graph.objects(data_node, property))
-                joined_graph.add((subject, predicate, row_ns[object]))
+                subject = next(joined_graph.objects(data_node, property),None)
+                if subject:
+                    joined_graph.add((subject, predicate, row_ns[object]))
             for subject, predicate, object in for_copy_to_set:
                 joined_graph.add((subject, predicate, row_ns[object]))
 
