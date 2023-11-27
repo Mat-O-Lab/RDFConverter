@@ -24,9 +24,11 @@ Example of how to use the API/service on the web:
 # create a .env file with
 ```bash
 PARSER_PORT=3001
-APP_PORT=5003
 MAPPER_PORT=4000
+YARRRML_URL=http://yarrrml-parser:${PARSER_PORT}
+MAPPER_URL=http://rmlmapper:${MAPPER_PORT}
 CONVERTER_PORT=6000
+APP_PORT=5003
 ```
 
 # Run flask app

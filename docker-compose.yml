@@ -27,7 +27,6 @@ services:
       - YARRRML_URL=http://yarrrml-parser:${PARSER_PORT}
       - MAPPER_URL=http://rmlmapper:${MAPPER_PORT}
       - APP_PORT=${APP_PORT}
-      - CONVERTER_PORT=${CONVERTER_PORT}
       - APP_SECRET=${APP_SECRET}
       - ADMIN_NAME=${ADMIN_NAME}
       - ADMIN_MAIL=${ADMIN_MAIL}
