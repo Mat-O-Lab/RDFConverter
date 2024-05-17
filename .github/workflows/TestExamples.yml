@@ -33,10 +33,10 @@ jobs:
         continue-on-error: true
         run: |
           curl -X POST "http://localhost:${{env.APP_PORT}}/api/yarrrmltorml" -H  "accept: text/turtle" -H  "accept: application/json" -H  "Content-Type: application/json" -d "{\"mapping_url\":\"${{env.MAPPING_URL}}\"}" > example.rml
-          - name: print logs on failure
-            if: failure()
-            run: |
-              docker-compose logs
+      - name: print logs
+        if: always()
+        run: |
+          docker-compose logs
       - name: join the method and the data meta graph
         working-directory: ${{env.WORKING_DIR}}
         run: |
