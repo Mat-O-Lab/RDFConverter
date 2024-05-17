@@ -24,16 +24,22 @@ from rdflib.util import guess_format
 from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette_wtf import StarletteForm
+from starlette.background import BackgroundTask
+
 from wtforms import BooleanField, URLField
 from wtforms.validators import Optional as WTFOptional
 
 from rmlmapper import count_rules_str, replace_data_source, strip_namespace
+from enum import Enum
 
-YARRRML_URL=os.environ.get("YARRRML_URL")
-MAPPER_URL=os.environ.get("MAPPER_URL")
+YARRRML_URL = os.environ.get("YARRRML_URL")
+MAPPER_URL = os.environ.get("MAPPER_URL")
 
+SSL_VERIFY = os.getenv("SSL_VERIFY", "True").lower() in ("true", "1", "t")
+if not SSL_VERIFY:
+    requests.packages.urllib3.disable_warnings()
 
-TEMPLATE_NAMESPACE="http://template_base/"
+TEMPLATE_NAMESPACE = "http://template_base/"
 
 import settings
 
@@ -73,7 +79,7 @@ app = FastAPI(
         "url": "https://github.com/Mat-O-Lab",
         "email": setting.admin_email,
     },
-    #contact={"name": setting.contact_name, "url": setting.org_site, "email": setting.admin_email},
+    # contact={"name": setting.contact_name, "url": setting.org_site, "email": setting.admin_email},
     license_info={
         "name": "Apache 2.0",
         "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
@@ -82,10 +88,9 @@ app = FastAPI(
     openapi_tags=tags_metadata,
     docs_url=setting.docs_url,
     redoc_url=None,
-    swagger_ui_parameters= {'syntaxHighlight': False},
-    #swagger_favicon_url="/static/resources/favicon.svg",
-    middleware=middleware
-
+    swagger_ui_parameters={"syntaxHighlight": False},
+    # swagger_favicon_url="/static/resources/favicon.svg",
+    middleware=middleware,
 )
 
 
@@ -120,6 +125,60 @@ IOF = Namespace("https://spec.industrialontologies.org/ontology/core/Core/")
 # RDF = Namespace('http://www.w3.org/2000/01/rdf-schema#')
 
 
+class ReturnType(str, Enum):
+    jsonld = "json-ld"
+    n3 = "n3"
+    # nquads="nquads" #only makes sense for context-aware stores
+    nt = "nt"
+    hext = "hext"
+    # prettyxml="pretty-xml" #only makes sense for context-aware stores
+    trig = "trig"
+    # trix="trix" #only makes sense for context-aware stores
+    turtle = "turtle"
+    longturtle = "longturtle"
+    xml = "xml"
+
+    @classmethod
+    def get(cls, format):
+        for member in cls:
+            if format.lower() == member.value.lower():
+                return member
+        raise ValueError(f"Invalid Return type: {format}")
+
+
+class RDFMimeType(str, Enum):
+    xml = "application/rdf+xml"
+    turtle = "text/turtle"
+    n3 = "application/n-triples"
+    nquads = "application/n-quads"
+    jsonld = "application/ld+json"
+
+    @classmethod
+    def get(cls, format):
+        for member in cls:
+            if format.lower() == member.value.lower():
+                return member
+        raise ValueError(f"Invalid Return type: {format}")
+
+
+class RDFStreamingResponse(StreamingResponse):
+    def __init__(
+        self,
+        content,
+        filename: str,
+        status_code: int = 200,
+        background: Optional[BackgroundTask] = None,
+    ):
+        headers = {
+            "Content-Disposition": "attachment; filename={}".format(filename),
+            "Access-Control-Expose-Headers": "Content-Disposition",
+        }
+        media_type = RDFMimeType[ReturnType.get(guess_format(filename)).name].value
+        super(RDFStreamingResponse, self).__init__(
+            content, status_code, headers, media_type
+        )
+
+
 def replace_between(
     text: str, begin: str = "", end: str = "", alternative: str = ""
 ) -> str:
@@ -130,25 +189,31 @@ def replace_between(
     )
 
 
-def open_file(uri: AnyUrl,authorization= None) -> Tuple["filedata": str, "filename": str]:
+def open_file(uri: AnyUrl, authorization=None) -> Tuple["filedata":str, "filename":str]:
     try:
         uri_parsed = urlparse(uri)
         # print(uri_parsed)
 
     except:
-        raise HTTPException(status_code=400, detail=uri + " is not an uri - if local file add file:// as prefix")
+        raise HTTPException(
+            status_code=400,
+            detail=uri + " is not an uri - if local file add file:// as prefix",
+        )
     else:
         filename = unquote(uri_parsed.path).rsplit("/download/upload")[0].split("/")[-1]
         if uri_parsed.scheme in ["https", "http"]:
             # r = urlopen(uri)
-            s= requests.Session()
+            s = requests.Session()
+            s.verify = SSL_VERIFY
             s.headers.update({"Authorization": authorization})
             r = s.get(uri, allow_redirects=True, stream=True)
-            
-            #r.raise_for_status()
-            if r.status_code!=200:
-                #logging.debug(r.content)
-                raise HTTPException(status_code=r.status_code, detail="cant get file at {}".format(uri))
+
+            # r.raise_for_status()
+            if r.status_code != 200:
+                # logging.debug(r.content)
+                raise HTTPException(
+                    status_code=r.status_code, detail="cant get file at {}".format(uri)
+                )
             filedata = r.content
             # charset=r.info().get_content_charset()
             # if not charset:
@@ -157,67 +222,75 @@ def open_file(uri: AnyUrl,authorization= None) -> Tuple["filedata": str, "filena
         elif uri_parsed.scheme == "file":
             filedata = open(unquote(uri_parsed.path), "rb").read()
         else:
-            raise  HTTPException(status_code=400,detail="unknown scheme {}".format(uri_parsed.scheme))
+            raise HTTPException(
+                status_code=400, detail="unknown scheme {}".format(uri_parsed.scheme)
+            )
         return filedata, filename
+
 
 from datetime import datetime
 
+
 def add_prov(graph: Graph, api_url: str, data_url: str, used: list = []) -> Graph:
-    """ Add prov-o information to output graph
+    """Add prov-o information to output graph
 
     Args:
         graph (Graph): Graph to add prov information to
-        api_url (str): the api url 
+        api_url (str): the api url
         data_url (str): the url to the rdf file that was used
 
     Returns:
-        Graph: Input Graph with prov metadata of the api call 
+        Graph: Input Graph with prov metadata of the api call
     """
-    graph.bind('prov',PROV)
-    
-    root=BNode()
-    api_node=URIRef(api_url)
-    graph.add((root,PROV.wasGeneratedBy,api_node))
-    graph.add((api_node,RDF.type,PROV.Activity))
-    software_node=URIRef(setting.source+"/releases/tag/"+setting.version)
-    graph.add((api_node,PROV.wasAssociatedWith,software_node))
-    graph.add((software_node,RDF.type,PROV.SoftwareAgent))
-    graph.add((software_node,RDFS.label,Literal( setting.name+setting.version)))
-    graph.add((software_node,PROV.hadPrimarySource,URIRef(setting.source)))
-    graph.add((root,PROV.generatedAtTime,Literal(str(datetime.now().isoformat()),datatype=XSD.dateTime)))
-    entity=URIRef(str(data_url))
-    graph.add((entity,RDF.type,PROV.Entity))
-    derivation=BNode()
-    graph.add((derivation,RDF.type,PROV.Derivation))
-    graph.add((derivation,PROV.entity,entity))
-    graph.add((derivation,PROV.hadActivity,api_node))
-    graph.add((root,PROV.qualifiedDerivation,derivation))
-    graph.add((root,PROV.wasDerivedFrom,entity))
+    graph.bind("prov", PROV)
+
+    root = BNode()
+    api_node = URIRef(api_url)
+    graph.add((root, PROV.wasGeneratedBy, api_node))
+    graph.add((api_node, RDF.type, PROV.Activity))
+    software_node = URIRef(setting.source + "/releases/tag/" + setting.version)
+    graph.add((api_node, PROV.wasAssociatedWith, software_node))
+    graph.add((software_node, RDF.type, PROV.SoftwareAgent))
+    graph.add((software_node, RDFS.label, Literal(setting.name + setting.version)))
+    graph.add((software_node, PROV.hadPrimarySource, URIRef(setting.source)))
+    graph.add(
+        (
+            root,
+            PROV.generatedAtTime,
+            Literal(str(datetime.now().isoformat()), datatype=XSD.dateTime),
+        )
+    )
+    entity = URIRef(str(data_url))
+    graph.add((entity, RDF.type, PROV.Entity))
+    derivation = BNode()
+    graph.add((derivation, RDF.type, PROV.Derivation))
+    graph.add((derivation, PROV.entity, entity))
+    graph.add((derivation, PROV.hadActivity, api_node))
+    graph.add((root, PROV.qualifiedDerivation, derivation))
+    graph.add((root, PROV.wasDerivedFrom, entity))
     if used:
-        [graph.add((api_node,PROV.wasInformedBy,URIRef(entry))) for entry in used]
+        [graph.add((api_node, PROV.wasInformedBy, URIRef(entry))) for entry in used]
     return graph
 
 
 def apply_mapping(
-    mapping_url: AnyUrl,
-    opt_data_url: AnyUrl = None,
-    authorization= None
+    mapping_url: AnyUrl, opt_data_url: AnyUrl = None, authorization=None
 ) -> Tuple[str, int, int]:
-    mapping_data, mapping_filename = open_file(mapping_url,authorization)
+    mapping_data, mapping_filename = open_file(mapping_url, authorization)
     try:
         mapping_dict = yaml.safe_load(mapping_data)
     except:
-        raise HTTPException(status_code=422, detail="could not read mapping file - is it yaml format?")
-    duplicate_for_table=mapping_dict.get('use_template_rowwise',False)
-    logging.info('use_template_rowwise: {}'.format(duplicate_for_table))
-    rml_rules = requests.post(
-        YARRRML_URL, data={"yarrrml": mapping_data}
-    ).text
+        raise HTTPException(
+            status_code=422, detail="could not read mapping file - is it yaml format?"
+        )
+    duplicate_for_table = mapping_dict.get("use_template_rowwise", False)
+    logging.info("use_template_rowwise: {}".format(duplicate_for_table))
+    rml_rules = requests.post(YARRRML_URL, data={"yarrrml": mapping_data}).text
     rml_graph = Graph()
     rml_graph.parse(data=rml_rules, format="ttl")
     # rml_graph.serialize('rml.ttl')
 
-    #mapping_dict = yaml.safe_load(mapping_data)
+    # mapping_dict = yaml.safe_load(mapping_data)
     rml_data_url = mapping_dict["sources"]["data_entities"]["access"].strip("/")
     method_url = mapping_dict["prefixes"]["method"].strip("/")
 
@@ -232,8 +305,8 @@ def apply_mapping(
         data_url = opt_data_url
     else:
         data_url = rml_data_url
-    data_content, data_filename = open_file(data_url,authorization)
-    
+    data_content, data_filename = open_file(data_url, authorization)
+
     filename = data_filename.rsplit(".", 1)[0].rsplit("-", 1)[0] + "-joined.ttl"
     data_graph = Graph()
     logging.debug(
@@ -244,7 +317,10 @@ def apply_mapping(
     try:
         data_graph.parse(data=data_content, format=guess_format(data_url))
     except:
-        raise HTTPException(status_code=422, detail="could not read data file - probably could guess format from url string")
+        raise HTTPException(
+            status_code=422,
+            detail="could not read data file - probably could guess format from url string",
+        )
     context = {
         "@vocab": str(CSVW),
         "rdf": str(RDF),
@@ -256,7 +332,7 @@ def apply_mapping(
     }
     data_content = data_graph.serialize(format="json-ld", context=context)
     # need to replace iris because they are changed to the document id
-
+    # data_graph.serialize('test,json',format="json-ld", context=context)
     # if opt_data_url:
     # logging.debug('opt_data_url: replacing {} with {}'.format(rml_data_url,opt_data_url))
     # rml_rules_new = rml_rules_new.replace(rml_data_url, opt_data_url)
@@ -277,13 +353,18 @@ def apply_mapping(
             return r.text, 400
         res = r.json()["output"]
     except:
-        raise HTTPException(status_code=r.status_code, detail="could not generated mapping results with rmlmapper")
+        raise HTTPException(
+            status_code=r.status_code,
+            detail="could not generated mapping results with rmlmapper",
+        )
 
     try:
         mapping_graph = Graph()
         mapping_graph.parse(data=res, format="ttl")
     except:
-        raise HTTPException(status_code=422, detail="could not pass mapping results to result graph")
+        raise HTTPException(
+            status_code=422, detail="could not pass mapping results to result graph"
+        )
     # mapping_graph.serialize('mapping_result.ttl')
 
     num_mappings_applied = len(mapping_graph)
@@ -316,14 +397,17 @@ def apply_mapping(
     logging.debug("loading method knowledge at {}".format(method_url))
     # print('method_url: '+method_url)
     templatedata, methodname = open_file(method_url, authorization)
-    
+
     template_graph = Graph()
     # parse template and add mapping results
     template_graph.parse(data=templatedata, format="turtle")
     try:
         template_graph.parse(data=templatedata, format="ttl")
     except:
-        raise HTTPException(status_code=422, detail="could not template graph file - probably could guess format from url string")
+        raise HTTPException(
+            status_code=422,
+            detail="could not template graph file - probably could guess format from url string",
+        )
 
     # remove the base iri or empty prefix if any
     template_namespace = TEMPLATE_NAMESPACE
@@ -351,7 +435,7 @@ def apply_mapping(
     #     # replace the subject URI with your new template URI
     #     new_iri=URIRef(str(subject).rsplit("/", 1)[-1].rsplit("#", 1)[-1])
     #     replace_iris(subject,new_iri,template_graph)
-    #template_graph.serialize('template.ttl')
+    # template_graph.serialize('template.ttl')
 
     # duplicate template if needed
     rows = list(data_graph[: RDF.type : CSVW.Row])
@@ -367,7 +451,7 @@ def apply_mapping(
     # use template to create new idivituals for every
     if duplicate_for_table and rows:
         # map_content=mapping_graph.serialize()
-        #mapping_graph.serialize('map_graph.ttl')
+        # mapping_graph.serialize('map_graph.ttl')
         tablegroup = next(data_graph[: RDF.type : CSVW.TableGroup])
         column_maps = {
             column: {
@@ -386,24 +470,24 @@ def apply_mapping(
             for note in non_column_subjects
         }
         for_row_to_set = list()
-        
+
         # adding tripples for columns
         for column, data in column_maps.items():
-            print(column,data)
+            print(column, data)
             property = data["propertyUrl"]
             for predicate, object in data["po"]:
                 for_row_to_set.append(
                     (property, predicate, strip_namespace(str(object)))
                 )
         print(for_row_to_set)
-        
+
         # adding tripples for notes
         for_copy_to_set = list()
         for note, data in note_maps.items():
             for predicate, object in data["po"]:
                 for_copy_to_set.append((note, predicate, strip_namespace(str(object))))
 
-        #print(for_copy_to_set)
+        # print(for_copy_to_set)
         logging.info("dublicating template graph for {} rows".format(len(rows)))
         for row in rows:
             data_node = data_graph.value(row, CSVW.describes)
@@ -414,7 +498,7 @@ def apply_mapping(
             joined_graph.bind("row" + str(data_node).rsplit("-", 1)[-1], row_ns)
             # set mapping realtions on each individual row
             for property, predicate, object in for_row_to_set:
-                subject = next(joined_graph.objects(data_node, property),None)
+                subject = next(joined_graph.objects(data_node, property), None)
                 if subject:
                     joined_graph.add((subject, predicate, row_ns[object]))
             for subject, predicate, object in for_copy_to_set:
@@ -423,7 +507,7 @@ def apply_mapping(
     else:
 
         joined_graph.parse(
-                data=template_content.replace(template_namespace, new_base_url)
+            data=template_content.replace(template_namespace, new_base_url)
         )
         joined_graph += mapping_graph
 
@@ -434,17 +518,19 @@ def apply_mapping(
     return filename, out, num_mappings_possible, num_mappings_applied
 
 
-def shacl_validate(shapes_url: AnyUrl, rdf_url: AnyUrl,authorization=None) -> Tuple[str, Graph]:
+def shacl_validate(
+    shapes_url: AnyUrl, rdf_url: AnyUrl, authorization=None
+) -> Tuple[str, Graph]:
     if not len(urlparse(shapes_url)) == 6:  # not a regular url might be data string
         shapes_data = shapes_url
     else:
-        shapes_data, filename = open_file(shapes_url,authorization)
-        
+        shapes_data, filename = open_file(shapes_url, authorization)
+
     if not len(urlparse(rdf_url)) == 6:  # not a regular url might be data string
         rdf_data = rdf_url
     else:
-        rdf_data, filename = open_file(rdf_url,authorization)
-        
+        rdf_data, filename = open_file(rdf_url, authorization)
+
     # readin graphs
     try:
         shapes_graph = Graph()
@@ -452,7 +538,10 @@ def shacl_validate(shapes_url: AnyUrl, rdf_url: AnyUrl,authorization=None) -> Tu
         rdf_graph = Graph()
         rdf_graph.parse(data=rdf_data, format=guess_format(rdf_data))
     except:
-        raise HTTPException(status_code=422, detail="could not graph data file - probably could guess format from url string")
+        raise HTTPException(
+            status_code=422,
+            detail="could not graph data file - probably could guess format from url string",
+        )
     try:
         conforms, g, _ = validate(
             rdf_graph,
@@ -514,7 +603,7 @@ async def index(request: Request):
             "start_form": start_form,
             "mapping_form": "",
             "result": "",
-            "setting": setting
+            "setting": setting,
         },
     )
 
@@ -539,7 +628,6 @@ async def convert(request: Request):
         opt_data_csvw_url = start_form.opt_data_csvw_url.data
         opt_shacl_shape_url = start_form.opt_shacl_shape_url.data
 
-        
         try:
             filename, out, count_rules, count_rules_applied = apply_mapping(
                 mapping_url, opt_data_csvw_url
@@ -572,7 +660,7 @@ async def convert(request: Request):
             "filename": filename,
             "payload": payload,
             "result": result,
-            "setting": setting
+            "setting": setting,
         },
     )
 
@@ -611,11 +699,12 @@ class RDFRequest(BaseModel):
         description="If given replaces the data target (csvw json-ld) url of the provided mapping.",
         omit_default=True,
     )
+
     class Config:
         json_schema_extra = {
             "example": {
                 "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml",
-                "data_url": "https://raw.githubusercontent.com/Mat-O-Lab/CSVToCSVW/main/examples/example-metadata.json"
+                "data_url": "https://raw.githubusercontent.com/Mat-O-Lab/CSVToCSVW/main/examples/example-metadata.json",
             }
         }
 
@@ -648,6 +737,7 @@ class RDFResponse(BaseModel):
             }
         }
 
+
 class CheckResponse(BaseModel):
     rules_applicable: int = Field(
         title="Number Rules Applied",
@@ -657,6 +747,7 @@ class CheckResponse(BaseModel):
         title="Number Rules Skipped",
         description="The total number of rules not applied once.",
     )
+
     # data_covered: float = Field(
     #     title="Percent Covered",
     #     description="Percent of data covered by rules.",
@@ -691,6 +782,7 @@ class ValidateResponse(BaseModel):
 class TurtleResponse(StreamingResponse):
     media_type = "text/turtle"
 
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
     return JSONResponse(content={"message": exc.detail}, status_code=exc.status_code)
@@ -700,10 +792,8 @@ async def http_exception_handler(request, exc):
 async def yarrrmltorml(request: RMLRequest) -> TurtleResponse:
     logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
     filedata, filename = open_file(str(request.mapping_url))
-    
-    rules = requests.post(
-        YARRRML_URL, data={"yarrrml": filedata}
-    ).text
+
+    rules = requests.post(YARRRML_URL, data={"yarrrml": filedata}).text
     data_bytes = BytesIO(rules.encode())
     filename = filename.rsplit(".yaml", 1)[0] + "-rml.ttl"
     headers = {
@@ -714,8 +804,10 @@ async def yarrrmltorml(request: RMLRequest) -> TurtleResponse:
 
 
 @app.post("/api/createrdf", response_model=RDFResponse)
-def create_rdf(request: RDFRequest, req: Request):
-    authorization=req.headers.get('Authorization',None)
+def create_rdf(
+    request: RDFRequest, req: Request, return_type: ReturnType = ReturnType.turtle
+):
+    authorization = req.headers.get("Authorization", None)
     logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
     filename, out, count_rules, count_rules_applied = apply_mapping(
         str(request.mapping_url), str(request.data_url), authorization
@@ -728,11 +820,12 @@ def create_rdf(request: RDFRequest, req: Request):
         "num_mappings_skipped": count_rules - count_rules_applied,
     }
 
-@app.post("/api/checkmapping",response_model=CheckResponse)
+
+@app.post("/api/checkmapping", response_model=CheckResponse)
 async def checkmapping(request: RDFRequest, req: Request):
     logging.info(f"POST /api/checkmapping {request.mapping_url,request.data_url}")
-    authorization=req.headers.get('Authorization',None)
-    return check_mapping(request.mapping_url,request.data_url,authorization)
+    authorization = req.headers.get("Authorization", None)
+    return check_mapping(request.mapping_url, request.data_url, authorization)
 
 
 @app.post("/api/rdfvalidator", response_model=ValidateResponse)
@@ -771,47 +864,54 @@ if __name__ == "__main__":
         log_config=config,
     )
 
-def check_mapping(mapping_url,data_url,authorization= None):
-    map_data, map_name = open_file(str(mapping_url),authorization)
-    
-    rules=yaml.safe_load(map_data)['mappings']
-    parameters=[rules[rule]['condition']['parameters'] for rule in rules]
-    use_template_rowwise=eval(yaml.safe_load(map_data).get('use_template_rowwise','false').capitalize())
+
+def check_mapping(mapping_url, data_url, authorization=None):
+    map_data, map_name = open_file(str(mapping_url), authorization)
+
+    rules = yaml.safe_load(map_data)["mappings"]
+    parameters = [rules[rule]["condition"]["parameters"] for rule in rules]
+    use_template_rowwise = eval(
+        yaml.safe_load(map_data).get("use_template_rowwise", "false").capitalize()
+    )
     if use_template_rowwise:
         logging.debug("row wise temaplate duplicatin is set")
-    lookups=[[item[0][1].strip("$()"),Literal(item[1][1])] for item in parameters]
+    lookups = [[item[0][1].strip("$()"), Literal(item[1][1])] for item in parameters]
     for item in lookups:
-        if item[0]=='label':
-            item[0]=RDFS.label
-        elif item[0]=='name':
-            item[0]=CSVW.name
+        if item[0] == "label":
+            item[0] = RDFS.label
+        elif item[0] == "name":
+            item[0] = CSVW.name
     logging.debug(lookups)
-    format=guess_format(str(data_url))
+    format = guess_format(str(data_url))
     if not format:
-        raise HTTPException(status_code=400, detail="couldnt guess format of data from url {}".format(data_url))
-    
-    data_str,filename=open_file(str(data_url),authorization)
-    
-    
-    #logging.debug(data_str)
-    data_graph=Graph()
+        raise HTTPException(
+            status_code=400,
+            detail="couldnt guess format of data from url {}".format(data_url),
+        )
+
+    data_str, filename = open_file(str(data_url), authorization)
+
+    # logging.debug(data_str)
+    data_graph = Graph()
     data_graph.parse(data=data_str, format=format)
     if use_template_rowwise:
-        row_data_present=next(data_graph.subjects(RDF.type,CSVW.Row),None)
+        row_data_present = next(data_graph.subjects(RDF.type, CSVW.Row), None)
         if not row_data_present:
-            #return zero rules applicable
+            # return zero rules applicable
             return {
-                'rules_applicable': 0,
-                'rules_skipped': 0,
+                "rules_applicable": 0,
+                "rules_skipped": 0,
             }
-    found=0
+    found = 0
     for item in lookups:
-        lookup=len(list(data_graph.subjects(item[0],item[1])))
+        lookup = len(list(data_graph.subjects(item[0], item[1])))
         if lookup:
-            found+=1
-    logging.info('number of rules to test: {} rules with match: {}'.format(len(lookups),found))
-    
+            found += 1
+    logging.info(
+        "number of rules to test: {} rules with match: {}".format(len(lookups), found)
+    )
+
     return {
-        'rules_applicable': len(lookups),
-        'rules_skipped': len(lookups)-found,
+        "rules_applicable": len(lookups),
+        "rules_skipped": len(lookups) - found,
     }

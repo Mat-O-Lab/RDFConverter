@@ -29,6 +29,7 @@ YARRRML_URL=http://yarrrml-parser:${PARSER_PORT}
 MAPPER_URL=http://rmlmapper:${MAPPER_PORT}
 CONVERTER_PORT=6000
 APP_PORT=5003
+SSL_VERIFY=<True or False> #default is True
 ```
 
 # Run flask app
