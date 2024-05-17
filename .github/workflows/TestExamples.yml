@@ -14,6 +14,7 @@ env:
   APP_PORT: 5003
   MAPPER_PORT: 4000
   CONVERTER_PORT: 6000
+  SSL_VERIFY: False
 
 jobs:
   TestExamples:
