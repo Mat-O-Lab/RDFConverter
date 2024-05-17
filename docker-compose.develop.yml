@@ -24,8 +24,8 @@ services:
   rdfconverter:
     container_name: rdfconverter
     build: .
-    ports:
-      - ${APP_PORT}:${CONVERTER_PORT}
+    expose:
+      - ${CONVERTER_PORT}
     restart: always
     networks:
       - rdfconverter_net
