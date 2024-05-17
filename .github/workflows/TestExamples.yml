@@ -30,11 +30,11 @@ jobs:
           docker ps -a
       - name: parse mapping to YARRRML parser
         working-directory: ${{env.WORKING_DIR}}
+        continue-on-error: true
         run: |
           curl -X POST "http://localhost:${{env.APP_PORT}}/api/yarrrmltorml" -H  "accept: text/turtle" -H  "accept: application/json" -H  "Content-Type: application/json" -d "{\"mapping_url\":\"${{env.MAPPING_URL}}\"}" > example.rml
-      - name: container log
-        working-directory: ${{env.WORKING_DIR}}
-        continue-on-error: true
+      - name: print logs on failure
+        if: failure()
         run: |
           docker-compose logs
       - name: join the method and the data meta graph
