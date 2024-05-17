@@ -11,6 +11,7 @@ env:
   WORKING_DIR: ./examples/
   MAPPING_URL: 'https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml'
   PARSER_PORT: 3001
+  APP_MODE: "development"
   APP_PORT: 5003
   MAPPER_PORT: 4000
   CONVERTER_PORT: 5000
