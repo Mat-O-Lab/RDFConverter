@@ -451,15 +451,18 @@ def apply_mapping(
     # use template to create new idivituals for every
     if duplicate_for_table and rows:
         # map_content=mapping_graph.serialize()
-        # mapping_graph.serialize('map_graph.ttl')
+        # mapping_graph.serialize("map_graph.ttl")
+        # data_graph.serialize("data_graph.ttl")
         tablegroup = next(data_graph[: RDF.type : CSVW.TableGroup])
-        column_maps = {
-            column: {
+        column_maps = {}
+        for column in data_graph[: RDF.type : CSVW.Column]:
+            column_maps[column] = {
                 "po": list(mapping_graph.predicate_objects(subject=column)),
-                "propertyUrl": tablegroup + "/" + data_graph.value(column, CSVW.name),
+                "propertyUrl": next(
+                    data_graph.objects(subject=column, predicate=CSVW.propertyUrl),
+                    column,
+                ),
             }
-            for column in data_graph[: RDF.type : CSVW.Column]
-        }
         non_column_subjects = [
             subject
             for subject in mapping_graph.subjects(unique=True)
@@ -472,6 +475,7 @@ def apply_mapping(
         for_row_to_set = list()
 
         # adding tripples for columns
+        print("column_map:{}".format(column_maps))
         for column, data in column_maps.items():
             print(column, data)
             property = data["propertyUrl"]
@@ -479,7 +483,7 @@ def apply_mapping(
                 for_row_to_set.append(
                     (property, predicate, strip_namespace(str(object)))
                 )
-        print(for_row_to_set)
+        print("to set for row: {}".format(for_row_to_set))
 
         # adding tripples for notes
         for_copy_to_set = list()
@@ -511,7 +515,7 @@ def apply_mapping(
         )
         joined_graph += mapping_graph
 
-    # joined_graph.serialize('joined.ttl')
+    # joined_graph.serialize("joined.ttl")
 
     out = joined_graph.serialize(format="turtle")
     out = out.replace("file:///src", data_url)
@@ -907,6 +911,9 @@ def check_mapping(mapping_url, data_url, authorization=None):
         lookup = len(list(data_graph.subjects(item[0], item[1])))
         if lookup:
             found += 1
+        else:
+            print("lookup for rule {} unsuccessful".format(item))
+
     logging.info(
         "number of rules to test: {} rules with match: {}".format(len(lookups), found)
     )
