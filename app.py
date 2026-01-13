@@ -91,6 +91,9 @@ app = FastAPI(
     swagger_ui_parameters={"syntaxHighlight": False},
     # swagger_favicon_url="/static/resources/favicon.svg",
     middleware=middleware,
+    servers=[
+        {"url": setting.server, "description": "Production environment"},
+    ],
 )
 
 
@@ -288,7 +291,7 @@ def extract_jsonld_namespaces(content: bytes) -> tuple[dict, str | None]:
     except Exception as e:
         logging.warning(f"Could not extract context from JSON-LD: {e}")
         
-    return namespace_dict, csv_namespace
+    return namespace_dict
 
 
 def detect_data_format(content: bytes, url: str) -> tuple[str | None, bool]:
@@ -351,23 +354,26 @@ def process_data_to_jsonld(
     """
     import json
     
+    # ALWAYS try to extract @context from JSON FIRST, before any RDF parsing
+    namespaces = None
+    if preserve_namespaces:
+        try:
+            namespaces = extract_jsonld_namespaces(content)
+        except Exception as e:
+            logging.debug(f"No JSON @context found (file may not be JSON or JSON-LD): {e}")
+    
+    # Now detect format
     data_format, is_rdf = detect_data_format(content, url)
     
     if not is_rdf:
-        # Plain JSON - use as-is
+        # Plain JSON - use as-is (we already extracted @context above)
         processed_content = content.decode() if isinstance(content, bytes) else content
-        return processed_content, False, None
+        return processed_content, False, namespaces
     
     # RDF data - normalize to JSON-LD
     try:
         logging.debug(f"Loading {url} as RDF in {data_format} format")
         
-        # Extract namespaces from JSON-LD @context if applicable
-        original_context_namespaces = {}
-        csv_namespace = None
-        if data_format == "json-ld" and preserve_namespaces:
-            original_context_namespaces, csv_namespace = extract_jsonld_namespaces(content)
-            logging.info(f"Preserving {len(original_context_namespaces)} namespaces from original context")
         
         # Parse as RDF
         temp_graph = Graph()
@@ -375,12 +381,12 @@ def process_data_to_jsonld(
         
         # Normalize to JSON-LD with standard context + preserved namespaces
         context = get_standard_jsonld_context()
-        context.update(original_context_namespaces)
+        context.update(namespaces)
         
         processed_content = temp_graph.serialize(format="json-ld", context=context)
         logging.info(f"Normalized RDF to JSON-LD")
         
-        return processed_content, True, csv_namespace
+        return processed_content, True, namespaces
         
     except Exception as e:
         raise HTTPException(
@@ -546,49 +552,56 @@ def download_sources(
     return url_mapping, primary_data_url, filename
 
 
-def bind_standard_namespaces(
-    graph: Graph,
-    mapping_dict: dict,
-    data_namespace: str | None = None,
-    csv_namespace: str | None = None
-) -> None:
-    """Bind standard and custom namespaces to graph.
-    
-    Args:
-        graph: RDF graph to bind namespaces to
-        mapping_dict: YARRRML mapping dictionary
-        data_namespace: Data namespace URL (optional)
-        csv_namespace: CSV namespace URL (optional)
-    """
-    # Bind empty base namespace for relative IRIs
-    graph.namespace_manager.bind("", Namespace(""), override=True, replace=True)
-    graph.namespace_manager.bind("base", Namespace(""), override=True, replace=True)
-    
-    # Bind data prefix from YARRRML mapping or data_namespace
-    if not data_namespace:
-        data_namespace = mapping_dict["prefixes"].get("data")
-    
-    if data_namespace and not data_namespace.endswith("/"):
-        data_namespace += "/"
-    
-    if data_namespace:
-        graph.namespace_manager.bind("data", Namespace(data_namespace), override=True)
-        logging.info(f"Bound data prefix to: {data_namespace}")
-    else:
-        logging.warning("No data namespace found in mapping or primary_data_url")
-    
-    # Bind csv prefix
-    if csv_namespace:
-        graph.namespace_manager.bind("csv", Namespace(csv_namespace), override=True)
-        logging.info(f"Bound csv prefix to extracted namespace: {csv_namespace}")
-    elif data_namespace:
-        graph.namespace_manager.bind("csv", Namespace(data_namespace), override=True)
-        logging.info(f"Bound csv prefix to data namespace (fallback): {data_namespace}")
-
-
 # ============================================================================
 # END HELPER FUNCTIONS
 # ============================================================================
+
+
+def apply_all_namespaces(
+    graph: Graph,
+    accumulated_namespaces: dict,
+    data_namespace: str | None,
+    method_namespace: str | None
+) -> Graph:
+    """Centralized namespace binding routine - call ONCE before serialization.
+    
+    Args:
+        graph: The RDF graph to bind namespaces to
+        accumulated_namespaces: Dict of {prefix: namespace_url} from template/mapping
+        csv_namespace: CSV namespace from JSON-LD @context (highest priority)
+        data_namespace: Data namespace from primary data URL
+        method_namespace: Method namespace from YARRRML mapping prefixes
+        
+    Returns:
+        The graph with all namespaces properly bound
+    """
+    logging.info("=" * 80)
+    logging.info("APPLYING ALL NAMESPACES (CENTRALIZED)")
+    logging.info("=" * 80)
+    
+    # 1. Bind empty prefix for relative IRIs (e.g., :SpecimenID)
+    graph.namespace_manager.bind("", Namespace(""), override=True, replace=True)
+    logging.info("✓ Bound empty prefix '' to empty namespace")
+    
+    # 2. Bind 'base' prefix to empty namespace
+    graph.namespace_manager.bind("base", Namespace(""), override=True, replace=True)
+    logging.info("✓ Bound 'base' prefix to empty namespace")
+    logging.debug(accumulated_namespaces)
+    # 3. Bind all accumulated namespaces from template/mapping graphs
+    logging.info(f"Binding {len(accumulated_namespaces)} accumulated namespaces:")
+    for prefix, namespace_str in accumulated_namespaces.items():
+        graph.namespace_manager.bind(prefix, Namespace(namespace_str), override=True)
+        logging.info(f"  ✓ {prefix}: {namespace_str}")
+    
+    
+    # 6. Log final namespace bindings
+    logging.info("=" * 80)
+    logging.info("FINAL NAMESPACE BINDINGS IN GRAPH:")
+    for prefix, namespace in graph.namespaces():
+        logging.info(f"  {prefix or '(empty)'}: {namespace}")
+    logging.info("=" * 80)
+    
+    return graph
 
 
 def add_prov(graph: Graph, api_url: str, data_url: str, used: list = []) -> Graph:
@@ -634,7 +647,7 @@ def add_prov(graph: Graph, api_url: str, data_url: str, used: list = []) -> Grap
 
 
 def apply_mapping(
-    mapping_url: AnyUrl, opt_data_url: AnyUrl = None, authorization=None
+    mapping_url: AnyUrl, opt_data_url: AnyUrl = None, authorization=None, api_url: str = None
 ) -> Tuple[str, int, int]:
     """Apply YARRRML mapping to data sources.
 
@@ -642,6 +655,7 @@ def apply_mapping(
         mapping_url: URL to YARRRML mapping file
         opt_data_url: Optional override URL for first data source
         authorization: Authorization header value
+        api_url: Full API URL (e.g., http://host:port/api/createrdf) for provenance
 
     Returns:
         Tuple of (filename, graph_output, num_rules_total, num_rules_applied)
@@ -684,7 +698,7 @@ def apply_mapping(
     sources_for_mapper = {}
     data_graph = Graph()  # For primary data if RDF
     is_rdf_data = False
-    csv_namespace = None
+    data_namespaces = None
 
     for original_url, info in url_mapping.items():
         placeholder = info["placeholder"]
@@ -692,13 +706,12 @@ def apply_mapping(
         content = info["content"]
 
         # Use helper function to process data
-        processed_content, is_rdf, csv_ns = process_data_to_jsonld(content, actual_url)
+        processed_content, is_rdf, data_namespaces = process_data_to_jsonld(content, actual_url)
         sources_for_mapper[placeholder] = processed_content
 
         # First source determines primary data graph and namespace
         if placeholder == "source_1.json":
             is_rdf_data = is_rdf
-            csv_namespace = csv_ns
             if is_rdf:
                 data_graph = Graph()
                 data_graph.parse(data=content, format=guess_format(actual_url))
@@ -796,15 +809,8 @@ def apply_mapping(
 
     # duplicate template if needed
     rows = list(data_graph[: RDF.type : CSVW.Row])
-    
+
     # join and prepare for output
-    # Bind empty base namespace for relative IRIs (resolves to file location)
-    joined_graph.namespace_manager.bind(
-        "", Namespace(""), override=True, replace=True
-    )
-    joined_graph.namespace_manager.bind(
-        "base", Namespace(""), override=True, replace=True
-    )
     # copy data entities into joined graph only if data was RDF
     # For plain JSON, RML mapper generates all the triples
     if is_rdf_data:
@@ -887,43 +893,45 @@ def apply_mapping(
     #joined_graph.serialize("debug_03_after_joining_graphs.ttl")
     logging.info("DEBUG: Serialized joined graph to debug_03_after_joining_graphs.ttl")
 
-    # Re-bind all namespaces from source graphs to ensure they're all preserved
-    logging.info("Re-binding namespaces from source graphs...")
-    
-    # Re-bind from template graph
-    for prefix, namespace in template_graph.namespaces():
-        if prefix not in ['', 'base']:  # Skip base/empty from template
-            joined_graph.namespace_manager.bind(prefix, namespace, override=False)
-            logging.debug(f"Re-bound from template: {prefix} -> {namespace}")
-    
-    # Re-bind from mapping graph
+    # NAMESPACE ACCUMULATION STRATEGY:
+    # Collect all namespaces BEFORE binding to avoid conflicts
+    # Priority: @context > template > mapping (data_graph EXCLUDED - it loses @context!)
+    logging.info("Accumulating namespaces from all sources...")
+
+    accumulated_namespaces = {}
+
+    # 1. From mapping graph (lowest priority)
     for prefix, namespace in mapping_graph.namespaces():
-        if prefix not in ['', 'base']:  # Skip base/empty from mapping
-            joined_graph.namespace_manager.bind(prefix, namespace, override=False)
-            logging.debug(f"Re-bound from mapping: {prefix} -> {namespace}")
-    
-    # Re-bind from data graph if it exists
-    if is_rdf_data and 'data_graph' in locals():
-        for prefix, namespace in data_graph.namespaces():
-            if prefix not in ['', 'base']:
-                joined_graph.namespace_manager.bind(prefix, namespace, override=False)
-                logging.debug(f"Re-bound from data: {prefix} -> {namespace}")
-                # Special handling for csv prefix
-                if prefix == 'csv':
-                    logging.info(f"Found and bound CSV prefix: {namespace}")
-    
-    logging.info("Set graph base to empty string")
-    
+        if prefix not in ['', 'base']:
+            accumulated_namespaces[prefix] = str(namespace)
+            logging.debug(f"Accumulated from mapping: {prefix} -> {namespace}")
+
+    # 2. From template/method graph (medium priority)
+    for prefix, namespace in template_graph.namespaces():
+        if prefix not in ['', 'base']:
+            accumulated_namespaces[prefix] = str(namespace)
+            logging.debug(f"Accumulated from template: {prefix} -> {namespace}")
+
+    # 3. From JSON-LD @context if it was extracted (highest priority for csv!)
+    # This is the ORIGINAL csv namespace before any RDFLib parsing
+    for prefix, namespace in data_namespaces.items():
+        if prefix not in ['', 'base']:
+            accumulated_namespaces[prefix] = str(namespace)
+            logging.debug(f"Accumulated from template: {prefix} -> {namespace}")
+
+    logging.debug(accumulated_namespaces)
+    logging.info(f"Total accumulated namespaces: {len(accumulated_namespaces)}")
+
     # Transform method namespace URIs to RELATIVE URIs (no scheme)
     logging.info(f"Transforming method URIs from {method_url} to relative URIs")
-    
+
     triples_to_transform = []
     for s, p, o in joined_graph:
         new_s = s
         new_p = p
         new_o = o
         changed = False
-        
+
         # Transform subject if it starts with method URL
         if isinstance(s, URIRef) and str(s).startswith(method_url):
             local_part = str(s).replace(method_url, "")
@@ -931,66 +939,53 @@ def apply_mapping(
             new_s = URIRef("#" + local_part)
             changed = True
             logging.debug(f"Transform subject: {s} -> {new_s}")
-            
+
         # Transform predicate if it starts with method URL
         if isinstance(p, URIRef) and str(p).startswith(method_url):
             local_part = str(p).replace(method_url, "")
             new_p = URIRef("#" + local_part)
             changed = True
             logging.debug(f"Transform predicate: {p} -> {new_p}")
-            
+
         # Transform object if it's a URIRef and starts with method URL
         if isinstance(o, URIRef) and str(o).startswith(method_url):
             local_part = str(o).replace(method_url, "")
             new_o = URIRef("#" + local_part)
             changed = True
             logging.debug(f"Transform object: {o} -> {new_o}")
-        
+
         if changed:
             triples_to_transform.append(((s, p, o), (new_s, new_p, new_o)))
-    
+
     # Apply transformations
     for (old_triple, new_triple) in triples_to_transform:
         joined_graph.remove(old_triple)
         joined_graph.add(new_triple)
-    
+
     logging.info(f"Transformed {len(triples_to_transform)} triples from method namespace to relative URIs")
-    
-    # Bind empty prefix to empty namespace (for :SpecimenID style with @prefix : <> .)
-    joined_graph.namespace_manager.bind("", Namespace(""), override=True)
-    logging.info("Bound empty prefix to empty namespace")
-    
-    # Bind data prefix from YARRRML mapping or primary_data_url with trailing slash
-    # Priority: data prefix from mapping > primary_data_url
-    data_namespace = mapping_dict["prefixes"].get("data")
-    if not data_namespace:
-        data_namespace = primary_data_url
-    
-    if data_namespace and not data_namespace.endswith("/"):
-        data_namespace += "/"
-    
-    if data_namespace:
-        joined_graph.namespace_manager.bind("data", Namespace(data_namespace), override=True)
-        logging.info(f"Bound data prefix to: {data_namespace}")
+
+    # Add provenance metadata using full API URL from request
+    if api_url:
+        full_api_url = api_url
     else:
-        logging.warning("No data namespace found in mapping or primary_data_url")
-    
-    # Bind csv prefix using extracted namespace from JSON-LD context (if found)
-    # Otherwise fall back to data_namespace
-    if csv_namespace:
-        joined_graph.namespace_manager.bind("csv", Namespace(csv_namespace), override=True)
-        logging.info(f"Bound csv prefix to extracted namespace: {csv_namespace}")
-    elif data_namespace:
-        joined_graph.namespace_manager.bind("csv", Namespace(data_namespace), override=True)
-        logging.info(f"Bound csv prefix to data namespace (fallback): {data_namespace}")
-    
-    logging.info(f"Final graph has {len(joined_graph)} triples")
-    logging.info(f"Namespace bindings in joined graph after transformation:")
-    for prefix, namespace in joined_graph.namespaces():
-        logging.info(f"  {prefix}: {namespace}")
+        full_api_url = "/api/createrdf"
+
+    used_resources = [str(mapping_url)]
+    if method_url:
+        used_resources.append(method_url)
+    add_prov(joined_graph, full_api_url, primary_data_url, used_resources)
+    logging.info(f"Added provenance metadata for data: {primary_data_url}, API: {full_api_url}")
+
+    # APPLY ALL NAMESPACES ONCE - centralized binding right before serialization
+    apply_all_namespaces(
+        joined_graph,
+        accumulated_namespaces,
+        primary_data_url,
+        method_url
+    )
 
     # Serialize the graph - all prefixes now preserved
-    out = joined_graph.serialize(format="turtle",base="")
+    out = joined_graph.serialize(format="turtle", base="")
     
     return filename, out, num_mappings_possible, num_mappings_applied
 
@@ -1285,9 +1280,13 @@ def create_rdf(
     request: RDFRequest, req: Request, return_type: ReturnType = ReturnType.turtle
 ):
     authorization = req.headers.get("Authorization", None)
-    logging.info(f"POST /api/yarrrmltorml {request.mapping_url}")
+    
+    # Get full API URL from request (same approach as CSVToCSVW)
+    api_url = req.url._url
+    
+    logging.info(f"POST /api/createrdf {request.mapping_url}")
     filename, out, count_rules, count_rules_applied = apply_mapping(
-        str(request.mapping_url), str(request.data_url), authorization
+        str(request.mapping_url), str(request.data_url), authorization, api_url
     )
     logging.info(f"POST /api/createrdf: {count_rules=}, {count_rules_applied=}")
     return {
@@ -1503,7 +1502,7 @@ async def test_mapping(
             import json
             try:
                 # Use helper function to process data
-                data_content_str, is_rdf_data, _ = process_data_to_jsonld(data_content, test_data_url)
+                data_content_str, is_rdf_data, data_namespaces = process_data_to_jsonld(data_content, test_data_url)
                 data_content = data_content_str
             except HTTPException:
                 # If helper fails, fall back to old logic for compatibility

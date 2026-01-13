@@ -16,6 +16,7 @@ class Setting(BaseSettings):
     source: str = str(
         os.environ.get("APP_SOURCE", "https://github.com/Mat-O-Lab/RDFConverter")
     )
+    server: str = os.environ.get("SERVER_URL") or "http://localhost:6003"
     desc: str = (
         "A service for joining and converting meta data documents based on YARRRML mapping files to RDF, optionally a validiation can be conducted using SHACL Shapes."
     )
