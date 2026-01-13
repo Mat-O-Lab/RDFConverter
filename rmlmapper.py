@@ -76,6 +76,23 @@ def replace_data_source(rules: Graph, new_source: str):
             rules.set((source, RML.source, Literal(new_source)))
 
 
+def replace_all_data_sources(rules: Graph, url_mapping: dict) -> None:
+    """
+    Replace all source URLs in RML rules with local placeholders.
+
+    Args:
+        rules: RDF graph containing RML rules
+        url_mapping: Dict mapping original URLs to placeholder info
+                    {url: {"placeholder": "source_1.json", "content": bytes, "original_url": url}}
+    """
+    for original_url, info in url_mapping.items():
+        placeholder = info["placeholder"]
+        sources = list(rules.subjects(RML.source, Literal(original_url)))
+        for source in sources:
+            logging.debug("Replacing source {} with placeholder {}".format(original_url, placeholder))
+            rules.set((source, RML.source, Literal(placeholder)))
+
+
 def find_method_graph(rules: Graph):
     pass
 
@@ -172,4 +189,3 @@ def replace_iris(old: URIRef, new: URIRef, graph: Graph):
     for triple in old_triples:
         graph.remove((triple[0], old, triple[1]))
         graph.add((triple[0], new, triple[1]))
-

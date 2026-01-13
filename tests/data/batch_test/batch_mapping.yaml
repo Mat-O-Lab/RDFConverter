@@ -1,0 +1,84 @@
+prefixes:
+  data: "https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json/"
+  method: "https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/Batch.ttl/"
+  method_urn: "urn:samm:io.catenax.batch:3.0.1#"
+  samm: "urn:samm:org.eclipse.esmf.samm:meta-model:2.3.0#"
+  mmm: "urn:samm:org.eclipse.esmf.samm:meta-meta-model:2.3.0#"
+  ext-built: "urn:samm:io.catenax.shared.part_site_information_as_built:2.0.0#"
+  ext-classification: "urn:samm:io.catenax.shared.part_classification:1.0.0#"
+base: http://purl.matolab.org/mseo/mappings/
+sources:
+      data_entities: {access: 'https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json',
+        iterator: '$..[*]', referenceFormulation: jsonpath}
+      root: {access: 'https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json',
+        iterator: '$', referenceFormulation: jsonpath}
+mappings:
+  identifierKey:
+    source: [data_entities]
+    s: method_urn:$(key~)
+    po:
+      - [samm:value, $(key)]
+  identifierValue:
+    source: [data_entities]
+    s: method_urn:$(value~)
+    po:
+      - [samm:value, $(value)]
+  manufacturingDate :
+    source: [data_entities]
+    s: method_urn:$(date~)
+    po:
+      - [samm:value, $(date)]
+  manufacturingCountry:
+    source: [data_entities]
+    s: method_urn:$(country~)
+    po:
+      - [samm:value, $(country)]
+  sites:
+    source: [data_entities]
+    s: method_urn:$(catenaXsiteId)
+    po:
+      - p: a
+        o: ext-built:SitesEntity
+      - p: ext-built:catenaXsiteId
+        o: $(catenaXsiteId)
+      - p: ext-built:function
+        o: $(function)
+  batchId :
+    source: [root]
+    s: method_urn:$(catenaXId~)
+    po:
+      - [samm:value, $(catenaXId)]
+  manufacturingEntitySites:
+    source: [root]
+    s: method_urn:$(manufacturingInformation~)
+    po:
+      - p: ext-built:sites
+        o: method_urn:$(.sites[*].catenaXsiteId)
+  manufacturerPartId:
+    source: [data_entities]
+    s: method_urn:$(manufacturerPartId~)
+    po:
+      - [samm:value, $(manufacturerPartId)]
+  nameAtManufacturer:
+    source: [data_entities]
+    s: method_urn:$(nameAtManufacturer~)
+    po:
+      - [samm:value, $(nameAtManufacturer)]
+  partClassification:
+    source: [data_entities]
+    s: method_urn:$(classificationID)
+    po:
+      - p: a
+        o: ext-classification:ClassificationEntity
+      - p: ext-classification:classificationStandard
+        o: $(classificationStandard)
+      - p: ext-classification:classificationDescription
+        o: $(classificationDescription)
+      - p: ext-classification:classificationID
+        o: $(classificationID)
+  partClassifications:
+    source: [root]
+    s: method_urn:$(partTypeInformation)
+    po:
+      - p: ext-classification:partClassification
+        o: method_urn:$(.partClassification[*].classificationID)

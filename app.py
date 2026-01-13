@@ -29,7 +29,7 @@ from starlette.background import BackgroundTask
 from wtforms import BooleanField, URLField
 from wtforms.validators import Optional as WTFOptional
 
-from rmlmapper import count_rules_str, replace_data_source, strip_namespace
+from rmlmapper import count_rules_str, replace_data_source, replace_all_data_sources, strip_namespace
 from enum import Enum
 
 YARRRML_URL = os.environ.get("YARRRML_URL")
@@ -285,78 +285,202 @@ def apply_mapping(
         )
     duplicate_for_table = mapping_dict.get("use_template_rowwise", False)
     logging.info("use_template_rowwise: {}".format(duplicate_for_table))
+
+    # PHASE 1: Build URL mapping from sources - download all source URLs
+    sources = mapping_dict.get("sources", {})
+    if not sources:
+        raise HTTPException(
+            status_code=422, detail="No sources found in mapping file"
+        )
+
+    url_mapping = {}
+    counter = 1
+    primary_data_url = None  # Track the primary data URL for filename
+
+    for source_name, source_def in sources.items():
+        # Strip trailing slash only for downloading - preserve for namespace matching later
+        original_url_for_download = source_def["access"].strip("/")
+        original_url = source_def["access"]  # Keep as-is for namespace matching
+
+        # Handle optional data_url override for the first source
+        if counter == 1:
+            if opt_data_url:
+                actual_url = opt_data_url.strip("/")  # Strip for download
+                primary_data_url = opt_data_url  # Keep as-is for namespace
+            else:
+                actual_url = original_url_for_download
+                primary_data_url = original_url
+        else:
+            actual_url = original_url_for_download
+
+        placeholder = f"source_{counter}.json"
+
+        # Download content
+        logging.debug(f"Downloading source {source_name} from {actual_url}")
+        data_content, data_filename = open_file(actual_url, authorization)
+
+        url_mapping[original_url] = {
+            "placeholder": placeholder,
+            "content": data_content,
+            "original_url": original_url,
+            "actual_url": actual_url
+        }
+
+        # Store filename from first source
+        if counter == 1:
+            filename = data_filename.rsplit(".", 1)[0].rsplit("-", 1)[0] + "-joined.ttl"
+
+        counter += 1
+
+    # DON'T strip method namespace - it comes from prefixes and has correct format
+    method_url = mapping_dict["prefixes"]["method"]
+
+    # PHASE 2: Convert YARRRML to RML and replace all source URLs with placeholders
     rml_rules = requests.post(YARRRML_URL, data={"yarrrml": mapping_data}).text
     rml_graph = Graph()
     rml_graph.parse(data=rml_rules, format="ttl")
-    # rml_graph.serialize('rml.ttl')
 
-    # mapping_dict = yaml.safe_load(mapping_data)
-    rml_data_url = mapping_dict["sources"]["data_entities"]["access"].strip("/")
-    method_url = mapping_dict["prefixes"]["method"].strip("/")
-
-    # replace rml source from mappingfile with local file
-    # because rmlmapper webapi does not work with remote sources
-    logging.debug("replace data_source {} with {}".format(rml_graph, "source.json"))
-    replace_data_source(rml_graph, "source.json")
+    logging.debug(f"Replacing {len(url_mapping)} source URLs with placeholders")
+    replace_all_data_sources(rml_graph, url_mapping)
     rml_rules_new = rml_graph.serialize(format="ttl")
 
-    # replace data_url with specified override
-    if opt_data_url:
-        data_url = opt_data_url
-    else:
-        data_url = rml_data_url
-    data_content, data_filename = open_file(data_url, authorization)
+    # PHASE 3: Process all data sources and prepare for RML mapper
+    sources_for_mapper = {}
+    data_graph = Graph()  # For primary data if RDF
+    is_rdf_data = False
+    csv_namespace = None  # Store csv namespace if found
+    import json
 
-    filename = data_filename.rsplit(".", 1)[0].rsplit("-", 1)[0] + "-joined.ttl"
-    data_graph = Graph()
-    logging.debug(
-        "loading {} as data graph in {} format".format(data_url, guess_format(data_url))
-    )
-    # normalizing data to rdflib json-ld wih maon vocab csvw
-    # data_graph.parse(data=data_content,format=guess_format(data_url))
-    try:
-        data_graph.parse(data=data_content, format=guess_format(data_url))
-    except:
-        raise HTTPException(
-            status_code=422,
-            detail="could not read data file - probably could guess format from url string",
-        )
-    context = {
-        "@vocab": str(CSVW),
-        "rdf": str(RDF),
-        "qudt": str(QUDT),
-        "qunit": str(QUNIT),
-        "label": "http://www.w3.org/2000/01/rdf-schema#label",
-        # "data1": data_url+'/',
-        # "data2": rml_data_url+'/'
-    }
-    data_content = data_graph.serialize(format="json-ld", context=context)
-    # need to replace iris because they are changed to the document id
-    # data_graph.serialize('test,json',format="json-ld", context=context)
-    # if opt_data_url:
-    # logging.debug('opt_data_url: replacing {} with {}'.format(rml_data_url,opt_data_url))
-    # rml_rules_new = rml_rules_new.replace(rml_data_url, opt_data_url)
+    # Process each source and prepare content for RML mapper
+    for original_url, info in url_mapping.items():
+        placeholder = info["placeholder"]
+        actual_url = info["actual_url"]
+        content = info["content"]
 
+        # Try to detect if it's JSON or RDF
+        try:
+            # Try to parse as plain JSON first
+            json_data = json.loads(content)
+            logging.info(f"Source {placeholder} is plain JSON")
+            # For plain JSON, use it as-is without RDF normalization
+            processed_content = content.decode() if isinstance(content, bytes) else content
+            # First source determines if we track RDF data
+            if placeholder == "source_1.json":
+                is_rdf_data = False
+        except:
+            # Not plain JSON, try as RDF
+            data_format = guess_format(actual_url)
+            if data_format:
+                try:
+                    logging.debug(f"Loading {actual_url} as RDF in {data_format} format")
+                    
+                    # If it's JSON-LD, extract namespace bindings from @context first
+                    original_context_namespaces = {}
+                    if data_format == "json-ld":
+                        try:
+                            json_data = json.loads(content)
+                            ctx = json_data.get("@context", [])
+                            # Context can be a list or dict
+                            if isinstance(ctx, list):
+                                for item in ctx:
+                                    if isinstance(item, dict):
+                                        for prefix, ns in item.items():
+                                            if isinstance(ns, str) and prefix not in ["@vocab"]:
+                                                original_context_namespaces[prefix] = ns
+                                                logging.debug(f"Extracted namespace from JSON-LD context: {prefix} -> {ns}")
+                                                # Store csv namespace for later use
+                                                if prefix == "csv" and placeholder == "source_1.json":
+                                                    csv_namespace = ns
+                                                    logging.info(f"Stored CSV namespace from JSON-LD: {csv_namespace}")
+                            elif isinstance(ctx, dict):
+                                for prefix, ns in ctx.items():
+                                    if isinstance(ns, str) and prefix not in ["@vocab"]:
+                                        original_context_namespaces[prefix] = ns
+                                        logging.debug(f"Extracted namespace from JSON-LD context: {prefix} -> {ns}")
+                                        # Store csv namespace for later use
+                                        if prefix == "csv" and placeholder == "source_1.json":
+                                            csv_namespace = ns
+                                            logging.info(f"Stored CSV namespace from JSON-LD: {csv_namespace}")
+                        except Exception as e:
+                            logging.warning(f"Could not extract context from JSON-LD: {e}")
+                    
+                    temp_graph = Graph()
+                    temp_graph.parse(data=content, format=data_format)
+
+                    # First source determines primary data graph
+                    if placeholder == "source_1.json":
+                        is_rdf_data = True
+                        data_graph = temp_graph
+
+                    # For RDF data, normalize to json-ld with CSVW vocab
+                    # PRESERVE original context namespaces
+                    logging.info(f"Source {placeholder} is RDF, normalizing to JSON-LD")
+                    context = {
+                        "@vocab": str(CSVW),
+                        "rdf": str(RDF),
+                        "qudt": str(QUDT),
+                        "qunit": str(QUNIT),
+                        "label": "http://www.w3.org/2000/01/rdf-schema#label",
+                    }
+                    # Add extracted namespaces to context
+                    context.update(original_context_namespaces)
+                    logging.info(f"Preserving {len(original_context_namespaces)} namespaces from original context")
+                    
+                    processed_content = temp_graph.serialize(format="json-ld", context=context)
+                except Exception as e:
+                    raise HTTPException(
+                        status_code=422,
+                        detail=f"Could not read source {actual_url} - not valid RDF or JSON format: {str(e)}",
+                    ) from e
+            else:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Could not determine data format from URL: {actual_url}",
+                )
+
+        sources_for_mapper[placeholder] = processed_content
+
+    # PHASE 4: Execute RML mapper with all sources
     d = {
         "rml": rml_rules_new,
-        "sources": {"source.json": data_content},
+        "sources": sources_for_mapper,
         "serialization": "turtle",
     }
+
+    # DEBUG: Log what we're sending to RML mapper
+    logging.debug("="*80)
+    logging.debug("DATA BEING SENT TO RML MAPPER:")
+    logging.debug(f"is_rdf_data: {is_rdf_data}")
+    logging.debug(f"Number of sources: {len(sources_for_mapper)}")
+    for placeholder, content in sources_for_mapper.items():
+        logging.debug(f"  {placeholder}: {len(content) if content else 0} chars")
+    logging.debug("RML Rules (first 500 chars):")
+    logging.debug(rml_rules_new[:500])
+    logging.debug("="*80)
+    
     # r = requests.post('http://rmlmapper'+':'+mapper_port+'/execute', json=d)
     # print(r.json())
     try:
         # call rmlmapper webapi
+        logging.debug(f"Calling RML mapper at: {MAPPER_URL}/execute")
         r = requests.post(MAPPER_URL + "/execute", json=d)
 
+        logging.debug(f"RML Mapper response status: {r.status_code}")
         if r.status_code != 200:
-            app.logger.error(r.text)
-            return r.text, 400
+            logging.error(f"RML Mapper error response: {r.text}")
+            raise HTTPException(
+                status_code=r.status_code,
+                detail=f"RML mapper failed: {r.text}"
+            )
         res = r.json()["output"]
-    except:
+        logging.debug(f"RML Mapper output length: {len(res)} chars")
+        logging.debug(f"RML Mapper output (first 500 chars): {res[:500]}")
+    except Exception as e:
+        logging.error(f"Exception calling RML mapper: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=r.status_code,
-            detail="could not generated mapping results with rmlmapper",
-        )
+            status_code=r.status_code if 'r' in locals() else 500,
+            detail=f"could not generate mapping results with rmlmapper: {str(e)}",
+        ) from e
 
     try:
         mapping_graph = Graph()
@@ -365,6 +489,8 @@ def apply_mapping(
         raise HTTPException(
             status_code=422, detail="could not pass mapping results to result graph"
         )
+    
+    # Don't transform yet - join graphs first, then transform
     # mapping_graph.serialize('mapping_result.ttl')
 
     num_mappings_applied = len(mapping_graph)
@@ -375,18 +501,19 @@ def apply_mapping(
         )
     )
     joined_graph = Graph()
-    # set prefixes
-    joined_graph.namespace_manager.bind("obo", OBO, override=True, replace=True)
-    joined_graph.namespace_manager.bind("csvw", CSVW)
-    joined_graph.namespace_manager.bind("oa", OA)
-    joined_graph.namespace_manager.bind("qudt", QUDT)
-    joined_graph.namespace_manager.bind("qunit", QUNIT)
-    joined_graph.namespace_manager.bind("iof", IOF)
-    joined_graph.namespace_manager.bind("data", data_url + "/")
+    
+    
+    # # Bind all custom prefixes from YARRRML mapping
+    # custom_prefixes = mapping_dict.get("prefixes", {})
+    # for prefix_name, prefix_url in custom_prefixes.items():
+    #     # Skip 'base' as it's handled separately
+    #     if prefix_name != "base":
+    #         joined_graph.namespace_manager.bind(prefix_name, Namespace(prefix_url))
+    #         logging.debug(f"Bound prefix '{prefix_name}' to '{prefix_url}'")
 
     # replace base url with place holder, should reference the now storage position of the resulting file
-    rdf_filename = "example.rdf"
-    new_base_url = ""
+    # rdf_filename = "example.rdf"
+    # new_base_url = ""
 
     ##add ontology entieties for reasoning
     # joined_graph.parse(CCO_URL, format='turtle')
@@ -399,8 +526,6 @@ def apply_mapping(
     templatedata, methodname = open_file(method_url, authorization)
 
     template_graph = Graph()
-    # parse template and add mapping results
-    template_graph.parse(data=templatedata, format="turtle")
     try:
         template_graph.parse(data=templatedata, format="ttl")
     except:
@@ -408,29 +533,29 @@ def apply_mapping(
             status_code=422,
             detail="could not template graph file - probably could guess format from url string",
         )
-
-    # remove the base iri or empty prefix if any
-    template_namespace = TEMPLATE_NAMESPACE
+    
+        # STEP 1: Replace template namespace WITH method namespace (unify them!)
     base_namespace = None
     for ns_prefix, namespace in template_graph.namespaces():
-        # print(ns_prefix,type(ns_prefix),len(ns_prefix))
         if ns_prefix in ["base", ""]:
             base_namespace = namespace
+    
+    # Replace template base with METHOD namespace (not TEMPLATE_NAMESPACE)
+    method_url = mapping_dict["prefixes"]["method"]
+    if not method_url.endswith("/"):
+        method_url += "/"
+    
     if base_namespace:
-        logging.debug(
-            "found the following base or empty prefix namespace {}".format(
-                base_namespace
-            )
-        )
+        logging.info(f"Replacing template namespace {base_namespace} with method namespace {method_url}")
         template_content = template_graph.serialize().replace(
-            base_namespace, template_namespace
+            base_namespace, method_url
         )
         template_graph = Graph()
         template_graph.parse(data=template_content)
-        template_graph.bind("data", data_url + "/")
     else:
         template_content = template_graph.serialize()
-
+    
+ 
     # for subject in template_graph.subjects():
     #     # replace the subject URI with your new template URI
     #     new_iri=URIRef(str(subject).rsplit("/", 1)[-1].rsplit("#", 1)[-1])
@@ -439,17 +564,24 @@ def apply_mapping(
 
     # duplicate template if needed
     rows = list(data_graph[: RDF.type : CSVW.Row])
-
+    
     # join and prepare for output
+    # Bind empty base namespace for relative IRIs (resolves to file location)
     joined_graph.namespace_manager.bind(
-        "base", Namespace(new_base_url), override=True, replace=True
+        "", Namespace(""), override=True, replace=True
     )
-    # copy data entieties into joined graph
-    joined_graph += data_graph
+    joined_graph.namespace_manager.bind(
+        "base", Namespace(""), override=True, replace=True
+    )
+    # copy data entities into joined graph only if data was RDF
+    # For plain JSON, RML mapper generates all the triples
+    if is_rdf_data:
+        joined_graph += data_graph
     # joined_graph += mapping_graph
 
-    # use template to create new idivituals for every
-    if duplicate_for_table and rows:
+    # use template to create new individuals for every row
+    # This only works with RDF/CSVW data, not plain JSON
+    if duplicate_for_table and is_rdf_data and rows:
         # map_content=mapping_graph.serialize()
         # mapping_graph.serialize("map_graph.ttl")
         # data_graph.serialize("data_graph.ttl")
@@ -496,7 +628,7 @@ def apply_mapping(
         for row in rows:
             data_node = data_graph.value(row, CSVW.describes)
             joined_graph.parse(
-                data=template_content.replace(template_namespace, data_node + "/")
+                data=template_content.replace(method_url, data_node + "/")
             )
             row_ns = Namespace(data_node + "/")
             joined_graph.bind("row" + str(data_node).rsplit("-", 1)[-1], row_ns)
@@ -509,16 +641,125 @@ def apply_mapping(
                 joined_graph.add((subject, predicate, row_ns[object]))
 
     else:
-
-        joined_graph.parse(
-            data=template_content.replace(template_namespace, new_base_url)
-        )
+        # Parse template AS IS (don't replace namespace yet - it causes file:///src/ issue!)
+        temp_template_graph = Graph()
+        temp_template_graph.parse(data=template_content)
+        joined_graph += temp_template_graph
         joined_graph += mapping_graph
+        # Only add data_graph if the data source was RDF
+        # For plain JSON, RML rules generate all needed triples
+        if is_rdf_data:
+            joined_graph += data_graph
 
-    # joined_graph.serialize("joined.ttl")
+    # DEBUG: Serialize after joining all graphs
+    #joined_graph.serialize("debug_03_after_joining_graphs.ttl")
+    logging.info("DEBUG: Serialized joined graph to debug_03_after_joining_graphs.ttl")
 
-    out = joined_graph.serialize(format="turtle")
-    out = out.replace("file:///src", data_url)
+    # Re-bind all namespaces from source graphs to ensure they're all preserved
+    logging.info("Re-binding namespaces from source graphs...")
+    
+    # Re-bind from template graph
+    for prefix, namespace in template_graph.namespaces():
+        if prefix not in ['', 'base']:  # Skip base/empty from template
+            joined_graph.namespace_manager.bind(prefix, namespace, override=False)
+            logging.debug(f"Re-bound from template: {prefix} -> {namespace}")
+    
+    # Re-bind from mapping graph
+    for prefix, namespace in mapping_graph.namespaces():
+        if prefix not in ['', 'base']:  # Skip base/empty from mapping
+            joined_graph.namespace_manager.bind(prefix, namespace, override=False)
+            logging.debug(f"Re-bound from mapping: {prefix} -> {namespace}")
+    
+    # Re-bind from data graph if it exists
+    if is_rdf_data and 'data_graph' in locals():
+        for prefix, namespace in data_graph.namespaces():
+            if prefix not in ['', 'base']:
+                joined_graph.namespace_manager.bind(prefix, namespace, override=False)
+                logging.debug(f"Re-bound from data: {prefix} -> {namespace}")
+                # Special handling for csv prefix
+                if prefix == 'csv':
+                    logging.info(f"Found and bound CSV prefix: {namespace}")
+    
+    logging.info("Set graph base to empty string")
+    
+    # Transform method namespace URIs to RELATIVE URIs (no scheme)
+    logging.info(f"Transforming method URIs from {method_url} to relative URIs")
+    
+    triples_to_transform = []
+    for s, p, o in joined_graph:
+        new_s = s
+        new_p = p
+        new_o = o
+        changed = False
+        
+        # Transform subject if it starts with method URL
+        if isinstance(s, URIRef) and str(s).startswith(method_url):
+            local_part = str(s).replace(method_url, "")
+            # Create relative URIRef (no scheme)
+            new_s = URIRef("#" + local_part)
+            changed = True
+            logging.debug(f"Transform subject: {s} -> {new_s}")
+            
+        # Transform predicate if it starts with method URL
+        if isinstance(p, URIRef) and str(p).startswith(method_url):
+            local_part = str(p).replace(method_url, "")
+            new_p = URIRef("#" + local_part)
+            changed = True
+            logging.debug(f"Transform predicate: {p} -> {new_p}")
+            
+        # Transform object if it's a URIRef and starts with method URL
+        if isinstance(o, URIRef) and str(o).startswith(method_url):
+            local_part = str(o).replace(method_url, "")
+            new_o = URIRef("#" + local_part)
+            changed = True
+            logging.debug(f"Transform object: {o} -> {new_o}")
+        
+        if changed:
+            triples_to_transform.append(((s, p, o), (new_s, new_p, new_o)))
+    
+    # Apply transformations
+    for (old_triple, new_triple) in triples_to_transform:
+        joined_graph.remove(old_triple)
+        joined_graph.add(new_triple)
+    
+    logging.info(f"Transformed {len(triples_to_transform)} triples from method namespace to relative URIs")
+    
+    # Bind empty prefix to empty namespace (for :SpecimenID style with @prefix : <> .)
+    joined_graph.namespace_manager.bind("", Namespace(""), override=True)
+    logging.info("Bound empty prefix to empty namespace")
+    
+    # Bind data prefix from YARRRML mapping or primary_data_url with trailing slash
+    # Priority: data prefix from mapping > primary_data_url
+    data_namespace = mapping_dict["prefixes"].get("data")
+    if not data_namespace:
+        data_namespace = primary_data_url
+    
+    if data_namespace and not data_namespace.endswith("/"):
+        data_namespace += "/"
+    
+    if data_namespace:
+        joined_graph.namespace_manager.bind("data", Namespace(data_namespace), override=True)
+        logging.info(f"Bound data prefix to: {data_namespace}")
+    else:
+        logging.warning("No data namespace found in mapping or primary_data_url")
+    
+    # Bind csv prefix using extracted namespace from JSON-LD context (if found)
+    # Otherwise fall back to data_namespace
+    if csv_namespace:
+        joined_graph.namespace_manager.bind("csv", Namespace(csv_namespace), override=True)
+        logging.info(f"Bound csv prefix to extracted namespace: {csv_namespace}")
+    elif data_namespace:
+        joined_graph.namespace_manager.bind("csv", Namespace(data_namespace), override=True)
+        logging.info(f"Bound csv prefix to data namespace (fallback): {data_namespace}")
+    
+    logging.info(f"Final graph has {len(joined_graph)} triples")
+    logging.info(f"Namespace bindings in joined graph after transformation:")
+    for prefix, namespace in joined_graph.namespaces():
+        logging.info(f"  {prefix}: {namespace}")
+
+    # Serialize the graph - all prefixes now preserved
+    out = joined_graph.serialize(format="turtle",base="")
+    
     return filename, out, num_mappings_possible, num_mappings_applied
 
 
@@ -563,7 +804,7 @@ def shacl_validate(
         return conforms, g
 
     except Exception as e:
-        app.logger.error(e)
+        logging.error(f"SHACL validation error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -842,6 +1083,428 @@ def validate_rdf(request: ValidateRequest):
 @app.get("/info", response_model=settings.Setting)
 async def info() -> dict:
     return setting
+
+
+class RuleStatistics(BaseModel):
+    rule_name: str = Field(title="Rule Name", description="Name of the mapping rule from YARRRML")
+    predicate: Optional[str] = Field(None, title="Predicate", description="Main predicate URI used by this rule")
+    triples_generated: int = Field(title="Triples Generated", description="Number of triples generated by this rule")
+    subjects_affected: int = Field(title="Subjects Affected", description="Number of unique subjects this rule applied to")
+    output: Optional[str] = Field(None, title="Rule Output", description="The RDF triples generated by this rule in Turtle format")
+
+
+class TestMappingResult(BaseModel):
+    success: bool = Field(
+        title="Test Success",
+        description="Whether the mapping test succeeded"
+    )
+    mapping_url: str = Field(
+        title="Mapping URL",
+        description="The URL of the mapping file tested"
+    )
+    data_url: Optional[str] = Field(
+        None,
+        title="Data URL",
+        description="The URL of the data file used (if overridden)"
+    )
+    filename: Optional[str] = Field(
+        None,
+        title="Output Filename",
+        description="The suggested filename for the output"
+    )
+    num_rules_total: int = Field(
+        title="Total Rules",
+        description="Total number of mapping rules defined"
+    )
+    num_rules_applied: int = Field(
+        title="Rules Applied",
+        description="Number of rules that successfully generated triples"
+    )
+    num_rules_skipped: int = Field(
+        title="Rules Skipped",
+        description="Number of rules that did not generate triples"
+    )
+    num_triples_generated: int = Field(
+        title="Triples Generated",
+        description="Total number of RDF triples generated"
+    )
+    rule_statistics: List[RuleStatistics] = Field(
+        default_factory=list,
+        title="Per-Rule Statistics",
+        description="Detailed statistics for each mapping rule"
+    )
+    output_preview: Optional[str] = Field(
+        None,
+        title="Output Preview",
+        description="First 1000 characters of the generated RDF output"
+    )
+    error: Optional[str] = Field(
+        None,
+        title="Error Message",
+        description="Error message if the test failed"
+    )
+    logs: List[str] = Field(
+        default_factory=list,
+        title="Processing Logs",
+        description="Log messages from the mapping process"
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "mapping_url": "https://raw.githubusercontent.com/Mat-O-Lab/MapToMethod/refs/heads/main/examples/example-map.yaml",
+                "data_url": None,
+                "filename": "example-joined.ttl",
+                "num_rules_total": 7,
+                "num_rules_applied": 7,
+                "num_rules_skipped": 0,
+                "num_triples_generated": 42,
+                "rule_statistics": [
+                    {
+                        "rule_name": "map_SpecimenID",
+                        "predicate": "http://purl.obolibrary.org/obo/RO_0010002",
+                        "triples_generated": 1,
+                        "subjects_affected": 1
+                    }
+                ],
+                "output_preview": "@prefix obo: <http://purl.obolibrary.org/obo/> ...",
+                "error": None,
+                "logs": [
+                    "use_template_rowwise: false",
+                    "Data is RDF, normalizing to JSON-LD",
+                    "number of rules: 7, applied: 7"
+                ]
+            }
+        }
+
+
+@app.api_route("/api/test", methods=["POST"], response_model=TestMappingResult, tags=["transform"])
+async def test_mapping(
+    mapping_url: Optional[str] = None,
+    mapping_yaml: Optional[str] = None,
+    data_url: Optional[str] = None
+):
+    """
+    Test a mapping by executing it and returning detailed results
+    
+    This endpoint tests an RDF mapping by executing it and providing detailed
+    statistics. You can either provide a mapping_url OR mapping_yaml content.
+    
+    Args:
+        mapping_url: URL to the YARRRML mapping file to test
+        mapping_yaml: Raw YARRRML content as a string (alternative to mapping_url)
+        data_url: Optional URL to override the data source specified in the mapping
+    
+    Returns:
+        TestMappingResult: Detailed test results including statistics and logs
+        
+    Example:
+        POST with mapping_url:
+        {"mapping_url": "https://example.com/mapping.yaml"}
+        
+        POST with mapping_yaml:
+        {"mapping_yaml": "prefixes:\\n  ...\\nmappings:\\n  ..."}
+    """
+    
+    if not mapping_url and not mapping_yaml:
+        mapping_url = "https://raw.githubusercontent.com/Mat-O-Lab/MapToMethod/refs/heads/main/examples/example-map.yaml"
+    
+    # Capture logs
+    log_capture = []
+    
+    class LogCapture(logging.Handler):
+        def emit(self, record):
+            try:
+                msg = self.format(record)
+                log_capture.append(msg)
+            except Exception:
+                pass
+    
+    # Add log capture handler with formatter
+    log_handler = LogCapture()
+    log_handler.setLevel(logging.DEBUG)  # Capture all levels
+    formatter = logging.Formatter('%(levelname)s - %(name)s - %(message)s')
+    log_handler.setFormatter(formatter)
+    
+    # Add to root logger to catch everything
+    root_logger = logging.getLogger()
+    original_level = root_logger.level
+    root_logger.setLevel(logging.DEBUG)  # Temporarily lower threshold
+    root_logger.addHandler(log_handler)
+    
+    try:
+        # Load mapping data from URL or provided YAML string
+        if mapping_yaml:
+            mapping_data = mapping_yaml.encode() if isinstance(mapping_yaml, str) else mapping_yaml
+            mapping_source = "provided YAML content"
+        else:
+            mapping_data, _ = open_file(mapping_url, None)
+            mapping_source = mapping_url
+            
+        mapping_dict = yaml.safe_load(mapping_data)
+        logging.info(f"Testing mapping from: {mapping_source}")
+        
+        # Execute the mapping via create_rdf since we have YAML content
+        # We need to save it temporarily or use the apply_mapping function differently
+        # For now, just execute via createrdf API
+        
+        # Get data URL from mapping or override
+        sources = mapping_dict.get("sources", {})
+        if sources:
+            first_source_name = next(iter(sources))
+            rml_data_url = sources[first_source_name]["access"].strip("/")
+        else:
+            raise HTTPException(status_code=422, detail="No sources found in mapping")
+        
+        test_data_url = data_url if data_url else rml_data_url
+        
+        # Call createrdf logic directly with the mapping data
+        try:
+            duplicate_for_table = mapping_dict.get("use_template_rowwise", False)
+            logging.info("use_template_rowwise: {}".format(duplicate_for_table))
+            
+            # Convert YARRRML to RML
+            rml_rules = requests.post(YARRRML_URL, data={"yarrrml": mapping_data}).text
+            rml_graph = Graph()
+            rml_graph.parse(data=rml_rules, format="ttl")
+            replace_data_source(rml_graph, "source.json")
+            rml_rules_new = rml_graph.serialize(format="ttl")
+            
+            # Get and process data
+            data_content, data_filename = open_file(test_data_url, None)
+            filename = data_filename.rsplit(".", 1)[0].rsplit("-", 1)[0] + "-joined.ttl"
+            
+            # Prepare data (same logic as apply_mapping)
+            import json
+            is_rdf_data = False
+            try:
+                json_data = json.loads(data_content)
+                data_content = data_content.decode() if isinstance(data_content, bytes) else data_content
+                is_rdf_data = False
+            except:
+                data_format = guess_format(test_data_url)
+                if data_format:
+                    data_graph = Graph()
+                    data_graph.parse(data=data_content, format=data_format)
+                    is_rdf_data = True
+                    context = {
+                        "@vocab": str(CSVW),
+                        "rdf": str(RDF),
+                        "qudt": str(QUDT),
+                        "qunit": str(QUNIT),
+                        "label": "http://www.w3.org/2000/01/rdf-schema#label",
+                    }
+                    data_content = data_graph.serialize(format="json-ld", context=context)
+            
+            # Execute RML mapper
+            d = {
+                "rml": rml_rules_new,
+                "sources": {"source.json": data_content},
+                "serialization": "turtle",
+            }
+            r = requests.post(MAPPER_URL + "/execute", json=d)
+            if r.status_code != 200:
+                raise HTTPException(status_code=r.status_code, detail="RML mapper failed")
+            
+            output = r.json()["output"]
+            num_rules = count_rules_str(rml_rules)
+            
+            # Parse mapping graph to count applied rules
+            mapping_graph = Graph()
+            mapping_graph.parse(data=output, format="ttl")
+            num_applied = len(mapping_graph)
+            
+            logging.info(f"Mapping executed: {num_rules} rules, {num_applied} triples generated")
+            
+        except Exception as e:
+            logging.error(f"Error executing mapping: {str(e)}")
+            raise
+        
+        # Parse the output to count total triples
+        num_triples = 0
+        try:
+            result_graph = Graph()
+            result_graph.parse(data=output, format="turtle")
+            num_triples = len(result_graph)
+        except Exception as e:
+            logging.error(f"Error parsing result graph: {str(e)}")
+        
+        # Execute each rule individually to count RML mapping output (before template joining)
+        rule_stats = []
+        mappings = mapping_dict.get("mappings", {})
+        
+        for idx, (rule_name, rule_def) in enumerate(mappings.items()):
+            try:
+                # Create a new dict with ONLY this one rule (avoids regex complexity)
+                # Use deep copy to avoid reference issues with yaml.dump()
+                import copy
+                single_rule_dict = {
+                    "prefixes": copy.deepcopy(mapping_dict.get("prefixes", {})),
+                    "base": f"http://test{idx}.example.com/",  # Unique base per rule to avoid caching
+                    "sources": copy.deepcopy(mapping_dict.get("sources", {})),
+                    "use_template_rowwise": copy.deepcopy(mapping_dict.get("use_template_rowwise", "false")),
+                    "mappings": {
+                        rule_name: copy.deepcopy(rule_def)  # Deep copy to ensure isolation
+                    }
+                }
+                
+                # Serialize to YAML with flow style false to avoid nested arrays
+                single_rule_yaml = yaml.dump(single_rule_dict, default_flow_style=False, sort_keys=False, allow_unicode=True)
+                
+                logging.debug("="*80)
+                logging.debug(f"SINGLE RULE YARRRML for {rule_name}:")
+                logging.debug(single_rule_yaml)
+                logging.debug("="*80)
+                
+                # Also log what we're sending to YARRRML parser
+                logging.debug(f"Sending to YARRRML parser for {rule_name}...")
+                logging.debug(f"Type: {type(single_rule_yaml)}, Length: {len(single_rule_yaml)}")
+                
+                rml_rules = requests.post(YARRRML_URL, data={"yarrrml": single_rule_yaml}).text
+                logging.debug(f"RML rules length for {rule_name}: {len(rml_rules)} chars")
+                logging.debug(f"RML rules (first 500 chars): {rml_rules[:500]}")
+                
+                # Parse RML and replace source
+                rml_graph = Graph()
+                rml_graph.parse(data=rml_rules, format="ttl")
+                replace_data_source(rml_graph, "source.json")
+                rml_rules_new = rml_graph.serialize(format="ttl")
+                
+                # Get data (reuse same logic as main mapping)
+                sources = mapping_dict.get("sources", {})
+                first_source_name = next(iter(sources))
+                rml_data_url = sources[first_source_name]["access"].strip("/")
+                test_data_url = data_url if data_url else rml_data_url
+                data_content, _ = open_file(test_data_url, None)
+                
+                # Prepare data content (same as apply_mapping)
+                import json
+                try:
+                    json_data = json.loads(data_content)
+                    data_content = data_content.decode() if isinstance(data_content, bytes) else data_content
+                except:
+                    data_format = guess_format(test_data_url)
+                    if data_format:
+                        data_graph = Graph()
+                        data_graph.parse(data=data_content, format=data_format)
+                        context = {
+                            "@vocab": str(CSVW),
+                            "rdf": str(RDF),
+                            "qudt": str(QUDT),
+                            "qunit": str(QUNIT),
+                            "label": "http://www.w3.org/2000/01/rdf-schema#label",
+                        }
+                        data_content = data_graph.serialize(format="json-ld", context=context)
+                
+                # Execute RML mapper for single rule only
+                d = {
+                    "rml": rml_rules_new,
+                    "sources": {"source.json": data_content},
+                    "serialization": "turtle",
+                }
+                
+                r = requests.post(MAPPER_URL + "/execute", json=d)
+                if r.status_code == 200:
+                    mapping_output = r.json()["output"]
+                    
+                    # DEBUG: Log what RML mapper returned
+                    logging.debug(f"Rule {rule_name} - RML output length: {len(mapping_output)} chars")
+                    logging.debug(f"Rule {rule_name} - RML output (first 300 chars): {mapping_output[:300]}")
+                    
+                    # Parse RML mapping output and count triples
+                    try:
+                        rule_graph = Graph()
+                        rule_graph.parse(data=mapping_output, format="turtle")
+                        triples_count = len(rule_graph)
+                        unique_subjects = len(set([s for s, p, o in rule_graph]))
+                        logging.debug(f"Rule {rule_name}: {triples_count} RML mapping triples, {unique_subjects} subjects")
+                    except Exception as parse_error:
+                        logging.error(f"Failed to parse RML output for rule {rule_name}: {str(parse_error)}")
+                        logging.debug(f"Attempted to parse: {mapping_output[:500]}")
+                        triples_count = 0
+                        unique_subjects = 0
+                else:
+                    logging.error(f"RML mapper failed for rule {rule_name}: {r.status_code}")
+                    triples_count = 0
+                    unique_subjects = 0
+                
+                # Get predicate for reporting
+                po_list = rule_def.get("po", [])
+                predicate_uri = None
+                if po_list and isinstance(po_list[0], list) and len(po_list[0]) >= 1:
+                    predicate_str = str(po_list[0][0])
+                    if ":" in predicate_str and not predicate_str.startswith("http"):
+                        prefix, local = predicate_str.split(":", 1)
+                        prefix_url = mapping_dict.get("prefixes", {}).get(prefix, "")
+                        predicate_uri = prefix_url + local if prefix_url else predicate_str
+                    else:
+                        predicate_uri = predicate_str
+                
+                rule_stats.append({
+                    "rule_name": rule_name,
+                    "predicate": predicate_uri,
+                    "triples_generated": triples_count,
+                    "subjects_affected": unique_subjects,
+                    "output": mapping_output if r.status_code == 200 else None
+                })
+                    
+            except Exception as e:
+                logging.error(f"Error processing rule {rule_name}: {str(e)}")
+                continue
+        
+        # Remove the log handler and restore level
+        root_logger.removeHandler(log_handler)
+        root_logger.setLevel(original_level)
+        
+        return {
+            "success": True,
+            "mapping_url": mapping_url,
+            "data_url": data_url,
+            "filename": filename,
+            "num_rules_total": num_rules,
+            "num_rules_applied": num_applied,
+            "num_rules_skipped": num_rules - num_applied,
+            "num_triples_generated": num_triples,
+            "rule_statistics": rule_stats,
+            "output_preview": output[:1000] if output else None,
+            "error": None,
+            "logs": log_capture  # Return all captured logs
+        }
+        
+    except HTTPException as e:
+        root_logger.removeHandler(log_handler)
+        root_logger.setLevel(original_level)
+        return {
+            "success": False,
+            "mapping_url": mapping_url,
+            "data_url": data_url,
+            "filename": None,
+            "num_rules_total": 0,
+            "num_rules_applied": 0,
+            "num_rules_skipped": 0,
+            "num_triples_generated": 0,
+            "output_preview": None,
+            "error": f"{e.status_code}: {e.detail}",
+            "logs": log_capture
+        }
+    except Exception as e:
+        root_logger.removeHandler(log_handler)
+        root_logger.setLevel(original_level)
+        import traceback
+        return {
+            "success": False,
+            "mapping_url": mapping_url,
+            "data_url": data_url,
+            "filename": None,
+            "num_rules_total": 0,
+            "num_rules_applied": 0,
+            "num_rules_skipped": 0,
+            "num_triples_generated": 0,
+            "output_preview": None,
+            "error": f"Error: {str(e)}\n{traceback.format_exc()}",
+            "logs": log_capture
+        }
 
 
 if __name__ == "__main__":

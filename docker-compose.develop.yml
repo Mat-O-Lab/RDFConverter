@@ -3,7 +3,8 @@ services:
   yarrrml-parser:
     environment:
       - PORT=${PARSER_PORT}
-    image: ghcr.io/mat-o-lab/yarrrml-parser:v.1.0.2
+    #image: ghcr.io/mat-o-lab/yarrrml-parser:v.1.12.2
+    build: yarrrml-parser/.
     expose:
       - ${PARSER_PORT}
     restart: always
@@ -15,7 +16,8 @@ services:
     environment:
       - PORT=${MAPPER_PORT}
     container_name: rmlmapper-webapi
-    image: ghcr.io/mat-o-lab/rmlmapper-webapi:latest
+    #image: ghcr.io/mat-o-lab/rmlmapper-webapi:latest
+    build: rmlmapper-webapi/.
     expose:
       - ${MAPPER_PORT}
     restart: always
@@ -24,9 +26,14 @@ services:
   rdfconverter:
     container_name: rdfconverter
     build: .
+    env_file:
+      - .env
     ports:
       - ${APP_PORT}:${CONVERTER_PORT}
+    volumes:
+      - ./:/src
     restart: always
+    entrypoint: python app.py
     networks:
       - rdfconverter_net
 

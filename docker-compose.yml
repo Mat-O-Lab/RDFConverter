@@ -36,7 +36,7 @@ services:
     ports:
       - ${APP_PORT}:${CONVERTER_PORT}
     restart: always
-    entrypoint: python app.py
+    #entrypoint: python app.py
     networks:
       - rdfconverter_net
 

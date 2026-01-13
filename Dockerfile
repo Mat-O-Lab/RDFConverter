@@ -11,6 +11,10 @@ RUN buildDeps='locales curl' \
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
+# Install test dependencies
+COPY tests/requirements.txt /tmp/test-requirements.txt
+RUN pip install --no-cache-dir -r /tmp/test-requirements.txt
+
 ADD . /src
 WORKDIR /src
 

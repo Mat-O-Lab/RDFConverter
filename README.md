@@ -29,7 +29,7 @@ YARRRML_URL=http://yarrrml-parser:${PARSER_PORT}
 MAPPER_URL=http://rmlmapper:${MAPPER_PORT}
 CONVERTER_PORT=6000
 APP_PORT=5003
-SSL_VERIFY=<True or False> #default is True
+SSL_VERIFY=<True r False> #default is True
 ```
 
 # Run flask app
@@ -40,6 +40,26 @@ docker-compose up
 Go to http://localhost:5003/api/docs for a Simple UI
 
 Try the api at http://localhost:5003/api/docs
+
+## Testing
+
+Run tests via the API endpoint:
+
+```bash
+# Via curl
+curl http://localhost:5003/api/test
+
+# Or access directly in browser/Swagger UI
+http://localhost:5003/api/docs#/transform/run_tests_api_test_get
+```
+
+The `/api/test` endpoint:
+- Runs all integration tests
+- Returns test results as JSON
+- Works in any deployed environment
+- No additional setup required
+
+For more testing options, see [TESTING.md](TESTING.md)
 
 # Acknowledgments
 The authors would like to thank the Federal Government and the Heads of Government of the Länder for their funding and support within the framework of the [Platform Material Digital](https://www.materialdigital.de) consortium. Funded by the German [Federal Ministry of Education and Research (BMBF)](https://www.bmbf.de/bmbf/en/) through the [MaterialDigital](https://www.bmbf.de/SharedDocs/Publikationen/de/bmbf/5/31701_MaterialDigital.pdf?__blob=publicationFile&v=5) Call in Project [KupferDigital](https://www.materialdigital.de/project/1) - project id 13XP5119.

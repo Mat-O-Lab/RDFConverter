@@ -1,4 +1,4 @@
-FROM node:17-alpine
+FROM node:22-alpine
 
 # from timbru31/node-alpine-git
 RUN apk -U upgrade \
