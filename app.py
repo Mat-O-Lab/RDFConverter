@@ -1672,62 +1672,11 @@ async def test_mapping(
         
         test_data_url = data_url if data_url else rml_data_url
         
-        # Call createrdf logic directly with the mapping data
+        # Use apply_mapping() to get properly post-processed results
         try:
-            duplicate_for_table = mapping_dict.get("use_template_rowwise", False)
-            logging.info("use_template_rowwise: {}".format(duplicate_for_table))
-            
-            # Convert YARRRML to RML
-            rml_rules = requests.post(YARRRML_URL, data={"yarrrml": mapping_data}).text
-            rml_graph = Graph()
-            rml_graph.parse(data=rml_rules, format="ttl")
-            replace_data_source(rml_graph, "source.json")
-            rml_rules_new = rml_graph.serialize(format="ttl")
-            
-            # Get and process data
-            data_content, data_filename = open_file(test_data_url, None)
-            filename = data_filename.rsplit(".", 1)[0].rsplit("-", 1)[0] + "-joined.ttl"
-            
-            # Prepare data using helper function
-            import json
-            try:
-                # Use helper function to process data
-                data_content_str, is_rdf_data, data_namespaces = process_data_to_jsonld(data_content, test_data_url)
-                data_content = data_content_str
-            except HTTPException:
-                # If helper fails, fall back to old logic for compatibility
-                try:
-                    json.loads(data_content)
-                    data_content = data_content.decode() if isinstance(data_content, bytes) else data_content
-                    is_rdf_data = False
-                except (json.JSONDecodeError, ValueError):
-                    data_format = guess_format(test_data_url)
-                    if data_format:
-                        data_graph = Graph()
-                        data_graph.parse(data=data_content, format=data_format)
-                        is_rdf_data = True
-                        context = get_standard_jsonld_context()
-                        data_content = data_graph.serialize(format="json-ld", context=context)
-            
-            # Execute RML mapper
-            d = {
-                "rml": rml_rules_new,
-                "sources": {"source.json": data_content},
-                "serialization": "turtle",
-            }
-            r = requests.post(MAPPER_URL + "/execute", json=d)
-            if r.status_code != 200:
-                raise HTTPException(status_code=r.status_code, detail="RML mapper failed")
-            
-            output = r.json()["output"]
-            # Count YARRRML mappings directly, not RML rules
-            num_rules = len(mapping_dict.get("mappings", {}))
-            
-            # Parse mapping graph to count applied rules
-            mapping_graph = Graph()
-            mapping_graph.parse(data=output, format="ttl")
-            num_applied = len(mapping_graph)
-            
+            filename, output, num_rules, num_applied = apply_mapping(
+                mapping_url, data_url, None, None
+            )
             logging.info(f"Mapping executed: {num_rules} rules, {num_applied} triples generated")
             
         except Exception as e:
@@ -1760,8 +1709,8 @@ async def test_mapping(
                 # Extract target object from rule definition
                 po_list = rule_def.get("po", [])
                 
-                if not po_list or not isinstance(po_list[0], list) or len(po_list[0]) < 2:
-                    logging.warning(f"Rule {rule_name}: Could not extract object URI")
+                if not po_list:
+                    logging.warning(f"Rule {rule_name}: No predicates/objects defined")
                     rule_stats.append({
                         "rule_name": rule_name,
                         "predicate": None,
@@ -1771,9 +1720,33 @@ async def test_mapping(
                     })
                     continue
                 
-                # Get predicate and object
-                predicate_str = str(po_list[0][0])
-                object_str = str(po_list[0][1])
+                # Handle both YARRRML formats:
+                # 1. List format: [predicate, object]
+                # 2. Dict format: {p: predicate, o: object}
+                first_po = po_list[0]
+                
+                if isinstance(first_po, dict):
+                    # Dict format
+                    predicate_str = str(first_po.get('p', ''))
+                    object_str = str(first_po.get('o', ''))
+                elif isinstance(first_po, list) and len(first_po) >= 2:
+                    # List format
+                    predicate_str = str(first_po[0])
+                    object_str = str(first_po[1])
+                else:
+                    logging.warning(f"Rule {rule_name}: Unknown po format: {first_po}")
+                    rule_stats.append({
+                        "rule_name": rule_name,
+                        "predicate": None,
+                        "triples_generated": 0,
+                        "subjects_affected": 0,
+                        "output": None
+                    })
+                    continue
+                
+                # Handle 'a' shorthand for rdf:type
+                if predicate_str == 'a':
+                    predicate_str = 'rdf:type'
                 
                 # Resolve predicate to full URI
                 if ":" in predicate_str and not predicate_str.startswith("http"):
@@ -1853,14 +1826,18 @@ async def test_mapping(
         root_logger.removeHandler(log_handler)
         root_logger.setLevel(original_level)
         
+        # Calculate correct statistics from per-rule data
+        num_rules_with_triples = sum(1 for rule in rule_stats if rule["triples_generated"] > 0)
+        num_rules_without_triples = len(rule_stats) - num_rules_with_triples
+        
         return {
             "success": True,
             "mapping_url": mapping_url,
             "data_url": data_url,
             "filename": filename,
-            "num_rules_total": num_rules,
-            "num_rules_applied": num_applied,
-            "num_rules_skipped": num_rules - num_applied,
+            "num_rules_total": len(rule_stats),  # Total YARRRML mappings
+            "num_rules_applied": num_rules_with_triples,  # Rules that generated triples
+            "num_rules_skipped": num_rules_without_triples,  # Rules that didn't generate triples
             "num_triples_generated": num_triples,
             "rule_statistics": rule_stats,
             "output_preview": output[:1000] if output else None,
