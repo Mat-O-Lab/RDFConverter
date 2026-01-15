@@ -8,8 +8,16 @@ on:
 env:
   WORKING_DIR: ./examples
   MAPPING_URL: https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml
+
+  PARSER_PORT: 3001
+  APP_PORT: 6003
+  MAPPER_PORT: 4000
+  CONVERTER_PORT: 5000
+
+  YARRRML_URL: http://yarrrml-parser:3001
+  MAPPER_URL: http://rmlmapper:4000
+
   APP_MODE: development
-  APP_PORT: 5003
   SSL_VERIFY: "False"
 
 jobs:
@@ -27,10 +35,23 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y jq curl
 
+      - name: Create .env for Docker Compose
+        run: |
+          cat <<EOF > .env
+          PARSER_PORT=${PARSER_PORT}
+          APP_PORT=${APP_PORT}
+          MAPPER_PORT=${MAPPER_PORT}
+          CONVERTER_PORT=${CONVERTER_PORT}
+          YARRRML_URL=${YARRRML_URL}
+          MAPPER_URL=${MAPPER_URL}
+          APP_MODE=${APP_MODE}
+          SSL_VERIFY=${SSL_VERIFY}
+          EOF
+
       - name: Run app (Docker Compose)
         run: |
           docker compose -f docker-compose.develop.yml up -d --build
-          echo "Waiting for services to start..."
+          echo "Waiting for services..."
           sleep 30
           docker compose ps
 
