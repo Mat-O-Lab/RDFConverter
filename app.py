@@ -750,8 +750,32 @@ def apply_mapping(
     duplicate_for_table = mapping_dict.get("use_template_rowwise", False)
     logging.info(f"use_template_rowwise: {duplicate_for_table}")
 
-    # PHASE 1: Download all source files using helper function
+    # PHASE 0: If opt_data_url is provided, replace the original data source URL in YARRRML
+    # This MUST happen BEFORE converting YARRRML to RML
     sources = mapping_dict.get("sources", {})
+    if opt_data_url and sources:
+        # Get the first source URL (the one we want to replace)
+        first_source_name = next(iter(sources))
+        original_data_url = sources[first_source_name]["access"].strip("/")
+        
+        # Replace ALL occurrences of the original data URL with the new one in the YARRRML string
+        # This ensures the RML rules will have the correct URL from the start
+        if isinstance(mapping_data, bytes):
+            mapping_data_str = mapping_data.decode('utf-8')
+        else:
+            mapping_data_str = mapping_data
+            
+        # Replace the data URL in the YARRRML content
+        mapping_data_str = mapping_data_str.replace(original_data_url, opt_data_url.strip("/"))
+        mapping_data = mapping_data_str.encode('utf-8') if isinstance(mapping_data, bytes) else mapping_data_str
+        
+        # Re-parse the modified YAML to update mapping_dict
+        mapping_dict = yaml.safe_load(mapping_data)
+        sources = mapping_dict.get("sources", {})
+        
+        logging.info(f"Replaced data source URL in YARRRML: {original_data_url} -> {opt_data_url}")
+
+    # PHASE 1: Download all source files using helper function
     url_mapping, primary_data_url, filename = download_sources(
         sources, opt_data_url, authorization
     )
