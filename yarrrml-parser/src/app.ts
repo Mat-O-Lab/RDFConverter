@@ -1,7 +1,8 @@
 // @ts-ignore
 import Yarrrml from "@rmlio/yarrrml-parser/lib/rml-generator";
 import express from "express";
-import bodyParser from "body-parser"
+import bodyParser from "body-parser";
+import * as yaml from "js-yaml";
 
 const app = express();
 const port = process.env.PORT;
@@ -15,7 +16,22 @@ app.post('/', (req, res) => {
     const y2r = new Yarrrml();
     const yarrrml_query = req.body.yarrrml;
     if (yarrrml_query) {
-        const quads = y2r.convert(yarrrml_query);
+        // Extract base IRI from YARRRML document
+        let baseIRI = 'http://example.com/'; // default fallback
+        try {
+            const parsed = yaml.load(yarrrml_query);
+            if (parsed && typeof parsed === 'object' && 'base' in parsed) {
+                baseIRI = (parsed as any).base;
+                console.log('✓ Using base IRI from YARRRML:', baseIRI);
+            } else {
+                console.log('ℹ No base IRI found in YARRRML, using default:', baseIRI);
+            }
+        } catch (e) {
+            console.warn('⚠ Could not parse YARRRML to extract base, using default:', baseIRI);
+        }
+        
+        // Pass baseIRI as option to convert method
+        const quads = y2r.convert(yarrrml_query, { baseIRI: baseIRI });
         console.log(quads)
         const triples: string[] = [];
         quads.forEach((q: { subject: { value: string; }; predicate: { value: string; }; object: { termType: string; value: string; }; }) => {

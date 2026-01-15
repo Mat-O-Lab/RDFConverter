@@ -1,0 +1,54 @@
+@prefix cx: <urn:samm:io.catenax.batch:3.0.1#> .
+@prefix ext-built: <urn:samm:io.catenax.shared.part_site_information_as_built:2.0.0#> .
+@prefix ext-classification: <urn:samm:io.catenax.shared.part_classification:1.0.0#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix urn-uuid: <urn:uuid:> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://purl.matolab.org/mseo/mappings/123-0.740-3434-A> a cx:PartTypeInformationEntity ;
+    cx:manufacturerPartId "123-0.740-3434-A" ;
+    cx:nameAtManufacturer "Mirror left" ;
+    ext-classification:partClassification <http://purl.matolab.org/mseo/mappings/1004712> .
+
+<http://purl.matolab.org/mseo/mappings/HUR-2025-09-26> a cx:ManufacturingEntity ;
+    cx:country "HUR" ;
+    cx:date "2025-09-26" ;
+    ext-built:sites <http://purl.matolab.org/mseo/mappings/BPNS1234567890ZZ> .
+
+urn-uuid:580d3adf-1981-44a0-a214-13d6ceed9379 a cx:Batch ;
+    cx:catenaXId "580d3adf-1981-44a0-a214-13d6ceed9379" ;
+    cx:localIdentifiers <http://purl.matolab.org/mseo/mappings/batchId-BID12345678> ;
+    cx:manufacturingInformation "HUR-2025-09-26" ;
+    cx:partTypeInformation "123-0.740-3434-A" .
+
+<http://purl.matolab.org/mseo/mappings/1004712> a ext-classification:ClassificationEntity ;
+    ext-classification:classificationDescription "Generic standard for classification of parts in the automotive industry." ;
+    ext-classification:classificationID "1004712" ;
+    ext-classification:classificationStandard "GIN 20510-21513" .
+
+<http://purl.matolab.org/mseo/mappings/BPNS1234567890ZZ> a ext-built:SitesEntity ;
+    ext-built:catenaXsiteId "BPNS1234567890ZZ" ;
+    ext-built:function "production" .
+
+<http://purl.matolab.org/mseo/mappings/batchId-BID12345678> a cx:KeyValueList ;
+    cx:key "batchId" ;
+    cx:value "BID12345678" .
+
+<https://github.com/Mat-O-Lab/RDFConverter/releases/tag/v1.0.4> a prov:SoftwareAgent ;
+    rdfs:label "RDFConverterv1.0.4" ;
+    prov:hadPrimarySource <https://github.com/Mat-O-Lab/RDFConverter> .
+
+<http://localhost:6003/api/createrdf> a prov:Activity ;
+    prov:wasAssociatedWith <https://github.com/Mat-O-Lab/RDFConverter/releases/tag/v1.0.4> ;
+    prov:wasInformedBy <https://dataportal.material-digital.de/dataset/6e69df9b-dbfb-4176-b0ad-231535797248/resource/8e00ed56-255c-46f2-b04e-fbd5b872efd9/download/catenax-batch-map.yaml> .
+
+<https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json> a prov:Entity .
+
+[] prov:generatedAtTime "2026-01-15T11:21:59.467991"^^xsd:dateTime ;
+    prov:qualifiedDerivation [ a prov:Derivation ;
+            prov:entity <https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json> ;
+            prov:hadActivity <http://localhost:6003/api/createrdf> ] ;
+    prov:wasDerivedFrom <https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json> ;
+    prov:wasGeneratedBy <http://localhost:6003/api/createrdf> .
+

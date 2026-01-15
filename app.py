@@ -552,6 +552,80 @@ def download_sources(
     return url_mapping, primary_data_url, filename
 
 
+def replace_base_uris(graph: Graph, base_uri: str) -> Graph:
+    """Replace all http://example.com URIs with the specified base URI.
+    
+    Args:
+        graph: RDF graph containing URIs to replace
+        base_uri: Base URI to use (e.g., 'http://example.org/' or '#' for relative)
+        
+    Returns:
+        Modified graph with replaced URIs
+    """
+    if not base_uri:
+        return graph
+    
+    # Handle different base formats
+    # - Full URI: "http://purl.matolab.org/mseo/mappings/" 
+    # - Relative: "#"
+    # Ensure trailing separator if not "#" and doesn't already have one
+    if base_uri != "#":
+        if not base_uri.endswith(("/", "#")):
+            base_uri += "/"
+    
+    logging.info(f"Replacing http://example.com URIs with base: {base_uri}")
+    
+    triples_to_replace = []
+    for s, p, o in graph:
+        new_s, new_p, new_o = s, p, o
+        changed = False
+        
+        # Replace subjects starting with http://example.com
+        if isinstance(s, URIRef) and str(s).startswith("http://example.com"):
+            local_part = str(s).replace("http://example.com", "")
+            if base_uri == "#":
+                new_s = URIRef("#" + local_part)
+            else:
+                new_s = URIRef(base_uri + local_part)
+            changed = True
+            logging.debug(f"  Subject: {s} -> {new_s}")
+        
+        # Replace predicates starting with http://example.com (rare but possible)
+        if isinstance(p, URIRef) and str(p).startswith("http://example.com"):
+            local_part = str(p).replace("http://example.com", "")
+            if base_uri == "#":
+                new_p = URIRef("#" + local_part)
+            else:
+                new_p = URIRef(base_uri + local_part)
+            changed = True
+            logging.debug(f"  Predicate: {p} -> {new_p}")
+        
+        # Replace objects starting with http://example.com
+        if isinstance(o, URIRef) and str(o).startswith("http://example.com"):
+            local_part = str(o).replace("http://example.com", "")
+            if base_uri == "#":
+                new_o = URIRef("#" + local_part)
+            else:
+                new_o = URIRef(base_uri + local_part)
+            changed = True
+            logging.debug(f"  Object: {o} -> {new_o}")
+        
+        if changed:
+            triples_to_replace.append(((s, p, o), (new_s, new_p, new_o)))
+    
+    # Apply replacements
+    for old_triple, new_triple in triples_to_replace:
+        graph.remove(old_triple)
+        graph.add(new_triple)
+    
+    if triples_to_replace:
+        logging.info(f"✓ Replaced {len(triples_to_replace)} triples with base URI: {base_uri}")
+    else:
+        logging.info("No http://example.com URIs found to replace")
+    
+    return graph
+
+
 # ============================================================================
 # END HELPER FUNCTIONS
 # ============================================================================
@@ -682,8 +756,8 @@ def apply_mapping(
         sources, opt_data_url, authorization
     )
 
-    # DON'T strip method namespace - it comes from prefixes and has correct format
-    method_url = mapping_dict["prefixes"]["method"]
+    # Check if template prefix exists (optional feature)
+    template_url = mapping_dict.get("prefixes", {}).get("template", None)
 
     # PHASE 2: Convert YARRRML to RML and replace all source URLs with placeholders
     rml_rules = convert_yarrrml_to_rml(mapping_data)
@@ -692,7 +766,34 @@ def apply_mapping(
 
     logging.debug(f"Replacing {len(url_mapping)} source URLs with placeholders")
     replace_all_data_sources(rml_graph, url_mapping)
+    
+    # Serialize RML rules
     rml_rules_new = rml_graph.serialize(format="ttl")
+    
+    # Add @base directive to RML rules so mapper uses correct base for data subjects
+    # RDFLib serialize(base=...) doesn't actually inject @base, so we do it manually
+    base_uri = mapping_dict.get("base", "")
+    if base_uri:
+        logging.info(f"Injecting @base <{base_uri}> directive into RML rules")
+        # Inject @base after @prefix declarations
+        lines = rml_rules_new.split('\n')
+        # Find the last @prefix line
+        last_prefix_idx = -1
+        for idx, line in enumerate(lines):
+            if line.strip().startswith('@prefix'):
+                last_prefix_idx = idx
+        
+        # Insert @base after last @prefix
+        if last_prefix_idx >= 0:
+            lines.insert(last_prefix_idx + 1, f'@base <{base_uri}> .')
+            rml_rules_new = '\n'.join(lines)
+            logging.info(f"✓ @base directive injected successfully")
+        else:
+            # No @prefix found, add @base at the beginning
+            rml_rules_new = f'@base <{base_uri}> .\n\n{rml_rules_new}'
+            logging.info(f"✓ @base directive added at beginning")
+    else:
+        logging.warning("No base URI found in mapping, RML mapper will use default base")
 
     # PHASE 3: Process all data sources using helper function
     sources_for_mapper = {}
@@ -735,6 +836,49 @@ def apply_mapping(
             detail=f"Could not parse mapping results to result graph: {str(e)}"
         ) from e
     
+    # POST-PROCESS 1: Replace http://example.com URIs with base URI from mapping
+    base_uri = mapping_dict.get("base", "")
+    if base_uri:
+        mapping_graph = replace_base_uris(mapping_graph, base_uri)
+    
+    # POST-PROCESS 2: Fix string literal type declarations that should be URIRefs
+    # The RML mapper sometimes outputs type declarations as string literals instead of URIRefs
+    # We need to convert these back to proper URIRefs using our accumulated prefixes
+    yarrrml_prefixes = mapping_dict.get("prefixes", {})
+    triples_to_fix = []
+    
+    for s, p, o in mapping_graph:
+        # Check if this is a type declaration with a string literal object
+        if p == RDF.type and isinstance(o, Literal):
+            o_str = str(o)
+            # Check if it looks like a URN or URI that should be a URIRef
+            if o_str.startswith("urn:") or o_str.startswith("http"):
+                # Try to find matching prefix
+                matched_prefix = None
+                for prefix, ns_url in yarrrml_prefixes.items():
+                    if o_str.startswith(ns_url):
+                        # Extract local part and create prefixed version
+                        local_part = o_str[len(ns_url):]
+                        matched_prefix = f"{prefix}:{local_part}"
+                        new_o = URIRef(o_str)
+                        triples_to_fix.append(((s, p, o), (s, p, new_o)))
+                        logging.info(f"Converting type string literal to URIRef: '{o_str}' -> {new_o}")
+                        break
+                
+                # If no prefix matched, still convert to URIRef
+                if not matched_prefix:
+                    new_o = URIRef(o_str)
+                    triples_to_fix.append(((s, p, o), (s, p, new_o)))
+                    logging.info(f"Converting type string literal to URIRef (no prefix): '{o_str}' -> {new_o}")
+    
+    # Apply the fixes
+    for (old_triple, new_triple) in triples_to_fix:
+        mapping_graph.remove(old_triple)
+        mapping_graph.add(new_triple)
+    
+    if triples_to_fix:
+        logging.info(f"Fixed {len(triples_to_fix)} string literal type declarations")
+    
     # Don't transform yet - join graphs first, then transform
     # mapping_graph.serialize('mapping_result.ttl')
 
@@ -764,41 +908,46 @@ def apply_mapping(
     # joined_graph.parse(CCO_URL, format='turtle')
     # joined_graph.parse(str(MSEO), format='xml')
 
-    # app.logger.info(f'POST /api/createrdf: {data_url}')
-    # load and copy method graph and give it a new base namespace
-    logging.debug("loading method knowledge at {}".format(method_url))
-    # print('method_url: '+method_url)
-    templatedata, methodname = open_file(method_url, authorization)
-
-    template_graph = Graph()
-    try:
-        template_graph.parse(data=templatedata, format="ttl")
-    except:
-        raise HTTPException(
-            status_code=422,
-            detail="could not template graph file - probably could guess format from url string",
-        )
+    # Load template graph if template prefix is provided (optional feature)
+    template_graph = None
+    template_content = None
     
-        # STEP 1: Replace template namespace WITH method namespace (unify them!)
-    base_namespace = None
-    for ns_prefix, namespace in template_graph.namespaces():
-        if ns_prefix in ["base", ""]:
-            base_namespace = namespace
-    
-    # Replace template base with METHOD namespace (not TEMPLATE_NAMESPACE)
-    method_url = mapping_dict["prefixes"]["method"]
-    if not method_url.endswith("/"):
-        method_url += "/"
-    
-    if base_namespace:
-        logging.info(f"Replacing template namespace {base_namespace} with method namespace {method_url}")
-        template_content = template_graph.serialize().replace(
-            base_namespace, method_url
-        )
-        template_graph = Graph()
-        template_graph.parse(data=template_content)
+    if template_url:
+        logging.info(f"📄 Template prefix found - loading template graph from: {template_url}")
+        try:
+            templatedata, template_filename = open_file(template_url, authorization)
+            template_graph = Graph()
+            template_graph.parse(data=templatedata, format="ttl")
+            
+            # STEP 1: Replace template namespace if it has base namespace
+            base_namespace = None
+            for ns_prefix, namespace in template_graph.namespaces():
+                if ns_prefix in ["base", ""]:
+                    base_namespace = namespace
+            
+            # Ensure template_url ends with /
+            if not template_url.endswith("/"):
+                template_url += "/"
+            
+            if base_namespace:
+                logging.info(f"Replacing template base namespace {base_namespace} with {template_url}")
+                template_content = template_graph.serialize().replace(
+                    base_namespace, template_url
+                )
+                template_graph = Graph()
+                template_graph.parse(data=template_content)
+            else:
+                template_content = template_graph.serialize()
+            
+            logging.info(f"✓ Template graph loaded successfully ({len(template_graph)} triples)")
+        except Exception as e:
+            logging.error(f"Failed to load template graph: {str(e)}")
+            raise HTTPException(
+                status_code=422,
+                detail=f"Could not load template graph from {template_url}: {str(e)}",
+            ) from e
     else:
-        template_content = template_graph.serialize()
+        logging.info("ℹ️  No template prefix found in mapping - skipping template graph loading")
     
  
     # for subject in template_graph.subjects():
@@ -819,7 +968,7 @@ def apply_mapping(
 
     # use template to create new individuals for every row
     # This only works with RDF/CSVW data, not plain JSON
-    if duplicate_for_table and is_rdf_data and rows:
+    if duplicate_for_table and is_rdf_data and rows and template_url and template_content:
         # map_content=mapping_graph.serialize()
         # mapping_graph.serialize("map_graph.ttl")
         # data_graph.serialize("data_graph.ttl")
@@ -865,9 +1014,10 @@ def apply_mapping(
         logging.info("dublicating template graph for {} rows".format(len(rows)))
         for row in rows:
             data_node = data_graph.value(row, CSVW.describes)
-            joined_graph.parse(
-                data=template_content.replace(method_url, data_node + "/")
-            )
+            if template_url and template_content:
+                joined_graph.parse(
+                    data=template_content.replace(template_url, data_node + "/")
+                )
             row_ns = Namespace(data_node + "/")
             joined_graph.bind("row" + str(data_node).rsplit("-", 1)[-1], row_ns)
             # set mapping realtions on each individual row
@@ -879,11 +1029,15 @@ def apply_mapping(
                 joined_graph.add((subject, predicate, row_ns[object]))
 
     else:
-        # Parse template AS IS (don't replace namespace yet - it causes file:///src/ issue!)
-        temp_template_graph = Graph()
-        temp_template_graph.parse(data=template_content)
-        joined_graph += temp_template_graph
+        # Join graphs based on what's available
+        if template_graph and template_content:
+            # Parse template AS IS (don't replace namespace yet - it causes file:///src/ issue!)
+            temp_template_graph = Graph()
+            temp_template_graph.parse(data=template_content)
+            joined_graph += temp_template_graph
+        
         joined_graph += mapping_graph
+        
         # Only add data_graph if the data source was RDF
         # For plain JSON, RML rules generate all needed triples
         if is_rdf_data:
@@ -895,7 +1049,7 @@ def apply_mapping(
 
     # NAMESPACE ACCUMULATION STRATEGY:
     # Collect all namespaces BEFORE binding to avoid conflicts
-    # Priority: @context > template > mapping (data_graph EXCLUDED - it loses @context!)
+    # Priority: mapping < template < @context < YARRRML (data_graph EXCLUDED - it loses @context!)
     logging.info("Accumulating namespaces from all sources...")
 
     accumulated_namespaces = {}
@@ -906,63 +1060,75 @@ def apply_mapping(
             accumulated_namespaces[prefix] = str(namespace)
             logging.debug(f"Accumulated from mapping: {prefix} -> {namespace}")
 
-    # 2. From template/method graph (medium priority)
-    for prefix, namespace in template_graph.namespaces():
-        if prefix not in ['', 'base']:
-            accumulated_namespaces[prefix] = str(namespace)
-            logging.debug(f"Accumulated from template: {prefix} -> {namespace}")
+    # 2. From template graph (medium priority) - only if template was loaded
+    if template_graph:
+        for prefix, namespace in template_graph.namespaces():
+            if prefix not in ['', 'base']:
+                accumulated_namespaces[prefix] = str(namespace)
+                logging.debug(f"Accumulated from template: {prefix} -> {namespace}")
 
-    # 3. From JSON-LD @context if it was extracted (highest priority for csv!)
+    # 3. From JSON-LD @context if it was extracted (high priority for csv!)
     # This is the ORIGINAL csv namespace before any RDFLib parsing
-    for prefix, namespace in data_namespaces.items():
-        if prefix not in ['', 'base']:
+    if data_namespaces:
+        for prefix, namespace in data_namespaces.items():
+            if prefix not in ['', 'base']:
+                accumulated_namespaces[prefix] = str(namespace)
+                logging.debug(f"Accumulated from @context: {prefix} -> {namespace}")
+
+    # 4. From YARRRML prefixes dictionary (HIGHEST PRIORITY - preserves user intent!)
+    # Extract prefixes directly from the mapping definition
+    yarrrml_prefixes = mapping_dict.get("prefixes", {})
+    for prefix, namespace in yarrrml_prefixes.items():
+        # Skip special prefixes that have dedicated handling
+        if prefix not in ['', 'base', 'template', 'method', 'data']:
             accumulated_namespaces[prefix] = str(namespace)
-            logging.debug(f"Accumulated from template: {prefix} -> {namespace}")
+            logging.info(f"✓ Preserved YARRRML prefix: {prefix} -> {namespace}")
 
     logging.debug(accumulated_namespaces)
     logging.info(f"Total accumulated namespaces: {len(accumulated_namespaces)}")
 
-    # Transform method namespace URIs to RELATIVE URIs (no scheme)
-    logging.info(f"Transforming method URIs from {method_url} to relative URIs")
+    # Transform template namespace URIs to RELATIVE URIs (no scheme) - only if template was loaded
+    if template_url:
+        logging.info(f"Transforming template URIs from {template_url} to relative URIs")
 
-    triples_to_transform = []
-    for s, p, o in joined_graph:
-        new_s = s
-        new_p = p
-        new_o = o
-        changed = False
+        triples_to_transform = []
+        for s, p, o in joined_graph:
+            new_s = s
+            new_p = p
+            new_o = o
+            changed = False
 
-        # Transform subject if it starts with method URL
-        if isinstance(s, URIRef) and str(s).startswith(method_url):
-            local_part = str(s).replace(method_url, "")
-            # Create relative URIRef (no scheme)
-            new_s = URIRef("#" + local_part)
-            changed = True
-            logging.debug(f"Transform subject: {s} -> {new_s}")
+            # Transform subject if it starts with template URL
+            if isinstance(s, URIRef) and str(s).startswith(template_url):
+                local_part = str(s).replace(template_url, "")
+                # Create relative URIRef (no scheme)
+                new_s = URIRef("#" + local_part)
+                changed = True
+                logging.debug(f"Transform subject: {s} -> {new_s}")
 
-        # Transform predicate if it starts with method URL
-        if isinstance(p, URIRef) and str(p).startswith(method_url):
-            local_part = str(p).replace(method_url, "")
-            new_p = URIRef("#" + local_part)
-            changed = True
-            logging.debug(f"Transform predicate: {p} -> {new_p}")
+            # Transform predicate if it starts with template URL
+            if isinstance(p, URIRef) and str(p).startswith(template_url):
+                local_part = str(p).replace(template_url, "")
+                new_p = URIRef("#" + local_part)
+                changed = True
+                logging.debug(f"Transform predicate: {p} -> {new_p}")
 
-        # Transform object if it's a URIRef and starts with method URL
-        if isinstance(o, URIRef) and str(o).startswith(method_url):
-            local_part = str(o).replace(method_url, "")
-            new_o = URIRef("#" + local_part)
-            changed = True
-            logging.debug(f"Transform object: {o} -> {new_o}")
+            # Transform object if it's a URIRef and starts with template URL
+            if isinstance(o, URIRef) and str(o).startswith(template_url):
+                local_part = str(o).replace(template_url, "")
+                new_o = URIRef("#" + local_part)
+                changed = True
+                logging.debug(f"Transform object: {o} -> {new_o}")
 
-        if changed:
-            triples_to_transform.append(((s, p, o), (new_s, new_p, new_o)))
+            if changed:
+                triples_to_transform.append(((s, p, o), (new_s, new_p, new_o)))
 
-    # Apply transformations
-    for (old_triple, new_triple) in triples_to_transform:
-        joined_graph.remove(old_triple)
-        joined_graph.add(new_triple)
+        # Apply transformations
+        for (old_triple, new_triple) in triples_to_transform:
+            joined_graph.remove(old_triple)
+            joined_graph.add(new_triple)
 
-    logging.info(f"Transformed {len(triples_to_transform)} triples from method namespace to relative URIs")
+        logging.info(f"Transformed {len(triples_to_transform)} triples from template namespace to relative URIs")
 
     # Add provenance metadata using full API URL from request
     if api_url:
@@ -971,8 +1137,8 @@ def apply_mapping(
         full_api_url = "/api/createrdf"
 
     used_resources = [str(mapping_url)]
-    if method_url:
-        used_resources.append(method_url)
+    if template_url:
+        used_resources.append(template_url)
     add_prov(joined_graph, full_api_url, primary_data_url, used_resources)
     logging.info(f"Added provenance metadata for data: {primary_data_url}, API: {full_api_url}")
 
@@ -981,7 +1147,7 @@ def apply_mapping(
         joined_graph,
         accumulated_namespaces,
         primary_data_url,
-        method_url
+        template_url
     )
 
     # Serialize the graph - all prefixes now preserved
