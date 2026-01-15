@@ -2,54 +2,64 @@ name: TestExamples
 
 on:
   push:
-    branches:
-      - main
-      - develop
+    branches: [ main, develop ]
   workflow_dispatch:
 
 env:
-  WORKING_DIR: ./examples/
-  MAPPING_URL: 'https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml'
-  PARSER_PORT: 3001
-  APP_MODE: "development"
+  WORKING_DIR: ./examples
+  MAPPING_URL: https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml
+  APP_MODE: development
   APP_PORT: 5003
-  MAPPER_PORT: 4000
-  CONVERTER_PORT: 5000
-  SSL_VERIFY: False
+  SSL_VERIFY: "False"
 
 jobs:
   TestExamples:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0        
-      - name: run app
+          fetch-depth: 0
+
+      - name: Install dependencies
         run: |
-          docker compose -f docker-compose.develop.yml up -d
-          sleep 20
-          docker ps -a
-      - name: parse mapping to YARRRML parser
-        working-directory: ${{env.WORKING_DIR}}
-        continue-on-error: true
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      - name: Run app (Docker Compose)
         run: |
-          curl -X POST "http://localhost:${{env.APP_PORT}}/api/yarrrmltorml" -H  "accept: text/turtle" -H  "accept: application/json" -H  "Content-Type: application/json" -d "{\"mapping_url\":\"${{env.MAPPING_URL}}\"}" > example.rml
-      - name: print logs
+          docker compose -f docker-compose.develop.yml up -d --build
+          echo "Waiting for services to start..."
+          sleep 30
+          docker compose ps
+
+      - name: Parse mapping to YARRRML parser
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          curl -s -X POST "http://localhost:${APP_PORT}/api/yarrrmltorml" \
+            -H "Content-Type: application/json" \
+            -d "{\"mapping_url\":\"${MAPPING_URL}\"}" \
+            -o example.rml
+
+      - name: Join the method and the data meta graph
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          RESULT=$(curl -s -X POST "http://localhost:${APP_PORT}/api/createrdf" \
+            -H "Content-Type: application/json" \
+            -d "{\"mapping_url\":\"${MAPPING_URL}\"}")
+
+          echo "$RESULT" | jq -r '.graph' > example.rdf
+
+      - name: Print logs
         if: always()
-        run: |
-          docker compose logs
-      - name: join the method and the data meta graph
-        working-directory: ${{env.WORKING_DIR}}
-        run: |
-          RESULT="$(curl -X POST "http://localhost:${{env.APP_PORT}}/api/createrdf" -H  "accept: application/json" -H  "Content-Type: application/json" -d "{\"mapping_url\":\"${{env.MAPPING_URL}}\"}")"
-          DATA="$(jq .graph <<< "$RESULT")"
-          #remove quots
-          echo -e "${DATA:1:-1}" > example.rdf
-          #unescape quots
-          sed -i 's/\\"/'\"'/g' example.rdf
-      - name: Commit files # commit the output folder
+        run: docker compose logs
+
+      - name: Commit generated files
         uses: EndBug/add-and-commit@v9
         with:
-          message: 'updated example output'
-          add: '*.* --force'
-          cwd: './examples/'
+          message: "updated example output"
+          add: |
+            example.rml
+            example.rdf
+          cwd: ./examples
