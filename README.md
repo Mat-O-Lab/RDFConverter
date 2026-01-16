@@ -221,6 +221,187 @@ RDFConverter uses a simple 3-step process:
 
 ---
 
+## Supported Data Formats
+
+### Native RML Reference Formulations
+
+RDFConverter supports all standard RML reference formulations as defined in the [RML specification](https://rml.io/specs/rml/):
+
+| Format | MIME Type | Reference Formulation | Iterator Syntax | Example |
+|--------|-----------|----------------------|-----------------|---------|
+| CSV | text/plain | `csv` | N/A (column names) | `$(columnName)` |
+| JSON | application/json | `jsonpath` | `$.path.to[*].data` | `$..items[*]` |
+| XML | application/xml | `xpath` | `/path/to/element` | `//book[@id]` |
+| XML | application/xml | `xquery` | XQuery expressions | `for $x in ...` |
+
+### Enhanced RDF Support 🎯
+
+**RDFConverter automatically converts RDF formats to JSON-LD**, enabling JSONPath-based mappings on semantic data sources. This is a key differentiator that allows you to use existing RDF/Turtle data with the powerful JSONPath iterator syntax.
+
+| Input Format | File Extension | Conversion | Use With |
+|--------------|----------------|------------|----------|
+| Turtle | .ttl | → JSON-LD | `referenceFormulation: jsonpath` |
+| RDF/XML | .rdf, .owl | → JSON-LD | `referenceFormulation: jsonpath` |
+| N-Triples | .nt | → JSON-LD | `referenceFormulation: jsonpath` |
+| N3 | .n3 | → JSON-LD | `referenceFormulation: jsonpath` |
+| JSON-LD | .jsonld | Preserved | `referenceFormulation: jsonpath` |
+
+#### How RDF Conversion Works
+
+The conversion process is transparent and automatic:
+
+1. **Detection:** RDFConverter detects RDF formats using file extension and content analysis
+2. **Parsing:** Loads RDF data with RDFLib into an in-memory graph
+3. **Namespace Preservation:** Extracts and preserves prefix bindings from original data
+4. **JSON-LD Serialization:** Converts graph to JSON-LD with standard `@context` for CSVW
+5. **Mapping Execution:** RML Mapper processes the JSON-LD using JSONPath iterators
+
+**Processing Pipeline:**
+```
+Turtle/RDF File → RDFLib Parser → Graph → JSON-LD Serializer →
+JSON-LD with @context → RML Mapper + JSONPath → Output RDF
+```
+
+#### Example: Using Turtle Data with JSONPath
+
+Suppose you have a Turtle file `data.ttl`:
+
+```turtle
+@prefix csvw: <http://www.w3.org/ns/csvw#> .
+@prefix ex: <http://example.org/> .
+
+ex:table a csvw:Table ;
+    csvw:column ex:col1, ex:col2 .
+
+ex:col1 a csvw:Column ;
+    csvw:name "Force" ;
+    csvw:datatype "number" .
+
+ex:col2 a csvw:Column ;
+    csvw:name "Displacement" ;
+    csvw:datatype "number" .
+```
+
+**YARRRML Mapping:**
+```yaml
+prefixes:
+  csvw: 'http://www.w3.org/ns/csvw#'
+  ex: 'http://example.org/'
+
+sources:
+  columns:
+    access: 'https://example.com/data.ttl'    # ← Turtle file
+    iterator: '$.[?(@.type=="csvw:Column")]'  # ← JSONPath on JSON-LD
+    referenceFormulation: jsonpath             # ← Use JSONPath
+
+mappings:
+  ColumnMapping:
+    sources: [columns]
+    s: ex:measurement_$(["csvw:name"])
+    po:
+      - [rdf:type, ex:Measurement]
+      - [ex:columnName, $(["csvw:name"])]
+      - [ex:dataType, $(["csvw:datatype"])]
+```
+
+**What Happens Behind the Scenes:**
+
+1. RDFConverter downloads `data.ttl` (Turtle format)
+2. Converts to JSON-LD:
+   ```json
+   {
+     "@context": {
+       "csvw": "http://www.w3.org/ns/csvw#",
+       "ex": "http://example.org/"
+     },
+     "@graph": [
+       {
+         "@id": "ex:col1",
+         "@type": "csvw:Column",
+         "csvw:name": "Force",
+         "csvw:datatype": "number"
+       },
+       {
+         "@id": "ex:col2",
+         "@type": "csvw:Column",
+         "csvw:name": "Displacement",
+         "csvw:datatype": "number"
+       }
+     ]
+   }
+   ```
+3. RML Mapper applies JSONPath iterator: `$.[?(@.type=="csvw:Column")]`
+4. Generates output RDF with mappings applied
+
+#### Example: CSVW Metadata (JSON-LD)
+
+The existing `csvw-template-map.yaml` example demonstrates this perfectly - it uses CSVW metadata (which is JSON-LD) with JSONPath iterators:
+
+```yaml
+sources:
+  columns:
+    access: 'https://.../example-metadata.json'
+    iterator: '$..columns[*]'        # JSONPath on JSON-LD structure
+    referenceFormulation: jsonpath
+  annotations:
+    access: 'https://.../example-metadata.json'
+    iterator: '$.notes[*]'           # Another JSONPath iterator
+    referenceFormulation: jsonpath
+```
+
+This works seamlessly because:
+- CSVW metadata is already JSON-LD
+- RDFConverter preserves the `@context`
+- JSONPath can navigate the nested JSON structure
+- RML Mapper generates semantic RDF output
+
+### Limitations and Constraints
+
+#### ❌ What's NOT Supported
+
+**Direct RDF/Turtle reference formulation:**
+```yaml
+# ❌ This does NOT work:
+sources:
+  data:
+    access: 'https://example.com/data.ttl'
+    referenceFormulation: turtle  # ❌ Not supported by RML Mapper
+```
+
+**Why?** The underlying RML Mapper (Java implementation) does not support `referenceFormulation: turtle` or other RDF formats as iterators. RDF formats don't have a natural "iteration" concept like arrays in JSON or rows in CSV.
+
+#### ✅ What to Use Instead
+
+**Use automatic JSON-LD conversion with JSONPath:**
+```yaml
+# ✅ This DOES work:
+sources:
+  data:
+    access: 'https://example.com/data.ttl'  # ✅ Auto-converted to JSON-LD
+    referenceFormulation: jsonpath          # ✅ Use JSONPath
+    iterator: '$'                           # ✅ Iterate over JSON-LD structure
+```
+
+**For complex RDF queries:** If you need SPARQL-like pattern matching, consider:
+1. Pre-processing RDF with SPARQL CONSTRUCT queries
+2. Using the resulting RDF as your data source
+3. Or restructuring your mapping to work with JSON-LD's hierarchical structure
+
+### Best Practices
+
+**✅ DO:**
+- Use JSONPath for all data sources (JSON, JSON-LD, auto-converted RDF)
+- Leverage automatic RDF → JSON-LD conversion for semantic sources
+- Test with `/api/test` endpoint to verify iterator expressions
+- Check the JSON-LD structure if mappings don't match (use debug mode)
+
+**❌ DON'T:**
+- Try to use `referenceFormulation: turtle` (not supported)
+- Assume RDF structure will directly map to JSON arrays (test first)
+- Mix reference formulations in a single source definition
+
+---
+
 ## Architecture & Components
 
 ### Microservices Architecture
