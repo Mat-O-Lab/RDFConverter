@@ -31,6 +31,7 @@ services:
       - APP_MODE=${APP_MODE}
       - APP_NAME=${APP_NAME}
       - APP_SOURCE=${APP_SOURCE}
+      - SERVER_URL=${SERVER_URL}
     container_name: rdfconverter
     image: ghcr.io/mat-o-lab/rdfconverter:latest
     ports:
