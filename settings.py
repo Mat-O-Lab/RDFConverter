@@ -9,7 +9,7 @@ class Setting(BaseSettings):
         os.environ.get("ADMIN_MAIL", "thomas.hanke@iwm.fraunhofer.de")
     )
     items_per_user: int = 50
-    version: str = str(os.environ.get("APP_VERSION", "v1.1.5"))
+    version: str = str(os.environ.get("APP_VERSION", "v1.2.0"))
     config_name: str = str(os.environ.get("APP_MODE", "development"))
     openapi_url: str = "/api/openapi.json"
     docs_url: str = "/api/docs"

@@ -2,28 +2,25 @@ name: TestExamples
 
 on:
   push:
-    branches: [ main, develop ]
+    branches:
+      - main
+      - develop
   workflow_dispatch:
 
 env:
   WORKING_DIR: ./examples
-  MAPPING_URL: https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml
-
-  PARSER_PORT: 3001
   APP_PORT: 6003
+  PARSER_PORT: 3001
   MAPPER_PORT: 4000
   CONVERTER_PORT: 5000
-
   YARRRML_URL: http://yarrrml-parser:3001
   MAPPER_URL: http://rmlmapper:4000
-
   APP_MODE: development
   SSL_VERIFY: "False"
 
 jobs:
   TestExamples:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -48,39 +45,71 @@ jobs:
           SSL_VERIFY=${SSL_VERIFY}
           EOF
 
-      - name: Run app (Docker Compose)
+      - name: Start services
         run: |
           docker compose -f docker-compose.develop.yml up -d --build
-          echo "Waiting for services..."
+          echo "Waiting for services to be ready..."
           sleep 30
           docker compose ps
 
-      - name: Parse mapping to YARRRML parser
+      - name: Test API endpoints with example mappings
         working-directory: ${{ env.WORKING_DIR }}
         run: |
-          curl -s -X POST "http://localhost:${APP_PORT}/api/yarrrmltorml" \
-            -H "Content-Type: application/json" \
-            -d "{\"mapping_url\":\"${MAPPING_URL}\"}" \
-            -o example.rml
+          echo "Testing all YAML mapping files..."
+          for file in *.yaml
+          do
+            if [ -f "$file" ]; then
+              echo "================================================"
+              echo "Processing: $file"
+              echo "================================================"
 
-      - name: Join the method and the data meta graph
-        working-directory: ${{ env.WORKING_DIR }}
-        run: |
-          RESULT=$(curl -s -X POST "http://localhost:${APP_PORT}/api/createrdf" \
-            -H "Content-Type: application/json" \
-            -d "{\"mapping_url\":\"${MAPPING_URL}\"}")
+              BASENAME="${file%.yaml}"
+              MAPPING_URL="https://github.com/${{ github.repository }}/raw/${{ github.ref_name }}/examples/$file"
 
-          echo "$RESULT" | jq -r '.graph' > example.rdf
+              echo "Mapping URL: $MAPPING_URL"
 
-      - name: Print logs
+              # Test 1: Convert YARRRML to RML
+              echo "→ Testing /api/yarrrmltorml endpoint..."
+              curl -s -X POST "http://localhost:${APP_PORT}/api/yarrrmltorml" \
+                -H "Content-Type: application/json" \
+                -d "{\"mapping_url\":\"${MAPPING_URL}\"}" \
+                -o "${BASENAME}.rml"
+
+              if [ -s "${BASENAME}.rml" ]; then
+                echo "✓ Generated ${BASENAME}.rml"
+              else
+                echo "✗ Failed to generate ${BASENAME}.rml"
+              fi
+
+              # Test 2: Create RDF from mapping
+              echo "→ Testing /api/createrdf endpoint..."
+              RESULT=$(curl -s -X POST "http://localhost:${APP_PORT}/api/createrdf" \
+                -H "Content-Type: application/json" \
+                -d "{\"mapping_url\":\"${MAPPING_URL}\"}")
+
+              echo "$RESULT" | jq -r '.graph' > "${BASENAME}.rdf"
+
+              if [ -s "${BASENAME}.rdf" ]; then
+                NUM_APPLIED=$(echo "$RESULT" | jq -r '.num_mappings_applied')
+                NUM_SKIPPED=$(echo "$RESULT" | jq -r '.num_mappings_skipped')
+                echo "✓ Generated ${BASENAME}.rdf"
+                echo "  - Mappings applied: ${NUM_APPLIED}"
+                echo "  - Mappings skipped: ${NUM_SKIPPED}"
+              else
+                echo "✗ Failed to generate ${BASENAME}.rdf"
+              fi
+
+              echo ""
+            fi
+          done
+
+      - name: Print service logs
         if: always()
         run: docker compose logs
 
       - name: Commit generated files
         uses: EndBug/add-and-commit@v9
         with:
-          message: "updated example output"
-          add: |
-            example.rml
-            example.rdf
-          cwd: ./examples
+          message: updated example outputs
+          add: "*.rml *.rdf --force"
+          cwd: ./examples/
