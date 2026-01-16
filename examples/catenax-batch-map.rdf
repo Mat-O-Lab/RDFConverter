@@ -6,30 +6,30 @@
 @prefix urn-uuid: <urn:uuid:> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-<#123-0.740-3434-A> a cx:PartTypeInformationEntity ;
-    cx:manufacturerPartId "123-0.740-3434-A" ;
-    cx:nameAtManufacturer "Mirror left" ;
-    ext-classification:partClassification <#1004712> .
-
-<#HUR-2025-09-26> a cx:ManufacturingEntity ;
-    cx:country "HUR" ;
-    cx:date "2025-09-26" ;
-    ext-built:sites <#BPNS1234567890ZZ> .
-
 urn-uuid:580d3adf-1981-44a0-a214-13d6ceed9379 a cx:Batch ;
     cx:catenaXId "580d3adf-1981-44a0-a214-13d6ceed9379" ;
     cx:localIdentifiers <#batchId-BID12345678> ;
-    cx:manufacturingInformation "HUR-2025-09-26" ;
-    cx:partTypeInformation "123-0.740-3434-A" .
+    cx:manufacturingInformation <#HUR-2025-09-26> ;
+    cx:partTypeInformation <#123-0.740-3434-A> .
 
 <#1004712> a ext-classification:ClassificationEntity ;
     ext-classification:classificationDescription "Generic standard for classification of parts in the automotive industry." ;
     ext-classification:classificationID "1004712" ;
     ext-classification:classificationStandard "GIN 20510-21513" .
 
+<#123-0.740-3434-A> a cx:PartTypeInformationEntity ;
+    cx:manufacturerPartId "123-0.740-3434-A" ;
+    cx:nameAtManufacturer "Mirror left" ;
+    ext-classification:partClassification <#1004712> .
+
 <#BPNS1234567890ZZ> a ext-built:SitesEntity ;
     ext-built:catenaXsiteId "BPNS1234567890ZZ" ;
     ext-built:function "production" .
+
+<#HUR-2025-09-26> a cx:ManufacturingEntity ;
+    cx:country "HUR" ;
+    cx:date "2025-09-26" ;
+    ext-built:sites <#BPNS1234567890ZZ> .
 
 <#batchId-BID12345678> a cx:KeyValueList ;
     cx:key "batchId" ;
@@ -45,7 +45,7 @@ urn-uuid:580d3adf-1981-44a0-a214-13d6ceed9379 a cx:Batch ;
 
 <https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json> a prov:Entity .
 
-[] prov:generatedAtTime "2026-01-16T08:25:18.949897"^^xsd:dateTime ;
+[] prov:generatedAtTime "2026-01-16T08:28:44.747847"^^xsd:dateTime ;
     prov:qualifiedDerivation [ a prov:Derivation ;
             prov:entity <https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json> ;
             prov:hadActivity <http://localhost:6003/api/createrdf> ] ;
