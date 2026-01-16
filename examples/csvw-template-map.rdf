@@ -1,0 +1,319 @@
+@prefix bfo: <http://purl.obolibrary.org/obo/> .
+@prefix csv: <https://github.com/Mat-O-Lab/CSVToCSVW/raw/main/examples/example.csv/> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix iof: <https://spec.industrialontologies.org/ontology/core/Core/> .
+@prefix iofav: <https://spec.industrialontologies.org/ontology/core/meta/AnnotationVocabulary/> .
+@prefix label: <http://www.w3.org/2000/01/rdf-schema#label> .
+@prefix mseo: <https://purl.matolab.org/mseo/mid/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<#> a owl:Ontology ;
+    dc:creator "Thomas Hanke" ;
+    dc:description "Ontology code created by Chowlk" ;
+    dc:title "DIN EN ISO 527-3 Graph" ;
+    owl:versionInfo "0.0.1" .
+
+<#ExperimentTimeInterval> a bfo:BFO_0000008,
+        owl:NamedIndividual .
+
+<#Operator> a owl:NamedIndividual,
+        iof:Agent ;
+    iof:designatedBy <#OperatorID> .
+
+<#PreLoadSetPoint> a owl:DatatypeProperty ;
+    label: "pre load set point" ;
+    rdfs:domain iof:ObjectiveSpecification .
+
+<#Project> a owl:NamedIndividual,
+        iof:PlannedProcess ;
+    iof:designatedBy <#ProjectID> .
+
+<#Specimen> a owl:NamedIndividual,
+        mseo:Specimen ;
+    iof:designatedBy <#SpecimenID> ;
+    iof:hasQuality <#SpecimenLength>,
+        <#SpecimenStress>,
+        <#SpecimenWidth> ;
+    iof:isInputOf <#PolymerTensileTest> .
+
+<#Standard> a owl:NamedIndividual,
+        mseo:Regulation ;
+    iofav:directSource "https://www.beuth.de/de/norm/din-en-iso-527-3/298745448"^^xsd:anyURI .
+
+<#TestPlan> a owl:NamedIndividual,
+        iof:PlanSpecification ;
+    bfo:BFO_0000110 <#CrossheadAccelerationSetPoint>,
+        <#CrossheadSpeedSetPoint> ;
+    iof:designatedBy <#TestPlanName> .
+
+bfo:BFO_0000056 a owl:ObjectProperty ;
+    label: "b f o_0000056" .
+
+bfo:BFO_0000063 a owl:ObjectProperty ;
+    label: "b f o_0000063" .
+
+bfo:BFO_0000110 a owl:ObjectProperty ;
+    label: "b f o_0000110" .
+
+bfo:BFO_0000117 a owl:ObjectProperty ;
+    label: "b f o_0000117" ;
+    rdfs:range iof:MeasurementProcess .
+
+bfo:BFO_0000166 a owl:ObjectProperty ;
+    label: "b f o_0000166" ;
+    rdfs:domain iof:MeasurementProcess .
+
+bfo:BFO_0000176 a owl:ObjectProperty ;
+    label: "b f o_0000176" .
+
+bfo:BFO_0000199 a owl:ObjectProperty ;
+    label: "b f o_0000199" ;
+    rdfs:domain iof:MeasurementProcess .
+
+csv:AktuelleProbe0 bfo:RO_0010002 <#SpecimenID> .
+
+csv:ProbenbreiteB03 bfo:RO_0010002 <#WidthMeasurement> .
+
+csv:ProbendickeA04 bfo:RO_0010002 <#ThicknessMeasurement> .
+
+csv:Pruefgeschwindigkeit5 bfo:RO_0010002 <#CrossheadSpeedSetPointValue> .
+
+csv:Vorkraft6 bfo:RO_0010002 <#PreLoadSetPointValue> .
+
+csv:table-1-Standardkraft bfo:RO_0010002 <#ForceMeasurement> .
+
+csv:table-1-Standardweg bfo:RO_0010002 <#LengthMeasurement> .
+
+mseo:in_accordance_with a owl:ObjectProperty ;
+    label: "in_accordance_with" ;
+    rdfs:domain iof:MeasurementProcess .
+
+iof:MeasurementCapaility a owl:Class ;
+    label: "Measurement Capaility" .
+
+iof:designatedBy a owl:ObjectProperty ;
+    label: "designated by" .
+
+iof:hasCapability a owl:ObjectProperty ;
+    label: "has capability" .
+
+iof:hasMeasuredValueAtSomeTime a owl:ObjectProperty ;
+    label: "has measured value at some time" .
+
+iof:hasProcessCharacteristic a owl:ObjectProperty ;
+    label: "has process characteristic" .
+
+iof:hasQuality a owl:ObjectProperty ;
+    label: "has quality" .
+
+iof:hasSpecifiedOutput a owl:ObjectProperty ;
+    label: "has specified output" .
+
+iof:isInputOf a owl:ObjectProperty ;
+    label: "is input of" .
+
+iof:measuredByAtSomeTime a owl:ObjectProperty ;
+    label: "measured by at some time" .
+
+iof:prescribedBy a owl:ObjectProperty ;
+    label: "prescribed by" ;
+    rdfs:domain iof:MeasurementProcess .
+
+iof:prescribes a owl:ObjectProperty ;
+    label: "prescribes" ;
+    rdfs:domain iof:ObjectiveSpecification .
+
+<#ApplyPreLoad> a owl:NamedIndividual,
+        iof:ProcessCharacteristic ;
+    bfo:BFO_0000063 <#CrosheadMovement> .
+
+<#CaliperID> a owl:NamedIndividual,
+        iof:DesignativeInformationContentEntity .
+
+<#CrossheadAccelerationSetPoint> a owl:NamedIndividual,
+        iof:ObjectiveSpecification ;
+    iof:hasValueExpressionAtSomeTime <#CrossheadAccelerationSetPointValue> ;
+    iof:prescribes <#CrosheadMovement> .
+
+<#CrossheadAccelerationSetPointValue> a owl:NamedIndividual,
+        iof:ValueExpression .
+
+<#CrossheadSpeedSetPoint> a owl:NamedIndividual,
+        iof:ObjectiveSpecification ;
+    iof:hasValueExpressionAtSomeTime <#CrossheadSpeedSetPointValue> ;
+    iof:prescribes <#CrosheadMovement> .
+
+<#ForceMeasurementCapability> a owl:NamedIndividual,
+        iof:DesignativeInformationContentEntity .
+
+<#LoadCellID> a owl:NamedIndividual,
+        iof:DesignativeInformationContentEntity .
+
+<#OperatorID> a owl:NamedIndividual,
+        iof:DesignativeInformationContentEntity .
+
+<#PolymerTensileTest> a owl:NamedIndividual,
+        iof:MeasurementProcess ;
+    bfo:BFO_0000056 <#Caliper>,
+        <#UniversalTestingMachine> ;
+    iof:hasProcessCharacteristic <#ApplyPreLoad>,
+        <#CrosheadMovement> ;
+    iof:hasSpecifiedOutput <#Measurements> .
+
+<#ProjectID> a owl:NamedIndividual,
+        iof:Identifier .
+
+<#SpecimenLength> a bfo:BFO_0000019,
+        owl:NamedIndividual ;
+    iof:hasMeasuredValueAtSomeTime <#ThicknessMeasurement> .
+
+<#SpecimenStress> a bfo:BFO_0000019,
+        owl:NamedIndividual .
+
+<#SpecimenWidth> a bfo:BFO_0000019,
+        owl:NamedIndividual ;
+    iof:hasMeasuredValueAtSomeTime <#LengthMeasurement>,
+        <#WidthMeasurement> .
+
+<#TestPlanName> a owl:NamedIndividual,
+        iof:DesignativeInformationContentEntity .
+
+<#TraverseID> a owl:NamedIndividual,
+        iof:DesignativeInformationContentEntity .
+
+<#UniversalTestingMachine> a owl:NamedIndividual,
+        iof:PieceOfEquipment ;
+    bfo:BFO_0000056 <#LoadCell>,
+        <#Traverse> .
+
+bfo:BFO_0000008 a owl:Class ;
+    label: "B F O_0000008" .
+
+<https://github.com/Mat-O-Lab/RDFConverter/releases/tag/v1.2.0> a prov:SoftwareAgent ;
+    label: "RDFConverterv1.2.0" ;
+    prov:hadPrimarySource <https://github.com/Mat-O-Lab/RDFConverter> .
+
+mseo:Regulation a owl:Class ;
+    label: "Regulation" .
+
+mseo:Specimen a owl:Class ;
+    label: "Specimen" .
+
+iof:Agent a owl:Class ;
+    label: "Agent" .
+
+iof:Identifier a owl:Class ;
+    label: "Identifier" .
+
+iof:MeasurementInformationContentEntity a owl:Class ;
+    label: "Measurement Information Content Entity" .
+
+iof:PieceOfEquipment a owl:Class ;
+    label: "Piece Of Equipment" .
+
+iof:PlanSpecification a owl:Class ;
+    label: "Plan Specification" .
+
+iof:PlannedProcess a owl:Class ;
+    label: "Planned Process" .
+
+iof:hasValueExpressionAtSomeTime a owl:ObjectProperty ;
+    label: "has value expression at some time" ;
+    rdfs:domain iof:ObjectiveSpecification .
+
+<#CrossheadSpeedSetPointValue> a owl:NamedIndividual,
+        iof:ValueExpression .
+
+<#DistanceMeasurementCapability> a owl:NamedIndividual,
+        iof:DesignativeInformationContentEntity .
+
+<#ForceMeasurement> a owl:NamedIndividual,
+        iof:ValueExpression ;
+    bfo:BFO_0000176 <#Measurements> ;
+    iof:measuredByAtSomeTime <#LoadCell> .
+
+<#LengthMeasurement> a owl:NamedIndividual,
+        iof:ValueExpression ;
+    bfo:BFO_0000176 <#Measurements> ;
+    iof:measuredByAtSomeTime <#Traverse> .
+
+<#LoadCell> a owl:NamedIndividual,
+        mseo:MeasurementDevice ;
+    iof:designatedBy <#LoadCellID> ;
+    iof:hasCapability <#ForceMeasurementCapability> .
+
+<#PreLoadSetPointValue> a owl:NamedIndividual,
+        iof:ValueExpression .
+
+<#SpecimenID> a owl:NamedIndividual,
+        iof:DesignativeInformationContentEntity .
+
+<#ThicknessMeasurement> a owl:NamedIndividual,
+        iof:ValueExpression ;
+    bfo:BFO_0000176 <#Measurements> ;
+    iof:measuredByAtSomeTime <#Caliper> .
+
+<#Traverse> a owl:NamedIndividual,
+        mseo:MeasurementDevice ;
+    iof:designatedBy <#TraverseID> ;
+    iof:hasCapability <#DistanceMeasurementCapability> .
+
+<#WidthMeasurement> a owl:NamedIndividual,
+        iof:ValueExpression ;
+    bfo:BFO_0000176 <#Measurements> ;
+    iof:measuredByAtSomeTime <#Caliper> .
+
+<http://localhost:6003/api/createrdf> a prov:Activity ;
+    prov:wasAssociatedWith <https://github.com/Mat-O-Lab/RDFConverter/releases/tag/v1.2.0> ;
+    prov:wasInformedBy <https://github.com/Mat-O-Lab/MSEO/raw/main/methods/DIN_EN_ISO_527-3.drawio.ttl/>,
+        <https://github.com/Mat-O-Lab/RDFConverter/raw/main/examples/csvw-template-map.yaml> .
+
+<https://github.com/Mat-O-Lab/CSVToCSVW/raw/main/examples/example-metadata.json> a prov:Entity .
+
+iof:ProcessCharacteristic a owl:Class ;
+    label: "Process Characteristic" .
+
+<#Caliper> a owl:NamedIndividual,
+        mseo:MeasurementDevice ;
+    iof:designatedBy <#CaliperID> ;
+    iof:hasCapability <#DistanceMeasurementCapability> .
+
+bfo:BFO_0000019 a owl:Class ;
+    label: "B F O_0000019" .
+
+mseo:MeasurementDevice a owl:Class ;
+    label: "Measurement Device" .
+
+<#CrosheadMovement> a owl:NamedIndividual,
+        iof:ProcessCharacteristic ;
+    iof:hasMeasuredValueAtSomeTime <#ForceMeasurement> .
+
+<#Measurements> a owl:NamedIndividual,
+        iof:MeasurementInformationContentEntity .
+
+iof:ObjectiveSpecification a owl:Class ;
+    label: "Objective Specification" ;
+    rdfs:subClassOf [ a owl:Restriction ;
+            owl:hasValue <#PreLoadSetPointValue> ;
+            owl:onProperty iof:hasValueExpressionAtSomeTime ] .
+
+iof:MeasurementProcess a owl:Class ;
+    label: "Measurement Process" .
+
+iof:ValueExpression a owl:Class ;
+    label: "Value Expression" .
+
+iof:DesignativeInformationContentEntity a owl:Class ;
+    label: "Designative Information Content Entity" .
+
+[] prov:generatedAtTime "2026-01-16T08:25:22.093787"^^xsd:dateTime ;
+    prov:qualifiedDerivation [ a prov:Derivation ;
+            prov:entity <https://github.com/Mat-O-Lab/CSVToCSVW/raw/main/examples/example-metadata.json> ;
+            prov:hadActivity <http://localhost:6003/api/createrdf> ] ;
+    prov:wasDerivedFrom <https://github.com/Mat-O-Lab/CSVToCSVW/raw/main/examples/example-metadata.json> ;
+    prov:wasGeneratedBy <http://localhost:6003/api/createrdf> .
+
+
