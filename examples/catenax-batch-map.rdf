@@ -45,7 +45,7 @@ urn-uuid:580d3adf-1981-44a0-a214-13d6ceed9379 a cx:Batch ;
 
 <https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json> a prov:Entity .
 
-[] prov:generatedAtTime "2026-01-16T08:45:13.300739"^^xsd:dateTime ;
+[] prov:generatedAtTime "2026-01-16T09:00:10.709134"^^xsd:dateTime ;
     prov:qualifiedDerivation [ a prov:Derivation ;
             prov:entity <https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json> ;
             prov:hadActivity <http://localhost:6003/api/createrdf> ] ;
