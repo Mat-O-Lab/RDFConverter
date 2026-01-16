@@ -25,8 +25,8 @@ mappings:
     po:
       - [rdf:type, cx:Batch]
       - [cx:catenaXId, $(catenaXId)]
-      - [cx:manufacturingInformation, $(.manufacturingInformation.country)-$(.manufacturingInformation.date)]
-      - [cx:partTypeInformation, $(.partTypeInformation.manufacturerPartId)]
+      - [cx:manufacturingInformation, $(.manufacturingInformation.country)-$(.manufacturingInformation.date)~iri]
+      - [cx:partTypeInformation, $(.partTypeInformation.manufacturerPartId~iri)]
       - p: cx:localIdentifiers
         o:
           mapping: identifiers_list
