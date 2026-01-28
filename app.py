@@ -91,10 +91,75 @@ app = FastAPI(
     swagger_ui_parameters={"syntaxHighlight": False},
     # swagger_favicon_url="/static/resources/favicon.svg",
     middleware=middleware,
+    root_path=setting.root_path or "",
     servers=[
         {"url": setting.server, "description": "Production environment"},
     ],
 )
+
+
+# Override OpenAPI schema generation to always use configured SERVER_URL
+# This ensures Swagger UI generates correct URLs regardless of reverse proxy headers
+def custom_openapi():
+    """Override OpenAPI schema to force configured SERVER_URL.
+    
+    This makes the app robust against reverse proxy configurations by
+    always using the explicitly configured SERVER_URL instead of trying
+    to detect it from X-Forwarded-* headers.
+    """
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    # Generate the default OpenAPI schema
+    from fastapi.openapi.utils import get_openapi
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+        tags=app.openapi_tags,
+        servers=app.servers,
+    )
+    
+    # Force the servers to always use configured SERVER_URL
+    # This overrides any automatic detection from request headers
+    openapi_schema["servers"] = [
+        {"url": setting.server, "description": "Production environment"}
+    ]
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
+
+
+# Startup validation to ensure configuration is correct
+@app.on_event("startup")
+async def startup_validation():
+    """Validate configuration on startup and log important settings."""
+    logging.info("=" * 80)
+    logging.info("RDFConverter Startup Configuration")
+    logging.info("=" * 80)
+    logging.info(f"App Name: {setting.name}")
+    logging.info(f"App Version: {setting.version}")
+    logging.info(f"App Mode: {setting.config_name}")
+    logging.info(f"SERVER_URL: {setting.server}")
+    logging.info(f"ROOT_PATH: {setting.root_path or '(empty)'}")
+    logging.info(f"OpenAPI docs: {setting.server}{setting.docs_url}")
+    
+    # Warn about potential security issues
+    if setting.server.startswith("http://") and "localhost" not in setting.server and "127.0.0.1" not in setting.server:
+        logging.warning("⚠️  SERVER_URL uses HTTP for non-localhost - consider using HTTPS for production")
+    
+    # Validate internal services
+    try:
+        logging.info(f"YARRRML Parser URL: {YARRRML_URL}")
+        logging.info(f"RML Mapper URL: {MAPPER_URL}")
+    except Exception as e:
+        logging.error(f"Error checking internal services: {e}")
+    
+    logging.info("=" * 80)
 
 
 app.mount("/static/", StaticFiles(directory="static", html=True), name="static")
