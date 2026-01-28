@@ -203,7 +203,6 @@ def open_file(uri: AnyUrl, authorization=None) -> Tuple["filedata":str, "filenam
             detail=f"{uri} is not a valid URI - if local file add file:// as prefix. Error: {str(e)}",
         ) from e
     else:
-        filename = unquote(uri_parsed.path).rsplit("/download/upload")[0].split("/")[-1]
         if uri_parsed.scheme in ["https", "http"]:
             # r = urlopen(uri)
             s = requests.Session()
@@ -218,6 +217,13 @@ def open_file(uri: AnyUrl, authorization=None) -> Tuple["filedata":str, "filenam
                     status_code=r.status_code, detail="cant get file at {}".format(uri)
                 )
             filedata = r.content
+            # Extract filename from the FINAL URL after redirects, not the original URL
+            final_url = r.url
+            final_url_parsed = urlparse(final_url)
+            filename = unquote(final_url_parsed.path).rsplit("/download/upload")[0].split("/")[-1]
+            logging.debug(f"Original URL: {uri}")
+            logging.debug(f"Final URL after redirects: {final_url}")
+            logging.debug(f"Extracted filename: {filename}")
             # charset=r.info().get_content_charset()
             # if not charset:
             #     charset='utf-8'
