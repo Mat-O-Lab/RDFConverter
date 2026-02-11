@@ -1,0 +1,15 @@
+prefixes:
+  ex: 'http://example.org/'
+base: 'http://example.org/data/'
+sources:
+  test_source:
+    access: 'https://example.com/data.json'
+    iterator: '$..[*]'
+    referenceFormulation: jsonpath
+mappings:
+  test_mapping:
+    sources: [test_source]
+    s: ex:entity_$(id)
+    po:
+      - [rdf:type, ex:TestEntity]
+      - [ex:hasValue, $(value)]

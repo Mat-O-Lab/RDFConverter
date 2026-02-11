@@ -309,6 +309,61 @@ from datetime import datetime
 # HELPER FUNCTIONS - Parameter Resolution
 # ============================================================================
 
+def validate_iterator(iterator: str, source_name: str = "") -> tuple[bool, str]:
+    """
+    Validate if an iterator pattern is supported.
+    
+    Args:
+        iterator: JSONPath iterator string from YARRRML source
+        source_name: Name of the source (for better error messages)
+        
+    Returns:
+        Tuple of (is_valid, error_message)
+        - is_valid: True if supported, False if unsupported
+        - error_message: Empty string if valid, descriptive error if invalid
+    """
+    # Check for unsupported pattern: $..[*]
+    if iterator == "$..[*]":
+        source_info = f" in source '{source_name}'" if source_name else ""
+        return False, (
+            f"Unsupported iterator '$..[*]'{source_info}. "
+            f"This iterator pattern (recursive descent with wildcard array) is too ambiguous. "
+            f"Please use a specific path like '$.notes[*]', '$.columns[*]', or '$.items[*]' instead."
+        )
+    
+    # Check for other potentially problematic patterns
+    # Add more validations here as needed
+    
+    return True, ""
+
+
+def validate_mapping_sources(mapping_dict: dict) -> tuple[bool, str, int]:
+    """
+    Validate all source iterators in a YARRRML mapping.
+    
+    Args:
+        mapping_dict: Parsed YARRRML mapping dictionary
+        
+    Returns:
+        Tuple of (is_valid, error_message, num_rules)
+        - is_valid: True if all iterators are valid
+        - error_message: Empty if valid, descriptive error if invalid
+        - num_rules: Total number of mapping rules defined
+    """
+    sources = mapping_dict.get("sources", {})
+    num_rules = len(mapping_dict.get("mappings", {}))
+    
+    for source_name, source_def in sources.items():
+        if isinstance(source_def, dict):
+            iterator = source_def.get("iterator", "")
+            if iterator:
+                is_valid, error_msg = validate_iterator(iterator, source_name)
+                if not is_valid:
+                    return False, error_msg, num_rules
+    
+    return True, "", num_rules
+
+
 def resolve_parameters(body, query_params: dict) -> dict:
     """
     Resolve parameters using all-or-nothing strategy.
@@ -868,6 +923,17 @@ def apply_mapping(
 
     duplicate_for_table = mapping_dict.get("use_template_rowwise", False)
     logging.info(f"use_template_rowwise: {duplicate_for_table}")
+
+    # VALIDATE: Check for unsupported iterators before processing
+    is_valid, error_msg, num_rules = validate_mapping_sources(mapping_dict)
+    if not is_valid:
+        logging.error(f"Iterator validation failed: {error_msg}")
+        raise HTTPException(
+            status_code=422,
+            detail=error_msg
+        )
+    
+    logging.info(f"✓ Iterator validation passed - all iterators are supported")
 
     # PHASE 0: If opt_data_url is provided, replace the original data source URL in YARRRML
     # This MUST happen BEFORE converting YARRRML to RML
@@ -1954,13 +2020,27 @@ def check_mapping(mapping_url, data_url, authorization=None):
     """
     Check mapping compatibility with data source.
     
-    Note: This function was designed for an older YARRRML format with "condition" keys.
-    Modern YARRRML mappings don't use this structure, so we provide simplified validation.
+    Validates:
+    1. Iterator patterns (e.g., rejects unsupported $..[*])
+    2. Data source accessibility
+    
+    Returns 0 applicable rules if validation fails.
     """
     map_data, map_name = open_file(str(mapping_url), authorization)
     
     mapping_dict = yaml.safe_load(map_data)
-    rules = mapping_dict.get("mappings", {})
+    
+    # VALIDATE: Check for unsupported iterators FIRST
+    is_valid, error_msg, num_rules = validate_mapping_sources(mapping_dict)
+    if not is_valid:
+        logging.warning(f"Iterator validation failed in check_mapping: {error_msg}")
+        # Return 0 applicable rules when iterator is unsupported
+        return {
+            "rules_applicable": 0,
+            "rules_skipped": num_rules,
+        }
+    
+    logging.info(f"✓ Iterator validation passed in check_mapping")
     
     # Extract data URL from mapping if not provided
     if not data_url:
@@ -1973,10 +2053,6 @@ def check_mapping(mapping_url, data_url, authorization=None):
                 status_code=422,
                 detail="No data_url provided and no sources found in mapping"
             )
-    
-    # Modern YARRRML doesn't have "condition" structure
-    # Just return basic statistics: number of rules defined
-    num_rules = len(rules)
     
     logging.info(f"Mapping check: {num_rules} rules defined in mapping")
     
