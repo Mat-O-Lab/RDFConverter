@@ -303,6 +303,223 @@ def open_file(uri: AnyUrl, authorization=None) -> Tuple["filedata":str, "filenam
 
 
 from datetime import datetime
+from jsonpath_ng import parse as jsonpath_parse
+from jsonpath_ng.exceptions import JsonPathParserError
+
+
+# ============================================================================
+# CONDITION EVALUATION FOR YARRRML MAPPINGS
+# ============================================================================
+
+def normalize_function_name(function_ref: str, prefixes: dict) -> str:
+    """
+    Normalize function reference to standard name.
+    
+    Handles three formats:
+    - Short name: "equal"
+    - Prefixed: "idlab-fn:equal"
+    - Full IRI: "https://w3id.org/imec/idlab/function#equal"
+    
+    Args:
+        function_ref: Function reference from YARRRML condition
+        prefixes: Dict of prefix -> namespace mappings
+        
+    Returns:
+        Normalized function name (e.g., "equal", "notEqual", etc.)
+    """
+    # If it's already a short name, return it
+    if ":" not in function_ref and "/" not in function_ref:
+        return function_ref
+    
+    # Handle prefixed format (e.g., "idlab-fn:equal")
+    if ":" in function_ref and "/" not in function_ref:
+        prefix, local_name = function_ref.split(":", 1)
+        return local_name
+    
+    # Handle full IRI - extract last part after # or /
+    if "#" in function_ref:
+        return function_ref.split("#")[-1]
+    elif "/" in function_ref:
+        return function_ref.split("/")[-1]
+    
+    return function_ref
+
+
+def extract_jsonpath_value(jsonpath_expr: str, data_item: dict) -> any:
+    """
+    Extract value from data item using JSONPath expression.
+    
+    Args:
+        jsonpath_expr: JSONPath expression like "$(label)" or "$.id"
+        data_item: Dictionary to extract value from
+        
+    Returns:
+        Extracted value or None if not found
+    """
+    # Remove $() wrapper if present - convert $(label) to $.label
+    if jsonpath_expr.startswith("$(") and jsonpath_expr.endswith(")"):
+        field_name = jsonpath_expr[2:-1]
+        jsonpath_expr = f"$.{field_name}"
+    
+    # If it's just a literal value (not starting with $), return as-is
+    if not jsonpath_expr.startswith("$"):
+        return jsonpath_expr
+    
+    try:
+        jsonpath_expression = jsonpath_parse(jsonpath_expr)
+        matches = jsonpath_expression.find(data_item)
+        
+        if matches:
+            # Return first match value
+            return matches[0].value
+        return None
+    except JsonPathParserError as e:
+        logging.warning(f"JSONPath parse error for '{jsonpath_expr}': {e}")
+        return None
+    except Exception as e:
+        logging.warning(f"Error extracting JSONPath value for '{jsonpath_expr}': {e}")
+        return None
+
+
+def evaluate_fno_function(function_name: str, parameters: dict) -> bool:
+    """
+    Evaluate an FnO function with given parameters.
+    
+    Args:
+        function_name: Normalized function name (e.g., "equal", "notEqual")
+        parameters: Dict of parameter name -> value
+        
+    Returns:
+        Boolean result of function evaluation
+    """
+    # Get common parameter names
+    str1 = parameters.get("str1") or parameters.get("grel:valueParam") or parameters.get("valueParam")
+    str2 = parameters.get("str2") or parameters.get("grel:valueParam2") or parameters.get("valueParam2")
+    
+    # Convert to strings for comparison (handle None)
+    str1 = str(str1) if str1 is not None else ""
+    str2 = str(str2) if str2 is not None else ""
+    
+    if function_name == "equal":
+        result = str1 == str2
+        logging.debug(f"  equal('{str1}', '{str2}') = {result}")
+        return result
+    
+    elif function_name == "notEqual":
+        result = str1 != str2
+        logging.debug(f"  notEqual('{str1}', '{str2}') = {result}")
+        return result
+    
+    elif function_name == "stringContainsOtherString":
+        other_str = parameters.get("otherStr") or parameters.get("idlab-fn:_otherStr")
+        delimiter = parameters.get("delimiter") or parameters.get("idlab-fn:_delimiter", ",")
+        
+        if not other_str:
+            return False
+        
+        # Split str1 by delimiter and check if other_str is in the list
+        parts = str1.split(delimiter)
+        result = other_str in parts
+        logging.debug(f"  stringContainsOtherString('{str1}', '{other_str}', delimiter='{delimiter}') = {result}")
+        return result
+    
+    elif function_name == "listContainsElement":
+        list_param = parameters.get("list") or parameters.get("idlab-fn:_list")
+        str_param = parameters.get("str") or parameters.get("idlab-fn:_str")
+        
+        if not list_param or not str_param:
+            return False
+        
+        # list_param might be a string representation or actual list
+        if isinstance(list_param, str):
+            # Try to split by common delimiters
+            list_items = list_param.split(",")
+        elif isinstance(list_param, list):
+            list_items = list_param
+        else:
+            return False
+        
+        result = str_param in list_items
+        logging.debug(f"  listContainsElement({list_items}, '{str_param}') = {result}")
+        return result
+    
+    elif function_name == "isNull":
+        str_param = parameters.get("str") or parameters.get("idlab-fn:_str") or str1
+        result = str_param is None or str_param == "" or str_param == "null"
+        logging.debug(f"  isNull('{str_param}') = {result}")
+        return result
+    
+    elif function_name == "inRange":
+        test_val = parameters.get("test") or parameters.get("idlab-fn:_test")
+        from_val = parameters.get("from") or parameters.get("idlab-fn:_from")
+        to_val = parameters.get("to") or parameters.get("idlab-fn:_to")
+        
+        try:
+            test_num = float(test_val) if test_val is not None else None
+            from_num = float(from_val) if from_val is not None else None
+            to_num = float(to_val) if to_val is not None else None
+            
+            if test_num is None or from_num is None or to_num is None:
+                return False
+            
+            result = from_num <= test_num <= to_num
+            logging.debug(f"  inRange({test_num}, {from_num}, {to_num}) = {result}")
+            return result
+        except (ValueError, TypeError):
+            return False
+    
+    else:
+        # Unknown function - log warning and return True (permissive)
+        logging.warning(f"Unknown FnO function '{function_name}' - assuming true")
+        return True
+
+
+def evaluate_condition(condition_dict: dict, data_item: dict, prefixes: dict) -> bool:
+    """
+    Evaluate a YARRRML condition against a data item.
+    
+    Args:
+        condition_dict: Condition from YARRRML mapping
+            Example: {
+                "function": "equal",
+                "parameters": [
+                    ["str1", "$(label)"],
+                    ["str2", "aktuelle Probe"]
+                ]
+            }
+        data_item: Single JSON object from iterator
+        prefixes: Dict of prefix -> namespace URL mappings
+        
+    Returns:
+        True if condition evaluates to true, False otherwise
+    """
+    if not condition_dict:
+        # No condition means always applicable
+        return True
+    
+    function_ref = condition_dict.get("function")
+    if not function_ref:
+        logging.warning("Condition missing 'function' field - assuming true")
+        return True
+    
+    # Normalize function name
+    function_name = normalize_function_name(function_ref, prefixes)
+    
+    # Extract parameters
+    param_list = condition_dict.get("parameters", [])
+    parameters = {}
+    
+    for param in param_list:
+        if isinstance(param, list) and len(param) == 2:
+            param_name = param[0]
+            param_value = param[1]
+            
+            # Extract actual value if it's a JSONPath expression
+            actual_value = extract_jsonpath_value(param_value, data_item)
+            parameters[param_name] = actual_value
+    
+    # Evaluate the function
+    return evaluate_fno_function(function_name, parameters)
 
 
 # ============================================================================
@@ -2022,10 +2239,13 @@ def check_mapping(mapping_url, data_url, authorization=None):
     
     Validates:
     1. Iterator patterns (e.g., rejects unsupported $..[*])
-    2. Data source accessibility
+    2. Data source accessibility  
+    3. Condition evaluation - checks if rules with conditions match actual data
     
-    Returns 0 applicable rules if validation fails.
+    Returns accurate count of applicable vs skipped rules based on condition evaluation.
     """
+    import json
+    
     map_data, map_name = open_file(str(mapping_url), authorization)
     
     mapping_dict = yaml.safe_load(map_data)
@@ -2056,27 +2276,118 @@ def check_mapping(mapping_url, data_url, authorization=None):
     
     logging.info(f"Mapping check: {num_rules} rules defined in mapping")
     
-    # Try to validate data source is accessible
+    # Load and parse data source
     try:
         data_str, filename = open_file(str(data_url), authorization)
-        format = guess_format(str(data_url))
-        if format:
-            # Try to parse to validate format
-            data_graph = Graph()
-            data_graph.parse(data=data_str, format=format)
-            logging.info(f"Data source validated: {len(data_graph)} triples")
-        else:
-            logging.warning(f"Could not guess format for data URL: {data_url}")
+        
+        # Try to parse as JSON first (most common case)
+        try:
+            data_json = json.loads(data_str)
+            logging.info("Data source parsed as JSON")
+        except (json.JSONDecodeError, ValueError):
+            # Try as RDF - convert to JSON-LD
+            format = guess_format(str(data_url))
+            if format:
+                data_graph = Graph()
+                data_graph.parse(data=data_str, format=format)
+                logging.info(f"Data source parsed as RDF ({format}), converting to JSON-LD")
+                
+                # Convert to JSON-LD for condition evaluation
+                json_ld_str = data_graph.serialize(format="json-ld")
+                data_json = json.loads(json_ld_str)
+            else:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Could not parse data source as JSON or RDF"
+                )
     except Exception as e:
-        logging.error(f"Error validating data source: {str(e)}")
+        logging.error(f"Error loading data source: {str(e)}")
         raise HTTPException(
             status_code=422,
             detail=f"Could not access or parse data source: {str(e)}"
         )
     
-    # Return optimistic result - all rules assumed applicable
-    # Actual rule applicability requires executing the mapping
+    # Get sources and prefixes from mapping
+    sources_dict = mapping_dict.get("sources", {})
+    prefixes = mapping_dict.get("prefixes", {})
+    mappings = mapping_dict.get("mappings", {})
+    
+    # Evaluate each mapping rule
+    rules_applicable = 0
+    rules_skipped = 0
+    
+    for rule_name, rule_def in mappings.items():
+        logging.debug(f"Checking rule: {rule_name}")
+        
+        # Check if rule has a condition
+        condition = rule_def.get("condition")
+        
+        if not condition:
+            # No condition = always applicable
+            rules_applicable += 1
+            logging.debug(f"  Rule '{rule_name}' has no condition - applicable")
+            continue
+        
+        # Rule has a condition - need to evaluate it against data
+        # Get the source(s) for this rule
+        rule_sources = rule_def.get("sources", [])
+        if not rule_sources:
+            # No source specified - skip
+            logging.warning(f"  Rule '{rule_name}' has no sources - skipping")
+            rules_skipped += 1
+            continue
+        
+        # Get the iterator for the first source
+        source_name = rule_sources[0] if isinstance(rule_sources, list) else rule_sources
+        
+        if source_name not in sources_dict:
+            logging.warning(f"  Source '{source_name}' not found for rule '{rule_name}'")
+            rules_skipped += 1
+            continue
+        
+        source_def = sources_dict[source_name]
+        if isinstance(source_def, dict):
+            iterator = source_def.get("iterator", "$")
+        else:
+            iterator = "$"
+        
+        # Apply iterator to get data items
+        try:
+            jsonpath_expression = jsonpath_parse(iterator)
+            matches = jsonpath_expression.find(data_json)
+            
+            if not matches:
+                logging.debug(f"  Iterator '{iterator}' found no data items - rule not applicable")
+                rules_skipped += 1
+                continue
+            
+            # Test condition against each data item
+            condition_met = False
+            for match in matches:
+                data_item = match.value
+                
+                # Evaluate condition
+                if evaluate_condition(condition, data_item, prefixes):
+                    condition_met = True
+                    logging.debug(f"  Rule '{rule_name}' condition met for at least one data item")
+                    break
+            
+            if condition_met:
+                rules_applicable += 1
+            else:
+                logging.debug(f"  Rule '{rule_name}' condition not met for any data items")
+                rules_skipped += 1
+                
+        except JsonPathParserError as e:
+            logging.error(f"  Invalid JSONPath iterator '{iterator}' for rule '{rule_name}': {e}")
+            rules_skipped += 1
+        except Exception as e:
+            logging.error(f"  Error evaluating condition for rule '{rule_name}': {e}")
+            rules_skipped += 1
+    
+    logging.info(f"Mapping check complete: {rules_applicable} applicable, {rules_skipped} skipped")
+    
     return {
-        "rules_applicable": num_rules,
-        "rules_skipped": 0,
+        "rules_applicable": rules_applicable,
+        "rules_skipped": rules_skipped,
     }
