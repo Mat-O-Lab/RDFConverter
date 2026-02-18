@@ -29,13 +29,7 @@ services:
     environment:
       - YARRRML_URL=http://yarrrml-parser:${PARSER_PORT}
       - MAPPER_URL=http://rmlmapper:${MAPPER_PORT}
-      - APP_PORT=${APP_PORT}
-      - APP_SECRET=${APP_SECRET}
-      - ADMIN_NAME=${ADMIN_NAME}
-      - ADMIN_MAIL=${ADMIN_MAIL}
       - APP_MODE=${APP_MODE}
-      - APP_NAME=${APP_NAME}
-      - APP_SOURCE=${APP_SOURCE}
       - SERVER_URL=${SERVER_URL}
     ports:
       - ${APP_PORT}:${CONVERTER_PORT}
