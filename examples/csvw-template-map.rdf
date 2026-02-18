@@ -192,8 +192,8 @@ iof:prescribes a owl:ObjectProperty ;
 bfo:BFO_0000008 a owl:Class ;
     label: "B F O_0000008" .
 
-<https://github.com/Mat-O-Lab/RDFConverter/releases/tag/v1.2.3> a prov:SoftwareAgent ;
-    label: "RDFConverterv1.2.3" ;
+<https://github.com/Mat-O-Lab/RDFConverter/releases/tag/v1.2.4> a prov:SoftwareAgent ;
+    label: "RDFConverterv1.2.4" ;
     prov:hadPrimarySource <https://github.com/Mat-O-Lab/RDFConverter> .
 
 mseo:Regulation a owl:Class ;
@@ -267,7 +267,7 @@ iof:hasValueExpressionAtSomeTime a owl:ObjectProperty ;
     iof:measuredByAtSomeTime <#Caliper> .
 
 <http://localhost:6003/api/createrdf> a prov:Activity ;
-    prov:wasAssociatedWith <https://github.com/Mat-O-Lab/RDFConverter/releases/tag/v1.2.3> ;
+    prov:wasAssociatedWith <https://github.com/Mat-O-Lab/RDFConverter/releases/tag/v1.2.4> ;
     prov:wasInformedBy <https://github.com/Mat-O-Lab/MSEO/raw/main/methods/DIN_EN_ISO_527-3.drawio.ttl/>,
         <https://github.com/Mat-O-Lab/RDFConverter/raw/main/examples/csvw-template-map.yaml> .
 
@@ -309,7 +309,7 @@ iof:ValueExpression a owl:Class ;
 iof:DesignativeInformationContentEntity a owl:Class ;
     label: "Designative Information Content Entity" .
 
-[] prov:generatedAtTime "2026-02-17T10:11:23.383394"^^xsd:dateTime ;
+[] prov:generatedAtTime "2026-02-18T15:03:59.097166"^^xsd:dateTime ;
     prov:qualifiedDerivation [ a prov:Derivation ;
             prov:entity <https://github.com/Mat-O-Lab/CSVToCSVW/raw/main/examples/example-metadata.json> ;
             prov:hadActivity <http://localhost:6003/api/createrdf> ] ;
