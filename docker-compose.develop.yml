@@ -3,8 +3,8 @@ services:
   yarrrml-parser:
     environment:
       - PORT=${PARSER_PORT}
-    #image: ghcr.io/mat-o-lab/yarrrml-parser:v.1.12.2
-    build: yarrrml-parser/.
+    image: ghcr.io/mat-o-lab/yarrrml-parser:latest
+    #build: yarrrml-parser/.
     expose:
       - ${PARSER_PORT}
     restart: always
@@ -26,8 +26,17 @@ services:
   rdfconverter:
     container_name: rdfconverter
     build: .
-    env_file:
-      - .env
+    environment:
+      - YARRRML_URL=http://yarrrml-parser:${PARSER_PORT}
+      - MAPPER_URL=http://rmlmapper:${MAPPER_PORT}
+      - APP_PORT=${APP_PORT}
+      - APP_SECRET=${APP_SECRET}
+      - ADMIN_NAME=${ADMIN_NAME}
+      - ADMIN_MAIL=${ADMIN_MAIL}
+      - APP_MODE=${APP_MODE}
+      - APP_NAME=${APP_NAME}
+      - APP_SOURCE=${APP_SOURCE}
+      - SERVER_URL=${SERVER_URL}
     ports:
       - ${APP_PORT}:${CONVERTER_PORT}
     volumes:

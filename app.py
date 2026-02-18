@@ -729,6 +729,8 @@ def process_data_to_jsonld(
 ) -> tuple[str, bool, str | None]:
     """Process data content to JSON-LD format for RML mapper.
     
+    PRESERVES ORIGINAL STRUCTURE - no normalization/transformation!
+    
     Args:
         content: Data content as bytes
         url: Source URL
@@ -736,8 +738,8 @@ def process_data_to_jsonld(
         
     Returns:
         Tuple of (processed_content, is_rdf_data, csv_namespace)
-        - processed_content: Data in JSON-LD format as string
-        - is_rdf_data: True if source was RDF, False if plain JSON
+        - processed_content: Data in JSON-LD format as string (structure preserved!)
+        - is_rdf_data: True if source was non-JSON-LD RDF, False if JSON/JSON-LD
         - csv_namespace: CSV namespace if found in original data, else None
         
     Raises:
@@ -746,38 +748,60 @@ def process_data_to_jsonld(
     import json
     
     # ALWAYS try to extract @context from JSON FIRST, before any RDF parsing
-    namespaces = None
+    namespace_dict = None
+    csv_namespace = None
     if preserve_namespaces:
         try:
-            namespaces = extract_jsonld_namespaces(content)
+            namespace_dict = extract_jsonld_namespaces(content)
+            logging.debug(f"Extracted {len(namespace_dict)} namespaces from JSON-LD @context")
         except Exception as e:
             logging.debug(f"No JSON @context found (file may not be JSON or JSON-LD): {e}")
     
-    # Now detect format
-    data_format, is_rdf = detect_data_format(content, url)
-    
-    if not is_rdf:
-        # Plain JSON - use as-is (we already extracted @context above)
-        processed_content = content.decode() if isinstance(content, bytes) else content
-        return processed_content, False, namespaces
-    
-    # RDF data - normalize to JSON-LD
+    # Try to parse as JSON/JSON-LD first (most common case)
     try:
-        logging.debug(f"Loading {url} as RDF in {data_format} format")
+        json_data = json.loads(content)
+        logging.info("Content detected as JSON/JSON-LD - preserving original structure")
         
+        # Check if it's JSON-LD (has @context)
+        has_context = "@context" in json_data if isinstance(json_data, dict) else False
+        
+        # Return as-is - NO TRANSFORMATION!
+        processed_content = content.decode() if isinstance(content, bytes) else content
+        
+        # is_rdf_data = False means "don't add data_graph to final output"
+        # For JSON-LD, RML mapper will handle everything
+        return processed_content, False, namespace_dict
+        
+    except (json.JSONDecodeError, ValueError):
+        # Not JSON - must be other RDF format (Turtle, RDF/XML, etc.)
+        logging.info("Content is not JSON - checking for other RDF formats")
+    
+    # Try as non-JSON RDF format (Turtle, RDF/XML, N-Triples, etc.)
+    data_format = guess_format(url)
+    if not data_format:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Could not determine data format from URL: {url}",
+        )
+    
+    try:
+        logging.info(f"Loading {url} as RDF in {data_format} format")
         
         # Parse as RDF
         temp_graph = Graph()
         temp_graph.parse(data=content, format=data_format)
         
-        # Normalize to JSON-LD with standard context + preserved namespaces
+        # Convert to JSON-LD with minimal context
+        # We must do this for non-JSON formats, but keep it minimal
         context = get_standard_jsonld_context()
-        context.update(namespaces)
+        if namespace_dict:
+            context.update(namespace_dict)
         
         processed_content = temp_graph.serialize(format="json-ld", context=context)
-        logging.info(f"Normalized RDF to JSON-LD")
+        logging.info(f"Converted {data_format} to JSON-LD (minimal transformation)")
         
-        return processed_content, True, namespaces
+        # is_rdf_data = True means "this was originally RDF, may need data_graph"
+        return processed_content, True, namespace_dict
         
     except Exception as e:
         raise HTTPException(
