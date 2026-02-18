@@ -39,8 +39,7 @@ jobs:
           APP_PORT=${APP_PORT}
           MAPPER_PORT=${MAPPER_PORT}
           CONVERTER_PORT=${CONVERTER_PORT}
-          YARRRML_URL=${YARRRML_URL}
-          MAPPER_URL=${MAPPER_URL}
+          SERVER_URL="http://localhost:${APP_PORT}"
           APP_MODE=${APP_MODE}
           SSL_VERIFY=${SSL_VERIFY}
           EOF
