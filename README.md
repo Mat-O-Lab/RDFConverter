@@ -889,11 +889,6 @@ A BibTeX entry:
   url       = {https://doi.org/10.5281/zenodo.19084883}
 }
 ```
-
-> **Note:** Replace `19084883` with the actual Zenodo DOI after publication.
-
----
-
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
