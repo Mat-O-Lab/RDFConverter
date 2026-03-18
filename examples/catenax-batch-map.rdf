@@ -44,7 +44,7 @@
 
 <https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json> a prov:Entity .
 
-[] prov:generatedAtTime "2026-03-18T08:28:11.772754"^^xsd:dateTime ;
+[] prov:generatedAtTime "2026-03-18T10:11:13.270501"^^xsd:dateTime ;
     prov:qualifiedDerivation [ a prov:Derivation ;
             prov:entity <https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json> ;
             prov:hadActivity <http://localhost:6003/api/createrdf> ] ;

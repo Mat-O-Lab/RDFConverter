@@ -309,7 +309,7 @@ iof:ValueExpression a owl:Class ;
 iof:DesignativeInformationContentEntity a owl:Class ;
     label: "Designative Information Content Entity" .
 
-[] prov:generatedAtTime "2026-03-18T08:28:14.732069"^^xsd:dateTime ;
+[] prov:generatedAtTime "2026-03-18T10:11:16.945979"^^xsd:dateTime ;
     prov:qualifiedDerivation [ a prov:Derivation ;
             prov:entity <https://github.com/Mat-O-Lab/CSVToCSVW/raw/main/examples/example-metadata.json> ;
             prov:hadActivity <http://localhost:6003/api/createrdf> ] ;
