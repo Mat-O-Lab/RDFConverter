@@ -1,90 +1,83 @@
 prefixes:
-  data: "https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json/"
-  method: "https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/Batch.ttl/"
-  samm: "urn:samm:org.eclipse.esmf.samm:meta-model:2.3.0#"
-  mmm: "urn:samm:org.eclipse.esmf.samm:meta-meta-model:2.3.0#"
-  ext-built: "urn:samm:io.catenax.shared.part_site_information_as_built:2.0.0#"
-  ext-classification: "urn:samm:io.catenax.shared.part_classification:1.0.0#"
-  ext-build: "urn:bamm:io.catenax.part_site_information_as_planned:1.0.0#"
-  cx: "urn:samm:io.catenax.batch:3.0.1#"
-  urn-uuid: "urn:uuid:"
+  data: https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json/
+  samm: urn:samm:org.eclipse.esmf.samm:meta-model:2.3.0#
+  ext-built: urn:samm:io.catenax.shared.part_site_information_as_built:2.0.0#
+  ext-classification: urn:samm:io.catenax.shared.part_classification:1.0.0#
+  cx: urn:samm:io.catenax.batch:3.0.1#
+  xsd: http://www.w3.org/2001/XMLSchema#
 base: '#'
 sources:
-      root: {access: 'https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json',
-        iterator: '$', referenceFormulation: jsonpath}
-      identifiers: {access: 'https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json',
-        iterator: '$.localIdentifiers[*]', referenceFormulation: jsonpath}
-      partClass_items: {access: 'https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json',
-        iterator: '$.partTypeInformation.partClassification[*]', referenceFormulation: jsonpath}
-      sites_items: {access: 'https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json',
-        iterator: '$.manufacturingInformation.sites[*]', referenceFormulation: jsonpath}
+  root:
+    access: https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json
+    iterator: $
+    referenceFormulation: jsonpath
+  identifiers:
+    access: https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json
+    iterator: $.localIdentifiers[*]
+    referenceFormulation: jsonpath
+  partClass_items:
+    access: https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json
+    iterator: $.partTypeInformation.partClassification[*]
+    referenceFormulation: jsonpath
+  sites_items:
+    access: https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json
+    iterator: $.manufacturingInformation.sites[*]
+    referenceFormulation: jsonpath
 mappings:
   batch:
-    source: [root]
-    s: urn-uuid:$(catenaXId)
+    sources: root
+    s: Batch_$(catenaXId)
     po:
-      - [rdf:type, cx:Batch]
+      - [a, cx:Batch]
       - [cx:catenaXId, $(catenaXId)]
-      - [cx:manufacturingInformation, $(.manufacturingInformation.country)-$(.manufacturingInformation.date)~iri]
-      - [cx:partTypeInformation, $(.partTypeInformation.manufacturerPartId~iri)]
       - p: cx:localIdentifiers
         o:
           mapping: identifiers_list
-          condition:
-            function: equal
-            parameters: [[str1, "1"], [str2, "1"]]
+      - p: cx:manufacturingInformation
+        o:
+          mapping: manuinfo
+      - p: cx:partTypeInformation
+        o:
+          mapping: parttypeinfo
   identifiers_list:
-    source: [identifiers]
-    s: $(key)-$(value)
+    sources: identifiers
+    s: LocalIdentifier_$(key)_$(value)
     po:
-      - [rdf:type, cx:KeyValueList]
+      - [a, cx:KeyValueList]
       - [cx:key, $(key)]
       - [cx:value, $(value)]
   manuinfo:
-    source: [root]
-    s: $(.manufacturingInformation.country)-$(.manufacturingInformation.date)
+    sources: root
+    s: ManufacturingEntity_$(.manufacturingInformation.country)_$(.manufacturingInformation.date)
     po:
-      - [rdf:type, cx:ManufacturingEntity]
+      - [a, cx:ManufacturingEntity]
       - [cx:date, $(.manufacturingInformation.date)]
       - [cx:country, $(.manufacturingInformation.country)]
       - p: ext-built:sites
         o:
           mapping: sites
-          condition:
-            function: equal
-            parameters: [[str1, "1"], [str2, "1"]]
   parttypeinfo:
-    source: [root]
-    s: $(.partTypeInformation.manufacturerPartId)
+    sources: root
+    s: PartTypeInformation_$(.partTypeInformation.manufacturerPartId)
     po:
-      - [rdf:type, cx:PartTypeInformationEntity]
+      - [a, cx:PartTypeInformationEntity]
       - [cx:manufacturerPartId, $(.partTypeInformation.manufacturerPartId)]
       - [cx:nameAtManufacturer, $(.partTypeInformation.nameAtManufacturer)]
       - p: ext-classification:partClassification
         o:
           mapping: partClassification
-          condition:
-            function: equal
-            parameters: [[str1, "1"], [str2, "1"]]
   sites:
-    source: [sites_items]
-    s: $(catenaXsiteId)
+    sources: sites_items
+    s: Site_$(catenaXsiteId)
     po:
-      - p: a
-        o: ext-built:SitesEntity
-      - p: ext-built:catenaXsiteId
-        o: $(catenaXsiteId)
-      - p: ext-built:function
-        o: $(function)
+      - [a, ext-built:SitesEntity]
+      - [ext-built:catenaXsiteId, $(catenaXsiteId)]
+      - [ext-built:function, $(function)]
   partClassification:
-    source: [partClass_items]
-    s: $(classificationID)
+    sources: partClass_items
+    s: Classification_$(classificationID)
     po:
-      - p: a
-        o: ext-classification:ClassificationEntity
-      - p: ext-classification:classificationStandard
-        o: $(classificationStandard)
-      - p: ext-classification:classificationDescription
-        o: $(classificationDescription)
-      - p: ext-classification:classificationID
-        o: $(classificationID)
+      - [a, ext-classification:ClassificationEntity]
+      - [ext-classification:classificationStandard, $(classificationStandard)]
+      - [ext-classification:classificationDescription, $(classificationDescription)]
+      - [ext-classification:classificationID, $(classificationID)]

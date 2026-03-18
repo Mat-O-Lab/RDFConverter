@@ -2486,71 +2486,61 @@ def check_mapping(mapping_url, data_url, authorization=None):
     
     for rule_name, rule_def in mappings.items():
         logging.debug(f"Checking rule: {rule_name}")
-        
-        # Check if rule has a condition
+
         condition = rule_def.get("condition")
-        
-        if not condition:
-            # No condition = always applicable
-            rules_applicable += 1
-            logging.debug(f"  Rule '{rule_name}' has no condition - applicable")
-            continue
-        
-        # Rule has a condition - need to evaluate it against data
-        # Get the source(s) for this rule
-        rule_sources = rule_def.get("sources", [])
+
+        # Resolve source iterator — always required regardless of condition
+        # Accept both "sources" (YARRRML spec) and legacy "source" key
+        rule_sources = rule_def.get("sources") or rule_def.get("source", [])
         if not rule_sources:
-            # No source specified - skip
             logging.warning(f"  Rule '{rule_name}' has no sources - skipping")
             rules_skipped += 1
             continue
-        
-        # Get the iterator for the first source
+
         source_name = rule_sources[0] if isinstance(rule_sources, list) else rule_sources
-        
+
         if source_name not in sources_dict:
             logging.warning(f"  Source '{source_name}' not found for rule '{rule_name}'")
             rules_skipped += 1
             continue
-        
+
         source_def = sources_dict[source_name]
-        if isinstance(source_def, dict):
-            iterator = source_def.get("iterator", "$")
-        else:
-            iterator = "$"
-        
-        # Apply iterator to get data items
+        iterator = source_def.get("iterator", "$") if isinstance(source_def, dict) else "$"
+
+        # Step 1: evaluate iterator — if it yields no results the rule can never fire
         try:
             jsonpath_expression = jsonpath_parse(iterator)
             matches = jsonpath_expression.find(data_json)
-            
-            if not matches:
-                logging.debug(f"  Iterator '{iterator}' found no data items - rule not applicable")
-                rules_skipped += 1
-                continue
-            
-            # Test condition against each data item
-            condition_met = False
-            for match in matches:
-                data_item = match.value
-                
-                # Evaluate condition
-                if evaluate_condition(condition, data_item, prefixes):
-                    condition_met = True
-                    logging.debug(f"  Rule '{rule_name}' condition met for at least one data item")
-                    break
-            
-            if condition_met:
-                rules_applicable += 1
-            else:
-                logging.debug(f"  Rule '{rule_name}' condition not met for any data items")
-                rules_skipped += 1
-                
         except JsonPathParserError as e:
             logging.error(f"  Invalid JSONPath iterator '{iterator}' for rule '{rule_name}': {e}")
             rules_skipped += 1
+            continue
         except Exception as e:
-            logging.error(f"  Error evaluating condition for rule '{rule_name}': {e}")
+            logging.error(f"  Error evaluating iterator for rule '{rule_name}': {e}")
+            rules_skipped += 1
+            continue
+
+        if not matches:
+            logging.debug(f"  Iterator '{iterator}' yielded no results for rule '{rule_name}' - skipped")
+            rules_skipped += 1
+            continue
+
+        # Step 2: no condition → iterator match is sufficient
+        if not condition:
+            rules_applicable += 1
+            logging.debug(f"  Rule '{rule_name}' iterator matched {len(matches)} item(s) - applicable")
+            continue
+
+        # Step 3: condition present → evaluate it against each matched item
+        condition_met = any(
+            evaluate_condition(condition, match.value, prefixes)
+            for match in matches
+        )
+        if condition_met:
+            rules_applicable += 1
+            logging.debug(f"  Rule '{rule_name}' condition met - applicable")
+        else:
+            logging.debug(f"  Rule '{rule_name}' condition not met for any item - skipped")
             rules_skipped += 1
     
     logging.info(f"Mapping check complete: {rules_applicable} applicable, {rules_skipped} skipped")
