@@ -1707,32 +1707,33 @@ def shacl_validate(
 
 class StartForm(StarletteForm):
     mapping_url = URLField(
-        "URL Field Mapping",
+        "YARRRML Mapping URL",
         # validators=[WTFOptional()],
-        description="Paste URL to a field mapping",
+        description="URL to a YARRRML mapping file (.yaml) that defines how the data is converted to RDF.",
         render_kw={
             "class": "form-control",
             "placeholder": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml",
         },
     )
-    opt_data_csvw_url = URLField(
-        "Optional: URL CSVW Json-LD",
+    opt_data_url = URLField(
+        "Optional: Data Source URL",
         validators=[WTFOptional()],
         render_kw={"class": "form-control"},
-        description="Paste URL to a CSVW Json-LD",
+        description="If provided, overrides the data source URL defined in the mapping. The app must be able to fetch this URL.",
     )
-    shacl_url = URLField(
-        "URL SHACL Shape Repository",
-        validators=[WTFOptional()],
-        render_kw={"class": "form-control"},
-        description="Paste URL to a SHACL Shape Repository",
-    )
-    opt_shacl_shape_url = URLField(
-        "Optional: URL SHACL Shape",
-        validators=[WTFOptional()],
-        render_kw={"class": "form-control"},
-        description="Paste URL to a SHACL Shape",
-    )
+    # SHACL validation fields — commented out until a test case is available
+    # shacl_url = URLField(
+    #     "URL SHACL Shape Repository",
+    #     validators=[WTFOptional()],
+    #     render_kw={"class": "form-control"},
+    #     description="Paste URL to a SHACL Shape Repository",
+    # )
+    # opt_shacl_shape_url = URLField(
+    #     "Optional: URL SHACL Shape",
+    #     validators=[WTFOptional()],
+    #     render_kw={"class": "form-control"},
+    #     description="Paste URL to a SHACL Shape",
+    # )
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
@@ -1767,15 +1768,15 @@ async def convert(request: Request):
         mapping_url = start_form.mapping_url.data
         request.session["mapping_url"] = mapping_url
 
-        opt_data_csvw_url = start_form.opt_data_csvw_url.data
-        opt_shacl_shape_url = start_form.opt_shacl_shape_url.data
+        opt_data_url = start_form.opt_data_url.data
+        # opt_shacl_shape_url = start_form.opt_shacl_shape_url.data  # SHACL: disabled
 
         try:
             # Construct full API URL for provenance
             api_url = setting.server + "/api/createrdf"
-            
+
             filename, out, count_rules, count_rules_applied = apply_mapping(
-                mapping_url, opt_data_csvw_url, None, api_url
+                mapping_url, opt_data_url, None, api_url
             )
 
         except Exception as err:
@@ -1792,8 +1793,9 @@ async def convert(request: Request):
             }
             result = api_result["graph"]
 
-            if start_form.opt_shacl_shape_url.data:
-                conforms, graph = shacl_validate(opt_shacl_shape_url, out)
+            # SHACL validation disabled until a test case is available
+            # if start_form.opt_shacl_shape_url.data:
+            #     conforms, graph = shacl_validate(opt_shacl_shape_url, out)
             b64 = base64.b64encode(result.encode())
             payload = b64.decode()
 
