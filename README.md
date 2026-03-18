@@ -1,10 +1,12 @@
 # RDFConverter
 
-[![Publish Docker image](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml/badge.svg?branch=main&event=workflow_dispatch)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml) [![TestExamples](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/TestExamples.yml/badge.svg?branch=main)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/TestExamples.yml)
+[![Publish Docker image](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml/badge.svg?branch=main&event=workflow_dispatch)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml) [![TestExamples](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/TestExamples.yml/badge.svg?branch=main)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/TestExamples.yml) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
 
 **Transform your data into semantic, machine-readable knowledge graphs - no coding required.**
 
 🌐 **Demo:** http://rdfconverter.matolab.org/
+
+**Keywords:** RDF, YARRRML, RML, knowledge graph, semantic web, data transformation, FAIR data, Catena-X, SAMM, CSVW, ontology, linked data, JSON-LD, materials science, automotive, REST API
 
 ---
 
@@ -430,6 +432,7 @@ RDFConverter consists of three Docker containers:
 |----------|--------|---------|-------|--------|
 | `/api/yarrrmltorml` | POST | Convert YARRRML to RML | YARRRML file URL | RML (Turtle format) |
 | `/api/createrdf` | POST | Execute mapping and generate RDF | Mapping URL + optional data URL | RDF graph + statistics |
+| `/api/createrdfupload` | POST | Create RDF from uploaded file content | Mapping URL + data URL (base URI) + file content | RDF graph + statistics |
 | `/api/checkmapping` | POST | Test mapping applicability | Mapping URL + data URL | Rule coverage report |
 | `/api/rdfvalidator` | POST | Validate RDF against SHACL | RDF URL + SHACL shapes URL | Validation report |
 | `/api/test` | POST | Test mapping with detailed stats | Mapping URL + optional data URL | Per-rule statistics |
@@ -569,25 +572,31 @@ prefixes:
 ```yaml
 mappings:
   batch:
-    source: [root]
-    s: urn-uuid:$(catenaXId)
+    sources: root
+    s: Batch_$(catenaXId)
     po:
-      - [rdf:type, cx:Batch]
+      - [a, cx:Batch]
       - [cx:catenaXId, $(catenaXId)]
       - p: cx:localIdentifiers
         o:
-          mapping: identifiers_list  # Links to another mapping
-          condition:
-            function: equal
-            parameters: [[str1, "1"], [str2, "1"]]
+          mapping: identifiers_list  # Links to another mapping — no join condition needed
+      - p: cx:manufacturingInformation
+        o:
+          mapping: manuinfo
+      - p: cx:partTypeInformation
+        o:
+          mapping: parttypeinfo
 ```
 
-4. **Reference to External Semantic Model:**
-```yaml
-prefixes:
-  method: "https://.../io.catenax.batch/3.0.1/Batch.ttl/"
+4. **Descriptive Subject URI Pattern:**
+
+Each mapping uses a human-readable type prefix in the subject URI (`s:` field):
+```text
+Batch_$(catenaXId)              → <#Batch_580d3adf-...>
+LocalIdentifier_$(key)_$(value) → <#LocalIdentifier_batchId_BID12345678>
+Site_$(catenaXsiteId)           → <#Site_BPNS1234567890ZZ>
 ```
-The mapping references the official Catena-X batch semantic model, ensuring compliance.
+This makes generated RDF self-explanatory and avoids opaque UUID-only subjects.
 
 **Why this matters:**
 
@@ -858,6 +867,30 @@ We welcome contributions! Here's how you can help:
    - The mapping file
    - A description of what it demonstrates
    - Sample data source (or URL to public data)
+
+---
+
+## How to Cite
+
+If you use RDFConverter in your research or project, please cite it as:
+
+> Hanke, T., & contributors. (2025). *RDFConverter: A REST API service for transforming data to RDF using YARRRML mappings* (v1.3.0). Zenodo. [https://doi.org/10.5281/zenodo.XXXXXXX](https://doi.org/10.5281/zenodo.XXXXXXX)
+
+A BibTeX entry:
+
+```bibtex
+@software{hanke_rdfconverter_2025,
+  author    = {Hanke, Thomas and contributors},
+  title     = {RDFConverter: A REST API service for transforming data to RDF using YARRRML mappings},
+  year      = {2025},
+  version   = {v1.3.0},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.XXXXXXX},
+  url       = {https://doi.org/10.5281/zenodo.XXXXXXX}
+}
+```
+
+> **Note:** Replace `XXXXXXX` with the actual Zenodo DOI after publication.
 
 ---
 
