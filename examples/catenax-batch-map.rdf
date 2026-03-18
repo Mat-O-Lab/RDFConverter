@@ -3,49 +3,48 @@
 @prefix ext-classification: <urn:samm:io.catenax.shared.part_classification:1.0.0#> .
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix urn-uuid: <urn:uuid:> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-urn-uuid:580d3adf-1981-44a0-a214-13d6ceed9379 a cx:Batch ;
+<#Batch_580d3adf-1981-44a0-a214-13d6ceed9379> a cx:Batch ;
     cx:catenaXId "580d3adf-1981-44a0-a214-13d6ceed9379" ;
-    cx:localIdentifiers <#batchId-BID12345678> ;
-    cx:manufacturingInformation <#HUR-2025-09-26> ;
-    cx:partTypeInformation <#123-0.740-3434-A> .
+    cx:localIdentifiers <#LocalIdentifier_batchId_BID12345678> ;
+    cx:manufacturingInformation <#ManufacturingEntity_HUR_2025-09-26> ;
+    cx:partTypeInformation <#PartTypeInformation_123-0.740-3434-A> .
 
-<#1004712> a ext-classification:ClassificationEntity ;
+<#Classification_1004712> a ext-classification:ClassificationEntity ;
     ext-classification:classificationDescription "Generic standard for classification of parts in the automotive industry." ;
     ext-classification:classificationID "1004712" ;
     ext-classification:classificationStandard "GIN 20510-21513" .
 
-<#123-0.740-3434-A> a cx:PartTypeInformationEntity ;
-    cx:manufacturerPartId "123-0.740-3434-A" ;
-    cx:nameAtManufacturer "Mirror left" ;
-    ext-classification:partClassification <#1004712> .
-
-<#BPNS1234567890ZZ> a ext-built:SitesEntity ;
-    ext-built:catenaXsiteId "BPNS1234567890ZZ" ;
-    ext-built:function "production" .
-
-<#HUR-2025-09-26> a cx:ManufacturingEntity ;
-    cx:country "HUR" ;
-    cx:date "2025-09-26" ;
-    ext-built:sites <#BPNS1234567890ZZ> .
-
-<#batchId-BID12345678> a cx:KeyValueList ;
+<#LocalIdentifier_batchId_BID12345678> a cx:KeyValueList ;
     cx:key "batchId" ;
     cx:value "BID12345678" .
 
-<https://github.com/Mat-O-Lab/RDFConverter/releases/tag/v1.2.4> a prov:SoftwareAgent ;
-    rdfs:label "RDFConverterv1.2.4" ;
+<#ManufacturingEntity_HUR_2025-09-26> a cx:ManufacturingEntity ;
+    cx:country "HUR" ;
+    cx:date "2025-09-26" ;
+    ext-built:sites <#Site_BPNS1234567890ZZ> .
+
+<#PartTypeInformation_123-0.740-3434-A> a cx:PartTypeInformationEntity ;
+    cx:manufacturerPartId "123-0.740-3434-A" ;
+    cx:nameAtManufacturer "Mirror left" ;
+    ext-classification:partClassification <#Classification_1004712> .
+
+<#Site_BPNS1234567890ZZ> a ext-built:SitesEntity ;
+    ext-built:catenaXsiteId "BPNS1234567890ZZ" ;
+    ext-built:function "production" .
+
+<https://github.com/Mat-O-Lab/RDFConverter/releases/tag/v1.3.0> a prov:SoftwareAgent ;
+    rdfs:label "RDFConverterv1.3.0" ;
     prov:hadPrimarySource <https://github.com/Mat-O-Lab/RDFConverter> .
 
 <http://localhost:6003/api/createrdf> a prov:Activity ;
-    prov:wasAssociatedWith <https://github.com/Mat-O-Lab/RDFConverter/releases/tag/v1.2.4> ;
+    prov:wasAssociatedWith <https://github.com/Mat-O-Lab/RDFConverter/releases/tag/v1.3.0> ;
     prov:wasInformedBy <https://github.com/Mat-O-Lab/RDFConverter/raw/main/examples/catenax-batch-map.yaml> .
 
 <https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json> a prov:Entity .
 
-[] prov:generatedAtTime "2026-02-18T15:03:54.701834"^^xsd:dateTime ;
+[] prov:generatedAtTime "2026-03-18T08:14:37.160400"^^xsd:dateTime ;
     prov:qualifiedDerivation [ a prov:Derivation ;
             prov:entity <https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json> ;
             prov:hadActivity <http://localhost:6003/api/createrdf> ] ;
