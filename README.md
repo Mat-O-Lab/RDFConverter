@@ -1,6 +1,6 @@
 # RDFConverter
 
-[![Publish Docker image](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml/badge.svg?branch=main)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml) [![TestExamples](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/TestExamples.yml/badge.svg?branch=main)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/TestExamples.yml) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
+[![Publish Docker image](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml/badge.svg)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml) [![TestExamples](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/TestExamples.yml/badge.svg?branch=main)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/TestExamples.yml) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19084883.svg)](https://doi.org/10.5281/zenodo.19084883)
 
 **Transform your data into semantic, machine-readable knowledge graphs - no coding required.**
 
@@ -874,7 +874,7 @@ We welcome contributions! Here's how you can help:
 
 If you use RDFConverter in your research or project, please cite it as:
 
-> Hanke, T., & contributors. (2025). *RDFConverter: A REST API service for transforming data to RDF using YARRRML mappings* (v1.3.0). Zenodo. [https://doi.org/10.5281/zenodo.XXXXXXX](https://doi.org/10.5281/zenodo.XXXXXXX)
+> Hanke, T., & contributors. (2025). *RDFConverter: A REST API service for transforming data to RDF using YARRRML mappings* (v1.3.0). Zenodo. [https://doi.org/10.5281/zenodo.19084883](https://doi.org/10.5281/zenodo.19084883)
 
 A BibTeX entry:
 
@@ -885,12 +885,12 @@ A BibTeX entry:
   year      = {2025},
   version   = {v1.3.0},
   publisher = {Zenodo},
-  doi       = {10.5281/zenodo.XXXXXXX},
-  url       = {https://doi.org/10.5281/zenodo.XXXXXXX}
+  doi       = {10.5281/zenodo.19084883},
+  url       = {https://doi.org/10.5281/zenodo.19084883}
 }
 ```
 
-> **Note:** Replace `XXXXXXX` with the actual Zenodo DOI after publication.
+> **Note:** Replace `19084883` with the actual Zenodo DOI after publication.
 
 ---
 
