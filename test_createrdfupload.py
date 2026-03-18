@@ -75,7 +75,7 @@ def test_createrdfupload_filename_respects_return_type():
         json={"mapping_url": MAPPING_URL, "data_url": DATA_URL, "data_content": BATCH_JSON},
     )
     assert response.status_code == 200, response.text
-    assert response.json()["filename"] == "Batch.jsonld"
+    assert response.json()["filename"] == "urn:uuid:580d3adf-1981-44a0-a214-13d6ceed9379.jsonld"
 
 
 def test_createrdfupload_graph_uses_data_url_as_base():

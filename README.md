@@ -1,6 +1,6 @@
 # RDFConverter
 
-[![Publish Docker image](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml/badge.svg?branch=main&event=workflow_dispatch)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml) [![TestExamples](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/TestExamples.yml/badge.svg?branch=main)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/TestExamples.yml) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
+[![Publish Docker image](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml/badge.svg?branch=main)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/PublishContainer.yml) [![TestExamples](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/TestExamples.yml/badge.svg?branch=main)](https://github.com/Mat-O-Lab/RDFConverter/actions/workflows/TestExamples.yml) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
 
 **Transform your data into semantic, machine-readable knowledge graphs - no coding required.**
 
