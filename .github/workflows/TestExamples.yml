@@ -102,6 +102,11 @@ jobs:
             fi
           done
 
+      - name: Run pytest integration tests
+        run: |
+          pip install pytest httpx
+          TEST_BASE_URL=http://localhost:${APP_PORT} pytest test_createrdfupload.py -v
+
       - name: Print service logs
         if: always()
         run: docker compose logs

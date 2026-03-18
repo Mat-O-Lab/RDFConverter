@@ -65,9 +65,21 @@ middleware = [
 
 tags_metadata = [
     {
-        "name": "transform",
-        "description": "transforms data to other format",
-    }
+        "name": "convert",
+        "description": "Convert data to RDF or between mapping formats.",
+    },
+    {
+        "name": "validate",
+        "description": "Validate mappings or RDF graphs.",
+    },
+    {
+        "name": "debug",
+        "description": "Test and inspect mappings with detailed output.",
+    },
+    {
+        "name": "info",
+        "description": "Application configuration and status.",
+    },
 ]
 
 app = FastAPI(
@@ -212,6 +224,18 @@ class ReturnType(str, Enum):
             if format.lower() == member.value.lower():
                 return member
         raise ValueError(f"Invalid Return type: {format}")
+
+
+RETURN_TYPE_EXT = {
+    "turtle": ".ttl",
+    "longturtle": ".ttl",
+    "json-ld": ".jsonld",
+    "xml": ".rdf",
+    "n3": ".n3",
+    "nt": ".nt",
+    "trig": ".trig",
+    "hext": ".hext",
+}
 
 
 class RDFMimeType(str, Enum):
@@ -901,7 +925,8 @@ def execute_rml_mapper(
 def download_sources(
     sources: dict,
     opt_data_url: str | None = None,
-    authorization: str | None = None
+    authorization: str | None = None,
+    injected_content: Optional[bytes] = None,
 ) -> tuple[dict, str, str]:
     """Download all sources from mapping and build URL mapping.
     
@@ -946,10 +971,22 @@ def download_sources(
             actual_url = original_url_for_download
         
         placeholder = f"source_{counter}.json"
-        
-        # Download content
-        logging.debug(f"Downloading source {source_name} from {actual_url}")
-        data_content, data_filename = open_file(actual_url, authorization)
+
+        # Use injected content for any source whose URL resolves to opt_data_url.
+        # This covers mappings where multiple sources reference the same file
+        # (all replaced by Phase 0) so none of them need to be fetched.
+        use_injected = (
+            injected_content is not None
+            and opt_data_url is not None
+            and actual_url == opt_data_url.strip("/")
+        )
+        if use_injected:
+            logging.debug(f"Using injected content for source {source_name} (url: {actual_url})")
+            data_content = injected_content
+            data_filename = actual_url.rstrip("/").split("/")[-1]
+        else:
+            logging.debug(f"Downloading source {source_name} from {actual_url}")
+            data_content, data_filename = open_file(actual_url, authorization)
         
         url_mapping[original_url] = {
             "placeholder": placeholder,
@@ -1136,7 +1173,8 @@ def add_prov(graph: Graph, api_url: str, data_url: str, used: list = []) -> Grap
 
 
 def apply_mapping(
-    mapping_url: AnyUrl, opt_data_url: AnyUrl = None, authorization=None, api_url: str = None
+    mapping_url: AnyUrl, opt_data_url: AnyUrl = None, authorization=None, api_url: str = None,
+    data_content: Optional[str] = None,
 ) -> Tuple[str, int, int]:
     """Apply YARRRML mapping to data sources.
 
@@ -1183,27 +1221,37 @@ def apply_mapping(
         # Get the first source URL (the one we want to replace)
         first_source_name = next(iter(sources))
         original_data_url = sources[first_source_name]["access"].strip("/")
-        
+
         # Replace ALL occurrences of the original data URL with the new one in the YARRRML string
         # This ensures the RML rules will have the correct URL from the start
         if isinstance(mapping_data, bytes):
             mapping_data_str = mapping_data.decode('utf-8')
         else:
             mapping_data_str = mapping_data
-            
+
         # Replace the data URL in the YARRRML content
         mapping_data_str = mapping_data_str.replace(original_data_url, opt_data_url.strip("/"))
         mapping_data = mapping_data_str.encode('utf-8') if isinstance(mapping_data, bytes) else mapping_data_str
-        
+
         # Re-parse the modified YAML to update mapping_dict
         mapping_dict = yaml.safe_load(mapping_data)
         sources = mapping_dict.get("sources", {})
-        
+
         logging.info(f"Replaced data source URL in YARRRML: {original_data_url} -> {opt_data_url}")
 
+    # Override base: with {data_url}# when file content is provided directly.
+    # Must happen AFTER Phase 0 re-parses mapping_dict.
+    if data_content is not None and opt_data_url:
+        override_base = str(opt_data_url).rstrip("/") + "#"
+        mapping_dict["base"] = override_base
+        # Also update mapping_data so yarrrml-parser receives the new base
+        mapping_data = yaml.dump(mapping_dict).encode("utf-8")
+        logging.info(f"Overriding base URI with: {override_base}")
+
     # PHASE 1: Download all source files using helper function
+    injected_bytes = data_content.encode("utf-8") if data_content is not None else None
     url_mapping, primary_data_url, filename = download_sources(
-        sources, opt_data_url, authorization
+        sources, opt_data_url, authorization, injected_bytes
     )
 
     # Check if template prefix exists (optional feature)
@@ -1788,12 +1836,12 @@ class RMLRequest(BaseModel):
 
 class RDFRequest(BaseModel):
     mapping_url: AnyUrl = Field(
-        "", title="Graph Url", description="Url to data metadata to use."
+        "", title="Mapping Url", description="URL to the YARRRML mapping file (.yaml)."
     )
     data_url: Optional[AnyUrl] = Field(
         "",
-        title="Url Data Target",
-        description="If given replaces the data target (csvw json-ld) url of the provided mapping.",
+        title="Data Url",
+        description="If given, overrides the data source URL defined in the mapping. The app must be able to fetch this URL.",
         omit_default=True,
     )
 
@@ -1806,14 +1854,46 @@ class RDFRequest(BaseModel):
         }
 
 
+class RDFUploadRequest(BaseModel):
+    mapping_url: AnyUrl = Field(
+        ..., title="Mapping Url", description="URL to the YARRRML mapping file."
+    )
+    data_url: AnyUrl = Field(
+        ...,
+        title="Data Base Url",
+        description="Base URL used as the semantic identifier for the uploaded data. Used as base: in the mapping.",
+    )
+    data_content: str = Field(
+        ..., title="Data Content", description="The file contents to process (JSON, JSON-LD, Turtle, etc.)."
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "mapping_url": "https://raw.githubusercontent.com/Mat-O-Lab/RDFConverter/refs/heads/main/examples/catenax-batch-map.yaml",
+                "data_url": "https://edc.my-company.example.com/api/v1/assets/urn:uuid:580d3adf-1981-44a0-a214-13d6ceed9379",
+                "data_content": (
+                    '{"localIdentifiers":[{"value":"BID12345678","key":"batchId"}],'
+                    '"manufacturingInformation":{"date":"2025-09-26","country":"HUR",'
+                    '"sites":[{"catenaXsiteId":"BPNS1234567890ZZ","function":"production"}]},'
+                    '"catenaXId":"580d3adf-1981-44a0-a214-13d6ceed9379",'
+                    '"partTypeInformation":{"partClassification":[{"classificationStandard":"GIN 20510-21513",'
+                    '"classificationID":"1004712","classificationDescription":"Generic standard for classification '
+                    'of parts in the automotive industry."}],"manufacturerPartId":"123-0.740-3434-A",'
+                    '"nameAtManufacturer":"Mirror left"}}'
+                ),
+            }
+        }
+
+
 class RDFResponse(BaseModel):
     filename: str = Field(
         "data-joined.ttl",
         title="Resulting File Name",
-        description="Suggested filename of the generated rdf in turtle format",
+        description="Suggested filename for the generated RDF document.",
     )
     graph: str = Field(
-        title="Graph data", description="The output gaph data in turtle format."
+        title="Graph Data", description="The generated RDF graph serialized as a string (Turtle format)."
     )
     num_mappings_applied: int = Field(
         title="Number Rules Applied",
@@ -1885,7 +1965,7 @@ async def http_exception_handler(request, exc):
     return JSONResponse(content={"message": exc.detail}, status_code=exc.status_code)
 
 
-@app.post("/api/yarrrmltorml", response_class=TurtleResponse)
+@app.post("/api/yarrrmltorml", response_class=TurtleResponse, summary="Convert YARRRML mapping to RML", tags=["convert"])
 async def yarrrmltorml(
     body: Annotated[Optional[RMLRequest], Body()] = None,
     mapping_url: Annotated[Optional[str], Query(description="URL to the YARRRML mapping file")] = None
@@ -1910,14 +1990,21 @@ async def yarrrmltorml(
     return TurtleResponse(content=data_bytes, headers=headers)
 
 
-@app.post("/api/createrdf", response_model=RDFResponse)
+@app.post("/api/createrdf", response_model=RDFResponse, summary="Create RDF from URL-accessible data", tags=["convert"])
 def create_rdf(
     req: Request,
     body: Annotated[Optional[RDFRequest], Body()] = None,
-    mapping_url: Annotated[Optional[str], Query(description="URL to the YARRRML mapping file")] = None,
-    data_url: Annotated[Optional[str], Query(description="Optional URL to override data source")] = None,
+    mapping_url: Annotated[Optional[str], Query(description="URL to the YARRRML mapping file (.yaml)")] = None,
+    data_url: Annotated[Optional[str], Query(description="Optional URL that overrides the data source defined in the mapping. The app must be able to fetch this URL.")] = None,
     return_type: ReturnType = ReturnType.turtle
 ):
+    """Convert data to RDF using a YARRRML mapping.
+
+    Fetches the mapping file and all data sources via URL, applies the mapping rules,
+    and returns the generated RDF graph. All referenced URLs must be accessible by the server.
+
+    Parameters can be supplied either as JSON body fields or as query parameters (not mixed).
+    """
     authorization = req.headers.get("Authorization", None)
     
     # Use helper: all-or-nothing strategy (query OR body, never mix)
@@ -1946,13 +2033,62 @@ def create_rdf(
     }
 
 
-@app.post("/api/checkmapping", response_model=CheckResponse)
+@app.post("/api/createrdfupload", response_model=RDFResponse, summary="Create RDF from uploaded file content", tags=["convert"])
+def create_rdf_upload(
+    req: Request,
+    body: RDFUploadRequest,
+    return_type: ReturnType = ReturnType.turtle,
+):
+    """Convert uploaded file contents to RDF using a YARRRML mapping.
+
+    Like `/api/createrdf` but the data file is sent directly in the request body —
+    the server does not need to fetch it from a URL. The `data_url` is used purely
+    as the semantic base URI for the generated RDF subjects (`base: {data_url}#`),
+    not as a download location.
+
+    The suggested return filename is derived from the last path segment of `data_url`
+    combined with the file extension for the chosen `return_type`.
+    """
+    authorization = req.headers.get("Authorization", None)
+    api_url = setting.server + "/api/createrdfupload"
+
+    logging.info(f"POST /api/createrdfupload {body.mapping_url}")
+
+    _, out, count_rules, count_rules_applied = apply_mapping(
+        str(body.mapping_url),
+        str(body.data_url),
+        authorization,
+        api_url,
+        data_content=body.data_content,
+    )
+
+    # Derive filename from last segment of data_url + extension for return_type
+    last_segment = str(body.data_url).rstrip("/").split("/")[-1]
+    stem = last_segment.rsplit(".", 1)[0] if "." in last_segment else last_segment
+    ext = RETURN_TYPE_EXT.get(return_type.value, ".ttl")
+    filename = stem + ext
+
+    return {
+        "filename": filename,
+        "graph": out,
+        "num_mappings_applied": count_rules_applied,
+        "num_mappings_skipped": count_rules - count_rules_applied,
+    }
+
+
+@app.post("/api/checkmapping", response_model=CheckResponse, summary="Check how many mapping rules apply to the data", tags=["validate"])
 async def checkmapping(
     req: Request,
     body: Annotated[Optional[RDFRequest], Body()] = None,
-    mapping_url: Annotated[Optional[str], Query(description="URL to the YARRRML mapping file")] = None,
-    data_url: Annotated[Optional[str], Query(description="Optional URL to override data source")] = None
+    mapping_url: Annotated[Optional[str], Query(description="URL to the YARRRML mapping file (.yaml)")] = None,
+    data_url: Annotated[Optional[str], Query(description="Optional URL that overrides the data source defined in the mapping.")] = None
 ):
+    """Check how many mapping rules can be applied to the data source.
+
+    Runs the mapping dry-run and reports how many rules matched the data
+    without returning the full RDF output. Useful for validating a mapping
+    before a full conversion.
+    """
     # Use helper: all-or-nothing strategy (query OR body, never mix)
     params = resolve_parameters(body, {"mapping_url": mapping_url, "data_url": data_url})
     final_mapping_url = params["mapping_url"]
@@ -1966,14 +2102,20 @@ async def checkmapping(
     return check_mapping(final_mapping_url, final_data_url, authorization)
 
 
-@app.post("/api/rdfvalidator", response_model=ValidateResponse)
+@app.post("/api/rdfvalidator", response_model=ValidateResponse, summary="Validate RDF against a SHACL shapes graph", tags=["validate"])
 def validate_rdf(request: ValidateRequest):
+    """Validate an RDF graph against a SHACL shapes graph.
+
+    Fetches both the SHACL shapes file and the RDF data file via URL, runs
+    SHACL validation, and returns the conformance report together with the
+    shapes graph.
+    """
     conforms, graph = shacl_validate(str(request.shapes_url), str(request.rdf_url))
     logging.info(f"POST /api/rdfvalidator: {conforms=}")
     return {"valid": conforms, "graph": graph.serialize(format="ttl")}
 
 
-@app.get("/info", response_model=settings.Setting)
+@app.get("/info", response_model=settings.Setting, summary="Get application configuration and version info", tags=["info"])
 async def info() -> dict:
     return setting
 
@@ -2072,7 +2214,7 @@ class TestMappingResult(BaseModel):
         }
 
 
-@app.api_route("/api/test", methods=["POST"], response_model=TestMappingResult, tags=["transform"])
+@app.api_route("/api/test", methods=["POST"], response_model=TestMappingResult, tags=["debug"], summary="Test a mapping and return detailed rule statistics")
 async def test_mapping(
     body: Annotated[Optional[RDFRequest], Body()] = None,
     mapping_url: Annotated[Optional[str], Query(description="URL to the YARRRML mapping file")] = None,
