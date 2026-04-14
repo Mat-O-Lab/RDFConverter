@@ -1738,9 +1738,9 @@ class StartForm(StarletteForm):
 async def index(request: Request):
     start_form = await StartForm.from_formdata(request)
     return templates.TemplateResponse(
+        request,
         "index.html",
         {
-            "request": request,
             "start_form": start_form,
             "mapping_form": "",
             "result": "",
@@ -1798,9 +1798,9 @@ async def convert(request: Request):
             payload = b64.decode()
 
     return templates.TemplateResponse(
+        request,
         "index.html",
         {
-            "request": request,
             "start_form": start_form,
             "filename": filename,
             "payload": payload,
