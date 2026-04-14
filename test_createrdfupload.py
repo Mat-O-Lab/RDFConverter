@@ -8,6 +8,7 @@ import json
 import os
 import pytest
 import httpx
+from rdflib import Graph, Namespace, RDF
 
 BASE_URL = os.environ.get("TEST_BASE_URL", "http://localhost:6003")
 
@@ -42,6 +43,14 @@ MAPPING_URL = (
 )
 
 DATA_URL = "https://edc.my-company.example.com/api/v1/assets/urn:uuid:580d3adf-1981-44a0-a214-13d6ceed9379"
+
+# The canonical source URL used in the mapping (used for /api/createrdf comparison)
+BATCH_JSON_URL = (
+    "https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models"
+    "/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json"
+)
+
+PROV = Namespace("http://www.w3.org/ns/prov#")
 
 
 def post(path, **kwargs):
@@ -120,3 +129,51 @@ def test_createrdfupload_missing_mapping_url_returns_422():
         json={"data_url": DATA_URL, "data_content": BATCH_JSON},
     )
     assert response.status_code == 422
+
+
+def _strip_prov(g: Graph) -> Graph:
+    """Remove all triples that involve the prov: namespace."""
+    to_remove = [
+        (s, p, o) for s, p, o in g
+        if str(p).startswith(str(PROV)) or str(o).startswith(str(PROV))
+    ]
+    for triple in to_remove:
+        g.remove(triple)
+    return g
+
+
+def test_createrdf_and_createrdfupload_produce_equivalent_graphs():
+    """Both endpoints produce the same data triples for the same input.
+
+    /api/createrdf fetches the data from the canonical source URL;
+    /api/createrdfupload receives the same content directly in the body.
+    After stripping provenance triples (which legitimately differ), the
+    predicate-object pairs and rdf:type assertions must be identical.
+    """
+    url_resp = post(
+        "/api/createrdf",
+        json={"mapping_url": MAPPING_URL, "data_url": BATCH_JSON_URL},
+    )
+    assert url_resp.status_code == 200, url_resp.text
+
+    upload_resp = post(
+        "/api/createrdfupload",
+        json={"mapping_url": MAPPING_URL, "data_url": BATCH_JSON_URL, "data_content": BATCH_JSON},
+    )
+    assert upload_resp.status_code == 200, upload_resp.text
+
+    g_url = _strip_prov(Graph().parse(data=url_resp.json()["graph"], format="turtle"))
+    g_upload = _strip_prov(Graph().parse(data=upload_resp.json()["graph"], format="turtle"))
+
+    assert len(g_url) == len(g_upload), (
+        f"Triple count mismatch: createrdf={len(g_url)}, createrdfupload={len(g_upload)}"
+    )
+
+    # Predicate-object pairs are independent of base URI and must match exactly
+    po_url = {(str(p), str(o)) for _, p, o in g_url}
+    po_upload = {(str(p), str(o)) for _, p, o in g_upload}
+    assert po_url == po_upload, (
+        f"Predicate-object mismatch:\n"
+        f"  only in createrdf:       {po_url - po_upload}\n"
+        f"  only in createrdfupload: {po_upload - po_url}"
+    )

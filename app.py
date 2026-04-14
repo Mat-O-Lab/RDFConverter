@@ -1241,11 +1241,9 @@ def apply_mapping(
 
     # Override base: with {data_url}# when file content is provided directly.
     # Must happen AFTER Phase 0 re-parses mapping_dict.
-    if data_content is not None and opt_data_url:
+    if opt_data_url:
         override_base = str(opt_data_url).rstrip("/") + "#"
         mapping_dict["base"] = override_base
-        # Also update mapping_data so yarrrml-parser receives the new base
-        mapping_data = yaml.dump(mapping_dict).encode("utf-8")
         logging.info(f"Overriding base URI with: {override_base}")
 
     # PHASE 1: Download all source files using helper function
