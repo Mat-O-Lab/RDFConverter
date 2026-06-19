@@ -327,7 +327,7 @@ def open_file(uri: AnyUrl, authorization=None) -> Tuple["filedata":str, "filenam
 
 
 from datetime import datetime
-from jsonpath_ng import parse as jsonpath_parse
+from jsonpath_ng.ext import parse as jsonpath_parse
 from jsonpath_ng.exceptions import JsonPathParserError
 
 
