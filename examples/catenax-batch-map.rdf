@@ -34,17 +34,17 @@
     ext-built:catenaXsiteId "BPNS1234567890ZZ" ;
     ext-built:function "production" .
 
-<https://github.com/Mat-O-Lab/RDFConverter/releases/tag/v1.3.0> a prov:SoftwareAgent ;
-    rdfs:label "RDFConverterv1.3.0" ;
+<https://github.com/Mat-O-Lab/RDFConverter/releases/tag/v1.3.2> a prov:SoftwareAgent ;
+    rdfs:label "RDFConverterv1.3.2" ;
     prov:hadPrimarySource <https://github.com/Mat-O-Lab/RDFConverter> .
 
 <http://localhost:6003/api/createrdf> a prov:Activity ;
-    prov:wasAssociatedWith <https://github.com/Mat-O-Lab/RDFConverter/releases/tag/v1.3.0> ;
+    prov:wasAssociatedWith <https://github.com/Mat-O-Lab/RDFConverter/releases/tag/v1.3.2> ;
     prov:wasInformedBy <https://github.com/Mat-O-Lab/RDFConverter/raw/main/examples/catenax-batch-map.yaml> .
 
 <https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json> a prov:Entity .
 
-[] prov:generatedAtTime "2026-04-14T09:36:02.804059"^^xsd:dateTime ;
+[] prov:generatedAtTime "2026-06-19T13:03:35.721823"^^xsd:dateTime ;
     prov:qualifiedDerivation [ a prov:Derivation ;
             prov:entity <https://raw.githubusercontent.com/eclipse-tractusx/sldt-semantic-models/refs/heads/main/io.catenax.batch/3.0.1/gen/Batch.json> ;
             prov:hadActivity <http://localhost:6003/api/createrdf> ] ;
