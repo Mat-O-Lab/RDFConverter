@@ -138,7 +138,47 @@ You'll get back a JSON response with:
 
 ---
 
-### Use Case 3: Your Use Case
+### Use Case 3: Steel Quality Inspection (AAS / Industry 4.0)
+
+**Challenge:** Steel producers exchange inspection certificates as Asset Administration Shell (AAS) JSON payloads. Quality data (tensile strength, chemical composition) must be mapped to domain ontologies for cross-company analytics.
+
+**Solution:** Use the [AAS Inspection Documents mapping](https://futurecarproduction.materialsdata.space/dataset/aas-mapping-inspection-documents-of-steel-products) to transform AAS submodel data into RDF aligned with the PMD Core Ontology (pmdco) and TTO.
+
+```bash
+curl -X POST http://localhost:6003/api/createrdf \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mapping_url": "https://futurecarproduction.materialsdata.space/dataset/e608c577-19a8-48d5-ad5e-310ab741d11b/resource/d4c80145-4fd9-4d99-9f22-4d687e8c6549/download/inspectiondocumentsofsteelproducts.json-to-pmdco.yaml",
+    "data_url": "https://futurecarproduction.materialsdata.space/dataset/7c41e2f2-e0ee-4ec9-b887-6e3e2a68ced9/resource/475d99df-b4b4-4ee6-ab0d-6941019bd112/download/inspectiondocumentsofsteelproducts.sample.json"
+  }'
+```
+
+**Result:**
+- AAS submodel properties become typed ontology instances
+- Mechanical properties (tensile, yield, elongation) and chemical composition linked to material
+- Uses JSONPath filter expressions (`$..value[?(@.idShort=='...')]`) to extract specific submodel elements
+- 39 mapping rules covering material, measurements, and element fractions
+
+📁 **Browse:** [AAS mappings collection](https://futurecarproduction.materialsdata.space/group/mappings)
+
+---
+
+### Use Case 4: Automotive Material Data (Catena-X SAMM)
+
+**Challenge:** Material composition data must flow between recyclers, OEMs, and suppliers in the Catena-X ecosystem using standardized aspect models.
+
+**Solution:** The [SAMM Material Class & Composition mapping](https://futurecarproduction.materialsdata.space/dataset/samm-mapping-material-class-and-composition) transforms JSON payloads into SAMM-compliant RDF referencing the official `io.catenax.matclassandcomp:1.0.0` model.
+
+**Result:**
+- JSON material data becomes semantic RDF with full SAMM compliance
+- Composition items (element, percentage, unit) properly structured
+- Compatible with other Catena-X SAMM mappings for [vehicle information](https://futurecarproduction.materialsdata.space/dataset/samm-mapping-vehicle-information), [recycling](https://futurecarproduction.materialsdata.space/dataset/samm-mapping-recycling-information), [sustainability](https://futurecarproduction.materialsdata.space/dataset/samm-mapping-sustainability), and more
+
+📁 **Browse:** [All SAMM mappings](https://futurecarproduction.materialsdata.space/group/mappings)
+
+---
+
+### Use Case 5: Your Use Case
 
 **Have JSON/CSV/RDF data that needs semantic structure?**
 
@@ -614,6 +654,66 @@ SAMM batch model reference → Compliant semantic RDF
 
 **Real-World Application:**
 In the automotive industry, this enables a battery manufacturer to provide semantic batch data to the OEM, who can then trace that batch through the entire vehicle lifecycle - all while maintaining data sovereignty and interoperability.
+
+---
+
+### Example 3: AAS Inspection Documents - Industry 4.0 Asset Administration Shell
+
+**What it does:**
+Transforms Asset Administration Shell (AAS) JSON payloads describing steel inspection certificates into RDF knowledge graphs aligned with the PMD Core Ontology and TTO (Tensile Test Ontology).
+
+**Key Features Demonstrated:**
+
+1. **JSONPath Filter Expressions for AAS Submodel Elements:**
+```yaml
+sources:
+  root:
+    access: '../Sample JSON data/InspectionDocumentsOfSteelProducts.sample.json'
+    iterator: $                                              # Root object
+  tensile_src:
+    iterator: "$..value[?(@.idShort=='TensileStrengthMean')]"  # Filter by idShort
+  carbon_src:
+    iterator: "$..value[?(@.idShort=='MassFraction_C')]"       # Chemical elements
+```
+The mapping uses JSONPath filter expressions to pinpoint specific submodel elements deep within the AAS hierarchy.
+
+2. **Multi-Domain Ontology Alignment:**
+```yaml
+prefixes:
+  pmd: https://w3id.org/pmd/co/           # PMD Core Ontology
+  tto: https://w3id.org/pmd/tto/          # Tensile Test Ontology
+  obo: http://purl.obolibrary.org/obo/    # OBO Foundry (BFO, IAO, OBI)
+  qudt: https://qudt.org/schema/qudt/     # Units of measurement
+```
+
+3. **Structured Measurement Pattern:**
+```yaml
+tensile_strength_value:
+  sources: tensile_src
+  po:
+    - [a, obo:OBI_0001931]              # Scalar value specification
+    - [qudt:numericValue, $(value)]      # Actual measurement
+    - [qudt:unit, qudt:MegaPA~iri]       # Unit reference
+```
+Each measurement follows a consistent pattern: quality → specification → value + unit.
+
+**Why this matters:**
+
+- **Industry 4.0 Interoperability:** Bridges AAS (IDTA standard) and semantic web ontologies
+- **39 Mapping Rules:** Covers material identity, mechanical properties (tensile, yield, elongation), and 9 chemical element fractions
+- **Reusable Pattern:** Same approach works for other AAS submodel templates
+
+**Try it:**
+```bash
+curl -X POST http://localhost:6003/api/createrdf \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mapping_url": "https://futurecarproduction.materialsdata.space/dataset/e608c577-19a8-48d5-ad5e-310ab741d11b/resource/d4c80145-4fd9-4d99-9f22-4d687e8c6549/download/inspectiondocumentsofsteelproducts.json-to-pmdco.yaml",
+    "data_url": "https://futurecarproduction.materialsdata.space/dataset/7c41e2f2-e0ee-4ec9-b887-6e3e2a68ced9/resource/475d99df-b4b4-4ee6-ab0d-6941019bd112/download/inspectiondocumentsofsteelproducts.sample.json"
+  }'
+```
+
+📁 **Browse more AAS and SAMM mappings:** [Mappings Collection](https://futurecarproduction.materialsdata.space/group/mappings)
 
 ---
 

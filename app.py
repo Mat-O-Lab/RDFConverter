@@ -1847,10 +1847,29 @@ class RDFRequest(BaseModel):
 
     class Config:
         json_schema_extra = {
-            "example": {
-                "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml",
-                "data_url": "https://raw.githubusercontent.com/Mat-O-Lab/CSVToCSVW/main/examples/example-metadata.json",
-            }
+            "examples": [
+                {
+                    "summary": "CSVW Template Mapping",
+                    "value": {
+                        "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml",
+                        "data_url": "https://raw.githubusercontent.com/Mat-O-Lab/CSVToCSVW/main/examples/example-metadata.json",
+                    },
+                },
+                {
+                    "summary": "AAS Inspection Documents (Steel Products)",
+                    "value": {
+                        "mapping_url": "https://futurecarproduction.materialsdata.space/dataset/e608c577-19a8-48d5-ad5e-310ab741d11b/resource/d4c80145-4fd9-4d99-9f22-4d687e8c6549/download/inspectiondocumentsofsteelproducts.json-to-pmdco.yaml",
+                        "data_url": "https://futurecarproduction.materialsdata.space/dataset/7c41e2f2-e0ee-4ec9-b887-6e3e2a68ced9/resource/475d99df-b4b4-4ee6-ab0d-6941019bd112/download/inspectiondocumentsofsteelproducts.sample.json",
+                    },
+                },
+                {
+                    "summary": "Catena-X SAMM Material Class & Composition",
+                    "value": {
+                        "mapping_url": "https://futurecarproduction.materialsdata.space/dataset/0cb5ba8a-4f7e-4988-88b5-edb551474689/resource/6adc9bcd-ed24-4c90-880b-29d06f02584b/download/materialclassandcomposition.json-to-samm.yaml",
+                        "data_url": "",
+                    },
+                },
+            ]
         }
 
 
