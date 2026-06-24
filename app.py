@@ -2542,10 +2542,35 @@ def check_mapping(mapping_url, data_url, authorization=None):
             rules_skipped += 1
             continue
 
-        # Step 2: no condition → iterator match is sufficient
+        # Step 2: no condition → check subject template field refs exist in data
         if not condition:
-            rules_applicable += 1
-            logging.debug(f"  Rule '{rule_name}' iterator matched {len(matches)} item(s) - applicable")
+            subject = rule_def.get("s", "")
+            subject_refs = re.findall(r'\$\(([^)]+)\)', subject)
+            if subject_refs:
+                # At least one matched row must have ALL subject fields present
+                def row_has_all_refs(row):
+                    row_data = row.value if hasattr(row, "value") else row
+                    if not isinstance(row_data, dict):
+                        row_data = data_json
+                    for ref in subject_refs:
+                        try:
+                            hits = jsonpath_parse(f"$.{ref}").find(row_data)
+                            if not hits or hits[0].value is None:
+                                return False
+                        except Exception:
+                            return False
+                    return True
+
+                if any(row_has_all_refs(m) for m in matches):
+                    rules_applicable += 1
+                    logging.debug(f"  Rule '{rule_name}' subject fields {subject_refs} found - applicable")
+                else:
+                    rules_skipped += 1
+                    logging.debug(f"  Rule '{rule_name}' subject fields {subject_refs} absent in data - skipped")
+            else:
+                # Static subject (no template refs) — iterator match is sufficient
+                rules_applicable += 1
+                logging.debug(f"  Rule '{rule_name}' iterator matched {len(matches)} item(s) - applicable")
             continue
 
         # Step 3: condition present → evaluate it against each matched item
