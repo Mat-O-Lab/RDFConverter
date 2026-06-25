@@ -10,9 +10,9 @@ from xmlrpc.client import Boolean
 import requests
 import uvicorn
 import yaml
-from fastapi import Body, FastAPI, HTTPException, Request, Query
+from fastapi import Body, FastAPI, HTTPException, Request, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, StreamingResponse, JSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -30,6 +30,8 @@ from wtforms import BooleanField, URLField
 from wtforms.validators import Optional as WTFOptional
 
 from rmlmapper import count_rules_str, replace_data_source, replace_all_data_sources, strip_namespace
+from yarrrml_utils import normalize_yarrrml_nested_lists
+from yarrrml_sparql import yarrrml_to_sparql
 from enum import Enum
 
 YARRRML_URL = os.environ.get("YARRRML_URL")
@@ -836,17 +838,22 @@ def process_data_to_jsonld(
 
 def convert_yarrrml_to_rml(mapping_data: bytes | str) -> str:
     """Convert YARRRML to RML format via web API.
-    
+
     Args:
         mapping_data: YARRRML content as bytes or string
-        
+
     Returns:
         RML rules as string in Turtle format
-        
+
     Raises:
         requests.RequestException: If conversion fails
     """
-    response = requests.post(YARRRML_URL, data={"yarrrml": mapping_data})
+    if isinstance(mapping_data, bytes):
+        yaml_str = mapping_data.decode('utf-8')
+    else:
+        yaml_str = mapping_data
+    yaml_str = normalize_yarrrml_nested_lists(yaml_str)
+    response = requests.post(YARRRML_URL, data={"yarrrml": yaml_str})
     response.raise_for_status()
     return response.text
 
@@ -1834,6 +1841,19 @@ class RMLRequest(BaseModel):
         }
 
 
+class YARRRMLSPARQLRequest(BaseModel):
+    mapping_url: Optional[AnyUrl] = Field(
+        "", title="Mapping URL", description="URL of the YARRRML mapping file"
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"
+            }
+        }
+
+
 class RDFRequest(BaseModel):
     mapping_url: AnyUrl = Field(
         "", title="Mapping Url", description="URL to the YARRRML mapping file (.yaml)."
@@ -1999,7 +2019,7 @@ async def yarrrmltorml(
     logging.info(f"POST /api/yarrrmltorml {final_mapping_url}")
     filedata, filename = open_file(final_mapping_url)
 
-    rules = requests.post(YARRRML_URL, data={"yarrrml": filedata}).text
+    rules = convert_yarrrml_to_rml(filedata)
     data_bytes = BytesIO(rules.encode())
     filename = filename.rsplit(".yaml", 1)[0] + "-rml.ttl"
     headers = {
@@ -2007,6 +2027,56 @@ async def yarrrmltorml(
         "Access-Control-Expose-Headers": "Content-Disposition",
     }
     return TurtleResponse(content=data_bytes, headers=headers)
+
+
+@app.post("/api/yarrrmltosparql", response_class=PlainTextResponse, summary="Convert YARRRML mapping to SPARQL SELECT query", tags=["convert"])
+async def yarrrmltosparql(
+    body: Annotated[Optional[YARRRMLSPARQLRequest], Body()] = None,
+    mapping_url: Annotated[Optional[str], Query(description="URL to the YARRRML mapping file")] = None
+) -> PlainTextResponse:
+    """Convert a YARRRML mapping file to a SPARQL SELECT query."""
+    params = resolve_parameters(body, {"mapping_url": mapping_url})
+    final_mapping_url = params["mapping_url"]
+
+    if not final_mapping_url:
+        raise HTTPException(status_code=422, detail="mapping_url is required")
+
+    logging.info(f"POST /api/yarrrmltosparql {final_mapping_url}")
+    filedata, _ = open_file(final_mapping_url)
+
+    try:
+        mapping_str = filedata.decode("utf-8")
+        sparql_str = yarrrml_to_sparql(mapping_str)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return PlainTextResponse(content=sparql_str)
+
+
+@app.post("/api/normalizeyarrrml", response_class=PlainTextResponse, summary="Normalize YARRRML nested-list po: blocks to inline-list form", tags=["convert"])
+async def normalizeyarrrml(
+    file: Optional[UploadFile] = None,
+) -> PlainTextResponse:
+    """Accept a YARRRML file upload and return normalized YAML text.
+
+    Converts nested-list po: blocks (two-line form) to inline-list form
+    that yarrrml-parser accepts without silently dropping them.
+    """
+    if file is None:
+        raise HTTPException(status_code=422, detail="file upload is required")
+
+    raw = await file.read()
+    if len(raw) > 1_048_576:
+        raise HTTPException(status_code=413, detail="File exceeds 1 MB limit")
+
+    try:
+        yaml_str = raw.decode('utf-8')
+    except UnicodeDecodeError as exc:
+        raise HTTPException(status_code=422, detail="File must be UTF-8 encoded") from exc
+
+    normalized = normalize_yarrrml_nested_lists(yaml_str)
+    logging.info(f"POST /api/normalizeyarrrml filename={file.filename}")
+    return PlainTextResponse(content=normalized)
 
 
 @app.post("/api/createrdf", response_model=RDFResponse, summary="Create RDF from URL-accessible data", tags=["convert"])
