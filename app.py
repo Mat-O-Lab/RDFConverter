@@ -31,6 +31,7 @@ from wtforms.validators import Optional as WTFOptional
 
 from rmlmapper import count_rules_str, replace_data_source, replace_all_data_sources, strip_namespace
 from yarrrml_utils import normalize_yarrrml_nested_lists
+from yarrrml_sparql import yarrrml_to_sparql
 from enum import Enum
 
 YARRRML_URL = os.environ.get("YARRRML_URL")
@@ -1840,6 +1841,19 @@ class RMLRequest(BaseModel):
         }
 
 
+class YARRRMLSPARQLRequest(BaseModel):
+    mapping_url: Optional[AnyUrl] = Field(
+        "", title="Mapping URL", description="URL of the YARRRML mapping file"
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "mapping_url": "https://github.com/Mat-O-Lab/MapToMethod/raw/main/examples/example-map.yaml"
+            }
+        }
+
+
 class RDFRequest(BaseModel):
     mapping_url: AnyUrl = Field(
         "", title="Mapping Url", description="URL to the YARRRML mapping file (.yaml)."
@@ -2013,6 +2027,30 @@ async def yarrrmltorml(
         "Access-Control-Expose-Headers": "Content-Disposition",
     }
     return TurtleResponse(content=data_bytes, headers=headers)
+
+
+@app.post("/api/yarrrmltosparql", response_class=PlainTextResponse, summary="Convert YARRRML mapping to SPARQL SELECT query", tags=["convert"])
+async def yarrrmltosparql(
+    body: Annotated[Optional[YARRRMLSPARQLRequest], Body()] = None,
+    mapping_url: Annotated[Optional[str], Query(description="URL to the YARRRML mapping file")] = None
+) -> PlainTextResponse:
+    """Convert a YARRRML mapping file to a SPARQL SELECT query."""
+    params = resolve_parameters(body, {"mapping_url": mapping_url})
+    final_mapping_url = params["mapping_url"]
+
+    if not final_mapping_url:
+        raise HTTPException(status_code=422, detail="mapping_url is required")
+
+    logging.info(f"POST /api/yarrrmltosparql {final_mapping_url}")
+    filedata, _ = open_file(final_mapping_url)
+
+    try:
+        mapping_str = filedata.decode("utf-8")
+        sparql_str = yarrrml_to_sparql(mapping_str)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return PlainTextResponse(content=sparql_str)
 
 
 @app.post("/api/normalizeyarrrml", response_class=PlainTextResponse, summary="Normalize YARRRML nested-list po: blocks to inline-list form", tags=["convert"])
