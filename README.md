@@ -753,6 +753,12 @@ RDFConverter uses GitHub Actions to automatically test all example mappings on e
 3. **Commit Results:** Generated outputs are committed back to `examples/` for review
 4. **Test on Push:** Runs on all pushes to `main` or `develop` branches
 
+### Pytest Suite
+
+`pytest` runs the unit tests directly and the integration tests (`test_createrdfupload.py`) against a running service
+(`TEST_BASE_URL`, default `http://localhost:6003`). The `Tests` workflow (`.github/workflows/Tests.yml`) starts
+`docker-compose.develop.yml` and runs the whole suite on every push to `main`/`develop` and on pull requests.
+
 ### Run Tests Locally
 
 **Via API Endpoint:**
@@ -823,6 +829,21 @@ services:
   rmlmapper:
     image: ghcr.io/mat-o-lab/rmlmapper-webapi:latest
 ```
+
+### Container Images
+
+The three images are built from this repository and released together: **use the same release tag for all three**
+(for example `v1.3.4`) and pin it instead of `latest`, so a deployment does not change when a new release is published.
+
+| Image | Base | Runs as | Healthcheck tools |
+|-------|------|---------|-------------------|
+| `rdfconverter` | `python:3.13-alpine` | root | `curl`, `wget`, `nc` |
+| `yarrrml-parser` | `node:22-alpine` (multi-stage, no npm/yarn at runtime) | `node` | `wget`, `nc` (no `curl`) |
+| `rmlmapper-webapi` | `node:22-alpine` + OpenJDK 21 JRE, rmlmapper-java 8.1.0 (pinned by sha256) | `node` | `wget`, `nc` (no `curl`) |
+
+Use `nc -z localhost $PARSER_PORT` for the parser and `wget -qO /dev/null http://localhost:4000/` for the mapper as healthchecks.
+All OS packages are upgraded at build time and the images are scanned with [Trivy](https://trivy.dev) before a release. Findings in
+third-party libraries bundled in the upstream rmlmapper-java jar can only be fixed by a new rmlmapper-java release.
 
 ### Environment Variables
 
