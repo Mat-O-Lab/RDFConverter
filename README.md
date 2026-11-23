@@ -842,9 +842,8 @@ The three images are built from this repository and released together: **use the
 | `rmlmapper-webapi` | `node:22-alpine` + OpenJDK 21 JRE, rmlmapper-java 8.1.0 (pinned by sha256) | `node` | `wget`, `nc` (no `curl`) |
 
 Use `nc -z localhost $PARSER_PORT` for the parser and `wget -qO /dev/null http://localhost:4000/` for the mapper as healthchecks.
-All OS packages are upgraded at build time and the images are scanned with [Trivy](https://trivy.dev) before a release. The parser and
-RDFConverter images have no known vulnerabilities; the mapper image carries the findings of the upstream rmlmapper-java 8.1.0 jar
-(jackson-databind, jackson-core, guava, jsoup, httpcore5), which can only be fixed by a new rmlmapper-java release.
+All OS packages are upgraded at build time and the images are scanned with [Trivy](https://trivy.dev) before a release. Findings in
+third-party libraries bundled in the upstream rmlmapper-java jar can only be fixed by a new rmlmapper-java release.
 
 ### Environment Variables
 
