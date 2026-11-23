@@ -177,3 +177,115 @@ def test_createrdf_and_createrdfupload_produce_equivalent_graphs():
         f"  only in createrdf:       {po_url - po_upload}\n"
         f"  only in createrdfupload: {po_upload - po_url}"
     )
+
+
+# ---------------------------------------------------------------------------
+# YARRRML nested-list normalization integration tests
+# ---------------------------------------------------------------------------
+
+# Minimal YARRRML mapping using nested-list po: form (two-line form).
+# yarrrml-parser silently drops this form; normalization must convert it first.
+NESTED_LIST_MAPPING = """\
+prefixes:
+  ex: "http://example.org/"
+  rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+mappings:
+  Item:
+    sources:
+      - [source~csv]
+    s: ex:$(id)
+    po:
+      - - rdf:type
+        - ex:Item
+      - - ex:label
+        - $(label)
+"""
+
+INLINE_LIST_MAPPING = """\
+prefixes:
+  ex: "http://example.org/"
+  rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+mappings:
+  Item:
+    sources:
+      - [source~csv]
+    s: ex:$(id)
+    po:
+      - [rdf:type, ex:Item]
+      - [ex:label, $(label)]
+"""
+
+SIMPLE_CSV = "id,label\n1,hello\n"
+
+
+def test_normalizeyarrrml_endpoint_returns_200():
+    """POST /api/normalizeyarrrml returns 200 for valid YAML upload."""
+    response = httpx.post(
+        f"{BASE_URL}/api/normalizeyarrrml",
+        files={"file": ("mapping.yaml", NESTED_LIST_MAPPING, "text/plain")},
+    )
+    assert response.status_code == 200, response.text
+
+
+def test_normalizeyarrrml_converts_nested_to_inline():
+    """Endpoint converts nested-list po: form to inline-list form."""
+    response = httpx.post(
+        f"{BASE_URL}/api/normalizeyarrrml",
+        files={"file": ("mapping.yaml", NESTED_LIST_MAPPING, "text/plain")},
+    )
+    assert response.status_code == 200, response.text
+    assert response.text == INLINE_LIST_MAPPING
+
+
+def test_normalizeyarrrml_missing_file_returns_422():
+    """Endpoint rejects requests with no file upload."""
+    response = httpx.post(f"{BASE_URL}/api/normalizeyarrrml")
+    assert response.status_code == 422
+
+
+def test_createrdfupload_nested_list_mapping_produces_triples():
+    """Nested-list YARRRML mapping produces triples after normalization."""
+    response = post(
+        "/api/createrdfupload",
+        json={
+            "mapping_url": "data:text/plain;base64," + __import__("base64").b64encode(
+                NESTED_LIST_MAPPING.encode()
+            ).decode(),
+            "data_url": "http://example.org/source.csv",
+            "data_content": SIMPLE_CSV,
+        },
+    )
+    # 200 with triples means normalization fired and yarrrml-parser accepted the mapping
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["num_mappings_applied"] > 0, (
+        "Nested-list mapping produced zero mappings — normalization may not have fired"
+    )
+
+
+def test_createrdfupload_nested_and_inline_produce_equivalent_graphs():
+    """Nested-list and inline-list forms of the same mapping produce equal graphs."""
+    def run(mapping: str) -> Graph:
+        resp = post(
+            "/api/createrdfupload",
+            json={
+                "mapping_url": "data:text/plain;base64," + __import__("base64").b64encode(
+                    mapping.encode()
+                ).decode(),
+                "data_url": "http://example.org/source.csv",
+                "data_content": SIMPLE_CSV,
+            },
+        )
+        assert resp.status_code == 200, resp.text
+        return _strip_prov(Graph().parse(data=resp.json()["graph"], format="turtle"))
+
+    g_nested = run(NESTED_LIST_MAPPING)
+    g_inline = run(INLINE_LIST_MAPPING)
+
+    po_nested = {(str(p), str(o)) for _, p, o in g_nested}
+    po_inline = {(str(p), str(o)) for _, p, o in g_inline}
+    assert po_nested == po_inline, (
+        f"Nested vs inline graph mismatch:\n"
+        f"  only in nested: {po_nested - po_inline}\n"
+        f"  only in inline: {po_inline - po_nested}"
+    )
