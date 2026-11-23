@@ -1,0 +1,51 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+  workflow_dispatch:
+
+env:
+  APP_PORT: 6003
+  PARSER_PORT: 3001
+  MAPPER_PORT: 4000
+  CONVERTER_PORT: 5000
+  APP_MODE: development
+  SSL_VERIFY: "False"
+  TEST_BASE_URL: http://localhost:6003
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Start services
+        run: docker compose -f docker-compose.develop.yml up -d --build
+
+      - name: Wait for RDFConverter
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf "$TEST_BASE_URL/info" > /dev/null && exit 0
+            sleep 5
+          done
+          docker compose -f docker-compose.develop.yml logs
+          exit 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install test dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest -q
+
+      - name: Service logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.develop.yml logs
