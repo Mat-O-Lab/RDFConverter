@@ -5,6 +5,7 @@ import re
 from io import BytesIO
 from typing import Any, List, Optional, Tuple, Annotated
 from urllib.parse import unquote, urlparse
+from urllib.request import urlopen
 from xmlrpc.client import Boolean
 
 import requests
@@ -321,6 +322,16 @@ def open_file(uri: AnyUrl, authorization=None) -> Tuple["filedata":str, "filenam
             # filedata = r.read().decode(charset)
         elif uri_parsed.scheme == "file":
             filedata = open(unquote(uri_parsed.path), "rb").read()
+        elif uri_parsed.scheme == "data":
+            # inline content, e.g. data:text/plain;base64,<payload> (no network access)
+            try:
+                with urlopen(uri) as r:
+                    filedata = r.read()
+            except Exception as e:
+                raise HTTPException(
+                    status_code=400, detail=f"invalid data URI: {e}"
+                ) from e
+            filename = "inline-data"
         else:
             raise HTTPException(
                 status_code=400, detail="unknown scheme {}".format(uri_parsed.scheme)
@@ -711,6 +722,58 @@ def extract_jsonld_namespaces(content: bytes) -> tuple[dict, str | None]:
     return namespace_dict
 
 
+RDF_SNIFF_FORMATS = ("turtle", "xml", "n3")
+
+
+def source_file_kind(content: bytes | str, url: str) -> str:
+    """'csv' if content is tabular data (not JSON, not RDF), else 'json'."""
+    import json
+
+    try:
+        json.loads(content)
+        return "json"
+    except (json.JSONDecodeError, ValueError):
+        pass
+    if sniff_rdf_format(content, url):
+        return "json"
+    text = content.decode("utf-8", errors="replace") if isinstance(content, bytes) else content
+    return "csv" if looks_like_csv(text) else "json"
+
+
+def looks_like_csv(text: str) -> bool:
+    """True if text has a consistent delimiter-separated table with >= 2 columns and rows."""
+    import csv
+
+    sample = text[:65536]
+    lines = [l for l in sample.splitlines() if l.strip()]
+    if len(lines) < 2:
+        return False
+    try:
+        dialect = csv.Sniffer().sniff("\n".join(lines[:50]), delimiters=",;\t|")
+    except csv.Error:
+        return False
+    widths = {len(r) for r in csv.reader(lines[:50], dialect)}
+    return len(widths) == 1 and widths.pop() >= 2
+
+
+def sniff_rdf_format(content: bytes | str, url: str) -> str | None:
+    """Find the RDF serialization of content: URL hint first, then try parsers on the body."""
+    candidates = []
+    hint = guess_format(url)
+    if hint:
+        candidates.append(hint)
+    candidates += [f for f in RDF_SNIFF_FORMATS if f not in candidates]
+    for fmt in candidates:
+        try:
+            g = Graph()
+            g.parse(data=content, format=fmt)
+        except Exception:
+            continue
+        if len(g) > 0:
+            return fmt
+    return None
+
+
 def detect_data_format(content: bytes, url: str) -> tuple[str | None, bool]:
     """Detect if content is JSON, RDF, or unknown.
     
@@ -737,14 +800,14 @@ def detect_data_format(content: bytes, url: str) -> tuple[str | None, bool]:
         pass
     
     # Try RDF format
-    data_format = guess_format(url)
+    data_format = sniff_rdf_format(content, url)
     if data_format:
         logging.info(f"Content detected as RDF format: {data_format}")
         return data_format, True
     
     raise HTTPException(
         status_code=422,
-        detail=f"Could not determine data format from URL: {url}",
+        detail=f"Could not determine data format of {url}: content is neither JSON nor RDF",
     )
 
 
@@ -802,12 +865,18 @@ def process_data_to_jsonld(
         # Not JSON - must be other RDF format (Turtle, RDF/XML, etc.)
         logging.info("Content is not JSON - checking for other RDF formats")
     
-    # Try as non-JSON RDF format (Turtle, RDF/XML, N-Triples, etc.)
-    data_format = guess_format(url)
+    # Try as non-JSON RDF format (Turtle, RDF/XML, N-Triples, etc.); decided by the
+    # content, the URL extension is only a hint
+    data_format = sniff_rdf_format(content, url)
     if not data_format:
+        text = content.decode("utf-8", errors="replace") if isinstance(content, bytes) else content
+        if looks_like_csv(text):
+            # tabular data is read by the RML mapper itself (referenceFormulation: csv)
+            logging.info("Content detected as CSV - passing through unchanged")
+            return text, False, namespace_dict
         raise HTTPException(
             status_code=422,
-            detail=f"Could not determine data format from URL: {url}",
+            detail=f"Could not determine data format of {url}: content is neither JSON, RDF nor CSV",
         )
     
     try:
@@ -995,6 +1064,11 @@ def download_sources(
             logging.debug(f"Downloading source {source_name} from {actual_url}")
             data_content, data_filename = open_file(actual_url, authorization)
         
+        # tabular data keeps a .csv name so the RML mapper reads it as CSV; JSON and RDF
+        # (converted to JSON-LD later) use .json
+        if source_file_kind(data_content, actual_url) == "csv":
+            placeholder = f"source_{counter}.csv"
+
         url_mapping[original_url] = {
             "placeholder": placeholder,
             "content": data_content,
@@ -1314,7 +1388,7 @@ def apply_mapping(
         sources_for_mapper[placeholder] = processed_content
 
         # First source determines primary data graph and namespace
-        if placeholder == "source_1.json":
+        if placeholder.startswith("source_1."):
             is_rdf_data = is_rdf
             if is_rdf:
                 data_graph = Graph()
@@ -1895,7 +1969,12 @@ class RDFRequest(BaseModel):
 
 class RDFUploadRequest(BaseModel):
     mapping_url: AnyUrl = Field(
-        ..., title="Mapping Url", description="URL to the YARRRML mapping file."
+        ...,
+        title="Mapping Url",
+        description=(
+            "URL to the YARRRML mapping file. To use a mapping that is not hosted anywhere, "
+            "pass it inline as a data URI: data:text/plain;base64,<base64 of the YARRRML>."
+        ),
     )
     data_url: AnyUrl = Field(
         ...,

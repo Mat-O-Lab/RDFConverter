@@ -500,6 +500,29 @@ curl -X POST http://localhost:6003/api/createrdf \
 }
 ```
 
+### Private Mappings and Inline Data (no static URL)
+
+Mappings and data do not have to be published at a static URL. With `POST /api/createrdfupload`
+both travel inside the request, so nothing needs to be hosted:
+
+- **Data**: send the file content in `data_content`. `data_url` is only the base identifier
+  for the generated IRIs (and the `access:` value of the mapping's source); it is never downloaded.
+  The format is detected from the content (JSON, JSON-LD, RDF serializations such as Turtle or
+  RDF/XML, or CSV) - the URL needs no file extension.
+- **Mapping**: send it as a `data:` URI in `mapping_url`: `data:text/plain;base64,<base64 of the YARRRML>`.
+  The decoded text is used as the mapping; the URI is never fetched.
+
+```bash
+MAPPING=$(base64 -w0 my-private-map.yaml)
+curl -X POST "http://localhost:6003/api/createrdfupload" \
+  -H "Content-Type: application/json" \
+  -d "{\"mapping_url\": \"data:text/plain;base64,${MAPPING}\",
+       \"data_url\": \"http://example.org/source.csv\",
+       \"data_content\": \"id,label\\n1,hello\\n\"}"
+```
+
+The mapping must still declare its source in a top-level `sources:` block whose `access:` equals `data_url`.
+
 ### Test Endpoint for Development
 
 The `/api/test` endpoint is particularly useful during development:
