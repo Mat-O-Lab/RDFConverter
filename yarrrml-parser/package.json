@@ -19,5 +19,8 @@
     "build": "tsc",
     "start": "node ./bin/app.js",
     "dev": "ts-node ./src/app.ts"
+  },
+  "resolutions": {
+    "@rmlio/yarrrml-parser/glob": "^14.0.2"
   }
 }
