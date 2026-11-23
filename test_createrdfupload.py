@@ -189,10 +189,14 @@ NESTED_LIST_MAPPING = """\
 prefixes:
   ex: "http://example.org/"
   rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+sources:
+  source:
+    access: http://example.org/source.csv
+    referenceFormulation: csv
 mappings:
   Item:
     sources:
-      - [source~csv]
+      - source
     s: ex:$(id)
     po:
       - - rdf:type
@@ -205,10 +209,14 @@ INLINE_LIST_MAPPING = """\
 prefixes:
   ex: "http://example.org/"
   rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+sources:
+  source:
+    access: http://example.org/source.csv
+    referenceFormulation: csv
 mappings:
   Item:
     sources:
-      - [source~csv]
+      - source
     s: ex:$(id)
     po:
       - [rdf:type, ex:Item]
