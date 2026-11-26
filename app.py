@@ -31,7 +31,7 @@ from wtforms import BooleanField, URLField
 from wtforms.validators import Optional as WTFOptional
 
 from rmlmapper import count_rules_str, replace_data_source, replace_all_data_sources, strip_namespace
-from yarrrml_utils import normalize_yarrrml_nested_lists
+from yarrrml_utils import as_bool, normalize_yarrrml_nested_lists
 from yarrrml_sparql import yarrrml_to_sparql
 from enum import Enum
 
@@ -1281,7 +1281,7 @@ def apply_mapping(
             detail=f"Could not read mapping file - is it valid YAML format? {str(e)}"
         ) from e
 
-    duplicate_for_table = mapping_dict.get("use_template_rowwise", False)
+    duplicate_for_table = as_bool(mapping_dict.get("use_template_rowwise", False))
     logging.info(f"use_template_rowwise: {duplicate_for_table}")
 
     # VALIDATE: Check for unsupported iterators before processing

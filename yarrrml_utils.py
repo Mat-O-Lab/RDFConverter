@@ -23,3 +23,20 @@ def normalize_yarrrml_nested_lists(yaml_str: str) -> str:
         yaml_str,
         flags=re.MULTILINE,
     )
+
+
+_TRUE_STRINGS = frozenset({"true", "yes", "on", "1"})
+
+
+def as_bool(value, default: bool = False) -> bool:
+    """Interpret a YAML flag as a boolean.
+
+    Mappings written by older MapToMethod versions carry flags as quoted strings
+    (``use_template_rowwise: 'false'``). Python treats any non-empty string as true,
+    so ``'false'`` would silently switch the feature on.
+    """
+    if value is None:
+        return default
+    if isinstance(value, str):
+        return value.strip().lower() in _TRUE_STRINGS
+    return bool(value)
