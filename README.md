@@ -304,6 +304,29 @@ Turtle/RDF File → RDFLib Parser → Graph → JSON-LD Serializer →
 JSON-LD with @context → RML Mapper + JSONPath → Output RDF
 ```
 
+#### Same rules for Turtle and JSON-LD
+
+JSON-LD and Turtle describe the same RDF graph, so one mapping can run on both. Every input that is RDF
+(including JSON-LD with an `@context`) is exposed to the iterators as a flat list of nodes under `@graph`.
+JSON-LD additionally keeps the structure its author gave it (for example `tables[*].tableSchema.columns[*]`),
+so mappings written against that structure keep working on JSON-LD. Turtle has no such structure, so use the
+`@graph` form when a mapping has to work on both:
+
+```yaml
+sources:
+  columns:
+    access: 'https://example.com/data-metadata.jsonld'   # replaced by data_url
+    iterator: "$['@graph'][?(@['@type']=='Column')]"      # works on JSON-LD and Turtle
+    referenceFormulation: jsonpath
+```
+
+- With JSON-LD as `data_url` the output contains the mapping result and that JSON-LD only.
+- With Turtle as `data_url` the output additionally contains the whole Turtle graph, so everything stays
+  connected through the identifiers the mapping uses (for example a column that is the predicate of the row values).
+- Use single quotes inside the iterator. Double quotes inside it break the generated RML.
+- `/api/checkmapping` evaluates the iterators the same way, so it reports the same rules as applicable for both inputs.
+- `use_template_rowwise` is a boolean. A quoted `'false'` is also read as false.
+
 #### Example: Using Turtle Data with JSONPath
 
 Suppose you have a Turtle file `data.ttl`:
