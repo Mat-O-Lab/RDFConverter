@@ -1,4 +1,5 @@
 import base64
+import json
 import logging
 import os
 import re
@@ -722,6 +723,37 @@ def extract_jsonld_namespaces(content: bytes) -> tuple[dict, str | None]:
     return namespace_dict
 
 
+def graph_to_flat_json(graph: Graph, namespace_dict: dict | None = None) -> dict:
+    """Canonical flat JSON-LD of an RDF graph, the form mapping rules are written against."""
+    context = get_standard_jsonld_context()
+    if namespace_dict:
+        context.update(namespace_dict)
+    return json.loads(graph.serialize(format="json-ld", context=context))
+
+
+def with_flat_graph(json_data, content, namespace_dict: dict | None = None):
+    """Give JSON-LD input the same flat '@graph' that RDF (Turtle, ...) input gets.
+
+    JSON-LD and Turtle describe the same RDF graph, but a JSON-LD document keeps the shape
+    its author gave it (nesting, aliases), while Turtle is converted to the flat form. Adding
+    the flat '@graph' to JSON-LD input lets one mapping, written against '@graph', run on both.
+    The original structure stays untouched, so mappings written against it keep working.
+    """
+    if not isinstance(json_data, dict) or "@context" not in json_data or "@graph" in json_data:
+        return json_data
+    try:
+        graph = Graph()
+        graph.parse(data=content, format="json-ld")
+        flat = graph_to_flat_json(graph, namespace_dict)
+    except Exception as e:  # e.g. a remote @context that cannot be loaded
+        logging.warning(f"Could not add flat @graph to JSON-LD input: {e}")
+        return json_data
+    nodes = flat.get("@graph")
+    if nodes is None:  # a single node is serialised without @graph
+        nodes = [{k: v for k, v in flat.items() if k != "@context"}]
+    return {**json_data, "@graph": nodes}
+
+
 RDF_SNIFF_FORMATS = ("turtle", "xml", "n3")
 
 
@@ -854,8 +886,12 @@ def process_data_to_jsonld(
         # Check if it's JSON-LD (has @context)
         has_context = "@context" in json_data if isinstance(json_data, dict) else False
         
-        # Return as-is - NO TRANSFORMATION!
+        # Original structure is kept as is; JSON-LD additionally gets the flat '@graph' of RDF input
         processed_content = content.decode() if isinstance(content, bytes) else content
+        if has_context:
+            enriched = with_flat_graph(json_data, content, namespace_dict)
+            if enriched is not json_data:
+                processed_content = json.dumps(enriched)
         
         # is_rdf_data = False means "don't add data_graph to final output"
         # For JSON-LD, RML mapper will handle everything
@@ -888,11 +924,7 @@ def process_data_to_jsonld(
         
         # Convert to JSON-LD with minimal context
         # We must do this for non-JSON formats, but keep it minimal
-        context = get_standard_jsonld_context()
-        if namespace_dict:
-            context.update(namespace_dict)
-        
-        processed_content = temp_graph.serialize(format="json-ld", context=context)
+        processed_content = json.dumps(graph_to_flat_json(temp_graph, namespace_dict))
         logging.info(f"Converted {data_format} to JSON-LD (minimal transformation)")
         
         # is_rdf_data = True means "this was originally RDF, may need data_graph"
@@ -2616,7 +2648,7 @@ def check_mapping(mapping_url, data_url, authorization=None):
         
         # Try to parse as JSON first (most common case)
         try:
-            data_json = json.loads(data_str)
+            data_json = with_flat_graph(json.loads(data_str), data_str)
             logging.info("Data source parsed as JSON")
         except (json.JSONDecodeError, ValueError):
             # Try as RDF - convert to JSON-LD
@@ -2627,8 +2659,7 @@ def check_mapping(mapping_url, data_url, authorization=None):
                 logging.info(f"Data source parsed as RDF ({format}), converting to JSON-LD")
                 
                 # Convert to JSON-LD for condition evaluation
-                json_ld_str = data_graph.serialize(format="json-ld")
-                data_json = json.loads(json_ld_str)
+                data_json = graph_to_flat_json(data_graph)
             else:
                 raise HTTPException(
                     status_code=422,
